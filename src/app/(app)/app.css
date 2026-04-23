@@ -1,0 +1,186 @@
+/**
+ * ARES Vendor App Module — Estilos exclusivos de la PWA vendedor
+ * Importado SOLO en (app)/layout.tsx
+ */
+
+/* ═══════════════════════════════════════════
+   VENDOR SIDEBAR (Desktop)
+   ═══════════════════════════════════════════ */
+.vendor-sidebar {
+    width: 100px;
+    height: 90vh;
+    background: var(--sidebar-bg);
+    margin: 5vh 0 5vh 5vw;
+    border-radius: var(--radius-lg);
+    border: var(--border-thick);
+    box-shadow: var(--shadow-heavy);
+    position: fixed;
+    left: 0;
+    top: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 1rem 0;
+    z-index: 1000;
+    overflow-y: auto;
+    scrollbar-width: none;
+}
+
+.vendor-sidebar::-webkit-scrollbar {
+    display: none;
+}
+
+.vendor-sidebar-link {
+    color: white;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.1rem;
+    padding: 0.8rem;
+    border-radius: var(--radius-md);
+    transition: 0.3s;
+    text-decoration: none;
+    margin-bottom: 1rem;
+}
+
+/* ═══════════════════════════════════════════
+   PWA NAVIGATION — FLOATING PILL (Mobile)
+   ═══════════════════════════════════════════ */
+.bottom-nav {
+    position: fixed;
+    bottom: 8px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: calc(100% - 1rem);
+    max-width: 500px;
+    background: rgba(0, 0, 0, 0.85);
+    backdrop-filter: blur(15px);
+    border: 2.5px solid var(--color-primary);
+    border-radius: 28px;
+    padding: 0.4rem 0.5rem;
+    display: flex;
+    justify-content: space-around;
+    align-items: center;
+    box-shadow: 0px 10px 40px rgba(0, 0, 0, 0.7);
+    z-index: 5000;
+}
+
+.bottom-nav::-webkit-scrollbar {
+    display: none;
+}
+
+.bottom-nav-item {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 0.1rem;
+    color: rgba(255, 255, 255, 0.5);
+    text-decoration: none;
+    min-width: 60px;
+    flex-shrink: 0;
+    transition: 0.3s;
+}
+
+.bottom-nav-item.active {
+    color: var(--color-primary);
+}
+
+.bottom-nav-item span {
+    font-size: 0.55rem;
+    font-weight: 800;
+    text-transform: uppercase;
+    margin-top: 2px;
+}
+
+/* ═══════════════════════════════════════════
+   APP ICON GRID (Home Shortcuts)
+   ═══════════════════════════════════════════ */
+.app-icon-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 1.25rem 0.5rem;
+    padding: 1rem 0;
+}
+
+.app-icon-item {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.5rem;
+    text-decoration: none;
+    transition: 0.2s;
+}
+
+.app-icon-container {
+    width: 65px;
+    height: 65px;
+    border-radius: 20px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    position: relative;
+    border: 2px solid #000;
+    box-shadow: 5px 5px 0px 0px rgba(0, 0, 0, 0.4);
+    background: var(--surface-raised);
+    transition: 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+
+.app-icon-item:active .app-icon-container {
+    transform: scale(0.9) translateY(4px);
+    box-shadow: 2px 2px 0px 0px rgba(0, 0, 0, 0.4);
+}
+
+.app-icon-label {
+    font-size: 0.6rem;
+    font-weight: 800;
+    color: var(--text-primary);
+    text-transform: uppercase;
+    text-align: center;
+    letter-spacing: -0.01em;
+}
+
+/* ═══════════════════════════════════════════
+   VENDOR MAIN CONTENT & RESPONSIVE
+   ═══════════════════════════════════════════ */
+.main-content {
+    max-width: 600px;
+    margin: 0 auto;
+    width: 100%;
+    padding: 1.5rem;
+    transition: all 0.3s ease;
+}
+
+@media (min-width: 768px) {
+    .bottom-nav {
+        display: none !important;
+    }
+
+    .layout-wrapper {
+        padding-bottom: 2rem !important;
+        display: flex;
+        justify-content: center;
+        padding-left: calc(5vw + 100px);
+    }
+
+    .main-content {
+        max-width: 1200px;
+        margin: 0 auto;
+        padding-top: 3rem;
+        padding-right: 2rem;
+    }
+
+    .mobile-only {
+        display: none !important;
+    }
+}
+
+@media (max-width: 767px) {
+    .desktop-only {
+        display: none !important;
+    }
+
+    .vendor-sidebar {
+        display: none !important;
+    }
+}

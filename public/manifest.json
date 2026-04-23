@@ -1,0 +1,18 @@
+{
+  "name": "Ares Platform",
+  "short_name": "Ares",
+  "description": "Premium IPTV & Streaming Reseller Platform",
+  "start_url": "/home",
+  "display": "standalone",
+  "background_color": "#000000",
+  "theme_color": "#F5C518",
+  "orientation": "portrait",
+  "icons": [
+    {
+      "src": "/ares_pwa_icon.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ]
+}
