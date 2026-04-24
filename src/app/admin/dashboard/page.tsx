@@ -131,7 +131,7 @@ export default function AdminDashboard() {
                     <Package size={300} strokeWidth={1} />
                 </div>
 
-                <div style={{ maxWidth: '650px', position: 'relative', zIndex: 10 }}>
+                <div style={{ maxWidth: '650px', position: 'relative' }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', marginBottom: '1rem' }}>
                         <div style={{ width: '10px', height: '10px', background: 'var(--color-accent)', borderRadius: '2px', boxShadow: '0 0 10px var(--color-accent)' }} />
                         <p style={{ fontWeight: 900, fontSize: '0.75rem', letterSpacing: '0.3rem', color: 'rgba(255,255,255,0.7)' }}>MAESTRO DE OPERACIONES</p>
