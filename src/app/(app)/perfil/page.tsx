@@ -200,7 +200,7 @@ export default function PerfilPage() {
             </div>
 
             {/* Public Link Section (Only for PRO users) */}
-            {vendor?.plan === 'Pro' && (
+            {['pro', 'proveedor'].includes(vendor?.plan?.toLowerCase() || '') && (
                 <motion.div
                     initial={{ opacity: 0, scale: 0.95 }}
                     animate={{ opacity: 1, scale: 1 }}
@@ -222,11 +222,11 @@ export default function PerfilPage() {
                         display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '1rem'
                     }}>
                         <code style={{ fontSize: '0.8rem', fontWeight: 800, color: 'var(--color-primary)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                            {typeof window !== 'undefined' ? `${window.location.origin}/u/${vendor.alias}` : `.../u/${vendor.alias}`}
+                            {typeof window !== 'undefined' ? `${window.location.origin}/u/${vendor?.alias || ''}` : `.../u/${vendor?.alias || ''}`}
                         </code>
                         <button
                             onClick={() => {
-                                const url = `${window.location.origin}/u/${vendor.alias}`;
+                                const url = `${window.location.origin}/u/${vendor?.alias || ''}`;
                                 navigator.clipboard.writeText(url);
                                 triggerToast();
                             }}

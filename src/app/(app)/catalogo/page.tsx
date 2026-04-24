@@ -40,7 +40,8 @@ export default function CatalogoPage() {
   const activeCount = misServicios.filter(ms => ms.activo).length;
 
   const handleActivate = async (svc: ServicioBase) => {
-    const precio = parseFloat(precioInput[svc.id] || svc.precio_sugerido.toString());
+    let precio = parseFloat(precioInput[svc.id] || svc.precio_sugerido.toString());
+    if (isNaN(precio)) precio = svc.precio_sugerido || 0;
     try {
       await api.post('/mis_servicios', { servicio_id: svc.id, precio_venta: precio });
       showToast(`${svc.nombre} activado ✅`);
