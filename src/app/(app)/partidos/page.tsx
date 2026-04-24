@@ -6,8 +6,9 @@
 import React, { useState, useEffect } from 'react';
 import api from '@/lib/api';
 import Link from 'next/link';
-import { Trophy, Clock, Tv, Copy, Calendar as CalendarIcon, Zap, Loader2, Star, MessageCircle, RefreshCw } from 'lucide-react';
+import { Trophy, Clock, Tv, Copy, Calendar as CalendarIcon, Zap, Loader2, Star, MessageCircle, RefreshCw, Download } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { toJpeg } from 'html-to-image';
 
 interface Partido {
     id: string;
@@ -27,6 +28,7 @@ export default function PartidosVendorPage() {
     const [loading, setLoading] = useState(true);
     const [showToast, setShowToast] = useState(false);
     const [userPlan, setUserPlan] = useState('');
+    const [downloadingImg, setDownloadingImg] = useState<Set<string>>(new Set());
 
     useEffect(() => { fetchPartidos(); }, []);
 
@@ -42,6 +44,25 @@ export default function PartidosVendorPage() {
             console.error('Error fetching matches:', error);
         } finally {
             setLoading(false);
+        }
+    };
+
+    const downloadFixture = async (id: string, equipoLocal: string, equipoVisita: string) => {
+        try {
+            setDownloadingImg(prev => new Set(prev).add(id));
+            const node = document.getElementById(`fixture-${id}`);
+            if (!node) return;
+            const dataUrl = await toJpeg(node, { quality: 0.95, backgroundColor: '#000' });
+            const link = document.createElement('a');
+            link.download = `Fixture_${equipoLocal}_vs_${equipoVisita}.jpg`.replace(/\s+/g, '_');
+            link.href = dataUrl;
+            link.click();
+        } catch (err) {
+            console.error('Error downloading fixture:', err);
+        } finally {
+            const next = new Set(downloadingImg);
+            next.delete(id);
+            setDownloadingImg(next);
         }
     };
 
@@ -152,7 +173,7 @@ export default function PartidosVendorPage() {
             ) : (
                 <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
                     {partidos.map((p, idx) => (
-                        <motion.div key={p.id} initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: idx * 0.1 }}
+                        <motion.div key={p.id} id={`fixture-${p.id}`} initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: idx * 0.1 }}
                             className="card" style={{ padding: '0', overflow: 'hidden', background: 'var(--surface-raised)' }}>
                             <div style={{
                                 background: 'var(--surface-raised)', padding: '0.6rem 1.25rem', borderBottom: '2.5px solid #000',
@@ -200,7 +221,7 @@ export default function PartidosVendorPage() {
                                     </div>
                                     {p.requiere_iptv && userPlan !== 'PRO' ? (
                                         <div style={{ marginTop: '0.5rem', textAlign: 'right' }}>
-                                            <Link href="/planes" style={{
+                                            <Link href="/plan" style={{
                                                 fontSize: '0.6rem', fontWeight: 900, color: 'var(--color-primary)',
                                                 textDecoration: 'none', border: '1px solid var(--color-primary)',
                                                 padding: '0.3rem 0.6rem', borderRadius: '8px',
@@ -218,6 +239,20 @@ export default function PartidosVendorPage() {
                                     )}
                                 </div>
                             </div>
+                            {(!p.requiere_iptv || userPlan === 'PRO') && (
+                                <button
+                                    onClick={() => downloadFixture(p.id, p.equipo_local, p.equipo_visita)}
+                                    disabled={downloadingImg.has(p.id)}
+                                    style={{
+                                        display: 'flex', width: '100%', padding: '0.75rem', background: 'rgba(255,255,255,0.05)',
+                                        border: 'none', borderTop: '2px solid #000', alignItems: 'center', justifyContent: 'center',
+                                        gap: '0.5rem', color: 'white', fontWeight: 900, fontSize: '0.75rem', cursor: 'pointer'
+                                    }}
+                                >
+                                    {downloadingImg.has(p.id) ? <Loader2 className="animate-spin" size={16} /> : <Download size={16} />}
+                                    {downloadingImg.has(p.id) ? 'GENERANDO MOCKUP FICTURE...' : 'DESCARGAR ESTA FIXTURE'}
+                                </button>
+                            )}
                         </motion.div>
                     ))}
                 </div>

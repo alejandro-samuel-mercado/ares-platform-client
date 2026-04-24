@@ -17,7 +17,7 @@ function Navigation() {
     const sidebarItems = [
         { href: '/home', icon: Home, label: 'Inicio' },
         { href: '/catalogo', icon: ShoppingBag, label: 'Catálogo' },
-        { href: '/imagenes', icon: Key, label: 'Mis Servicios' },
+        { href: '/imagenes', icon: Key, label: 'Servicios' },
         { href: '/flyers', icon: ImageIcon, label: 'Flyers' },
         { href: '/promociones', icon: Megaphone, label: 'Promos' },
         { href: '/estrenos', icon: Clapperboard, label: 'Estrenos' },
