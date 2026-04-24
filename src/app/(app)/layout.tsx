@@ -17,7 +17,7 @@ function Navigation() {
     const sidebarItems = [
         { href: '/home', icon: Home, label: 'Inicio' },
         { href: '/catalogo', icon: ShoppingBag, label: 'Catálogo' },
-        { href: '/imagenes', icon: ImageIcon, label: 'Imágenes' },
+        { href: '/imagenes', icon: ImageIcon, label: 'Mis Servicios' },
         { href: '/estrenos', icon: Clapperboard, label: 'Estrenos' },
         { href: '/partidos', icon: Trophy, label: 'Partidos' },
         { href: '/mensajes', icon: MessageSquare, label: 'Mensajes' },
@@ -31,7 +31,7 @@ function Navigation() {
     const bottomItems = [
         { href: '/home', icon: Home, label: 'Inicio' },
         { href: '/catalogo', icon: ShoppingBag, label: 'Catálogo' },
-        { href: '/partidos', icon: Trophy, label: 'Partidos' },
+        { href: '/imagenes', icon: ImageIcon, label: 'Mis Servicios' },
         { href: '/mensajes', icon: MessageSquare, label: 'Mensajes' },
         { href: '/perfil', icon: User, label: 'Perfil' },
     ];

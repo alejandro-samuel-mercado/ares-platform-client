@@ -13,6 +13,8 @@ interface Pedido {
   servicio_id: string;
   notas: string;
   status: string;
+  respuesta_admin: string | null;
+  respondido_en: string | null;
   creado_en: string;
 }
 
@@ -195,9 +197,18 @@ export default function PedidosVendorPage() {
                       {new Date(p.creado_en).toLocaleDateString()}
                     </span>
                   </div>
-                  <p style={{ fontWeight: 700, fontSize: '0.9rem', color: '#000', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                  <p style={{ fontWeight: 700, fontSize: '0.9rem', color: 'var(--text-primary)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                     {p.notas}
                   </p>
+                  {p.respuesta_admin && (
+                    <div style={{ 
+                      marginTop: '0.75rem', padding: '0.75rem 1rem', borderRadius: '12px',
+                      background: 'rgba(34,197,94,0.1)', border: '2px solid rgba(34,197,94,0.3)'
+                    }}>
+                      <div style={{ fontSize: '0.6rem', fontWeight: 900, color: 'var(--color-success)', marginBottom: '0.4rem', letterSpacing: '0.05em' }}>📋 RESPUESTA DEL ADMIN</div>
+                      <p style={{ fontWeight: 700, fontSize: '0.85rem', color: 'var(--text-primary)', whiteSpace: 'pre-wrap', lineHeight: 1.4 }}>{p.respuesta_admin}</p>
+                    </div>
+                  )}
                 </div>
               </motion.div>
             );

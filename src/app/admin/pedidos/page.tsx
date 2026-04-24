@@ -19,12 +19,19 @@ interface Pedido {
   servicio_id: string;
   notas: string;
   status: string;
+  respuesta_admin: string | null;
+  respondido_en: string | null;
   creado_en: string;
   vendor: {
     nombre: string;
     alias: string;
     logo_url: string | null;
   };
+  servicio?: {
+    nombre: string;
+    logo_url: string;
+    categoria: string;
+  } | null;
 }
 
 export default function PedidosAdminPage() {
@@ -34,6 +41,8 @@ export default function PedidosAdminPage() {
   const [updating, setUpdating] = useState<string | null>(null);
   const [showToast, setShowToast] = useState(false);
   const [toastMsg, setToastMsg] = useState('');
+  const [responseModal, setResponseModal] = useState<{ open: boolean; pedidoId: string | null }>({ open: false, pedidoId: null });
+  const [respuestaText, setRespuestaText] = useState('');
 
   const fetchPedidos = async () => {
     setLoading(true);
@@ -55,12 +64,14 @@ export default function PedidosAdminPage() {
     setTimeout(() => setShowToast(false), 3000);
   };
 
-  const handleStatusUpdate = async (id: string, newStatus: string) => {
+  const handleStatusUpdate = async (id: string, newStatus: string, respuesta?: string) => {
     setUpdating(id);
     try {
+      const body: any = { status: newStatus };
+      if (respuesta) body.respuesta_admin = respuesta;
       await api.request(`/admin/pedidos/${id}`, {
         method: 'PATCH',
-        body: { status: newStatus }
+        body
       });
       triggerToast(`ESTADO ACTUALIZADO: ${newStatus}`);
       await fetchPedidos();
@@ -69,6 +80,13 @@ export default function PedidosAdminPage() {
     } finally {
       setUpdating(null);
     }
+  };
+
+  const handleCompleteWithResponse = async () => {
+    if (!responseModal.pedidoId) return;
+    await handleStatusUpdate(responseModal.pedidoId, 'COMPLETADO', respuestaText);
+    setResponseModal({ open: false, pedidoId: null });
+    setRespuestaText('');
   };
 
   const filteredPedidos = pedidos.filter(p => 
@@ -86,6 +104,7 @@ export default function PedidosAdminPage() {
   };
 
   return (
+    <>
     <div style={{ maxWidth: '1400px', margin: '0 auto', paddingBottom: '4rem' }}>
       
       {/* Toast Dinámico Ares v2.3 */}
@@ -224,14 +243,29 @@ export default function PedidosAdminPage() {
                     position: 'absolute', top: '-14px', left: '25px', 
                     background: 'var(--color-primary)', color: 'white', 
                     fontSize: '0.7rem', padding: '4px 12px', borderRadius: '6px', fontWeight: 900,
-                    border: '2px solid #000'
+                    border: '2px solid #000', display: 'flex', alignItems: 'center', gap: '0.5rem'
                   }}>
-                    REQUERIMIENTO MAESTRO
+                    {p.servicio?.logo_url && <img src={p.servicio.logo_url} style={{ width: '14px', height: '14px', objectFit: 'contain' }} />}
+                    {p.servicio?.nombre ? p.servicio.nombre.toUpperCase() : 'REQUERIMIENTO MAESTRO'}
                   </div>
                   <p style={{ fontWeight: 800, fontSize: '1rem', color: 'var(--text-primary)', lineHeight: 1.5 }}>
                     <MessageCircle size={16} style={{ display: 'inline', marginRight: '0.75rem', color: 'var(--color-primary)' }} />
                     <span style={{ fontStyle: 'italic', opacity: 0.9 }}>"{p.notas}"</span>
                   </p>
+                  {p.respuesta_admin && (
+                    <div style={{ 
+                      marginTop: '1rem', padding: '1rem 1.5rem', borderRadius: '16px',
+                      background: 'rgba(34,197,94,0.1)', border: '2px solid rgba(34,197,94,0.3)'
+                    }}>
+                      <div style={{ fontSize: '0.65rem', fontWeight: 900, color: 'var(--color-success)', marginBottom: '0.5rem', letterSpacing: '0.1em' }}>📋 RESPUESTA ADMIN</div>
+                      <p style={{ fontWeight: 700, fontSize: '0.9rem', color: 'var(--text-primary)', whiteSpace: 'pre-wrap' }}>{p.respuesta_admin}</p>
+                      {p.respondido_en && (
+                        <div style={{ fontSize: '0.6rem', fontWeight: 800, opacity: 0.4, marginTop: '0.5rem' }}>
+                          Respondido: {new Date(p.respondido_en).toLocaleString()}
+                        </div>
+                      )}
+                    </div>
+                  )}
                   <div style={{ marginTop: '1rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center', opacity: 0.5 }}>
                     <div style={{ fontSize: '0.7rem', fontWeight: 900, display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
                         <Clock size={12} /> ENTRADA: {new Date(p.creado_en).toLocaleString()}
@@ -260,10 +294,13 @@ export default function PedidosAdminPage() {
                       )}
                       {p.status === 'EN_PROCESO' && (
                         <button 
-                          onClick={() => handleStatusUpdate(p.id, 'COMPLETADO')}
+                          onClick={() => {
+                            setResponseModal({ open: true, pedidoId: p.id });
+                            setRespuestaText('');
+                          }}
                           className="btn-primary"
                           style={{ padding: '0.75rem', width: '50px', height: '50px', display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#22C55E' }}
-                          title="Completar"
+                          title="Completar con Respuesta"
                         >
                           <Check size={22} />
                         </button>
@@ -292,5 +329,75 @@ export default function PedidosAdminPage() {
         )}
       </div>
     </div>
+
+    {/* Modal de Respuesta al Completar Pedido */}
+    <AnimatePresence>
+      {responseModal.open && (
+        <div style={{
+          position: 'fixed', inset: 0, zIndex: 20000,
+          display: 'flex', alignItems: 'center', justifyContent: 'center',
+          background: 'rgba(0,0,0,0.6)', backdropFilter: 'blur(8px)'
+        }}>
+          <motion.div
+            initial={{ scale: 0.9, opacity: 0 }}
+            animate={{ scale: 1, opacity: 1 }}
+            exit={{ scale: 0.9, opacity: 0 }}
+            className="card-static"
+            style={{
+              width: '90%', maxWidth: '550px', padding: '3rem',
+              background: 'var(--surface-raised)', borderWidth: '3px',
+              boxShadow: '16px 16px 0px 0px #000'
+            }}
+          >
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2rem' }}>
+              <h2 style={{ fontSize: '1.8rem' }}>ENVIAR <span className="text-gradient-primary">RESPUESTA</span></h2>
+              <button
+                onClick={() => setResponseModal({ open: false, pedidoId: null })}
+                className="btn-ghost"
+                style={{ padding: '0.5rem' }}
+              >
+                <X size={24} />
+              </button>
+            </div>
+
+            <div style={{ marginBottom: '1.5rem' }}>
+              <label className="input-label">Credenciales / Instrucciones para el vendedor</label>
+              <textarea
+                className="input"
+                placeholder="Ej: Usuario: netflix_user@mail.com&#10;Contraseña: abc123&#10;Perfil: #3"
+                value={respuestaText}
+                onChange={(e) => setRespuestaText(e.target.value)}
+                style={{ minHeight: '140px', resize: 'none', paddingTop: '1rem' }}
+              />
+            </div>
+
+            <div className="card-static" style={{ background: 'var(--surface-base)', borderWidth: '1.5px', padding: '1rem', marginBottom: '1.5rem' }}>
+              <p style={{ fontSize: '0.7rem', fontWeight: 800, color: 'var(--color-primary)', lineHeight: 1.4 }}>
+                Esta respuesta será visible para el vendedor en su app. Incluí credenciales o instrucciones claras.
+              </p>
+            </div>
+
+            <div style={{ display: 'flex', gap: '1rem' }}>
+              <button
+                onClick={() => setResponseModal({ open: false, pedidoId: null })}
+                className="btn-secondary"
+                style={{ flex: 1, padding: '1rem' }}
+              >
+                CANCELAR
+              </button>
+              <button
+                onClick={handleCompleteWithResponse}
+                className="btn-primary"
+                style={{ flex: 2, padding: '1rem', background: '#22C55E' }}
+                disabled={updating !== null}
+              >
+                {updating ? 'PROCESANDO...' : '✅ COMPLETAR Y ENVIAR'}
+              </button>
+            </div>
+          </motion.div>
+        </div>
+      )}
+    </AnimatePresence>
+    </>
   );
 }

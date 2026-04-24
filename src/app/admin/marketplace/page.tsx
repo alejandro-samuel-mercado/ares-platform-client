@@ -12,12 +12,11 @@ import { motion, AnimatePresence } from 'framer-motion';
 interface MarketService {
     id: string;
     nombre: string;
-    descripcion: string;
-    precio: number;
+    descripcion_base: string;
+    precio_sugerido: number;
     categoria: string;
     logo_url: string;
     activo: boolean;
-    fecha_creacion: string;
 }
 
 export default function MarketplaceAdminPage() {
@@ -45,7 +44,7 @@ export default function MarketplaceAdminPage() {
     const fetchServices = async () => {
         try {
             setLoading(true);
-            const data = await api.get('/admin/market-services');
+            const data = await api.get('/admin/servicios');
             setServices(data);
         } catch (error) {
             console.error('Error fetching market services:', error);
@@ -72,7 +71,7 @@ export default function MarketplaceAdminPage() {
             }
 
             const token = localStorage.getItem('ares_token');
-            const apiUrl = `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000/api'}/admin/market-services`;
+            const apiUrl = `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000/api'}/admin/servicios`;
 
             const response = await fetch(editingId ? `${apiUrl}/${editingId}` : apiUrl, {
                 method: editingId ? 'PUT' : 'POST',
@@ -101,8 +100,8 @@ export default function MarketplaceAdminPage() {
             setEditingId(service.id);
             setFormData({
                 nombre: service.nombre,
-                descripcion: service.descripcion,
-                precio: service.precio.toString(),
+                descripcion: service.descripcion_base,
+                precio: service.precio_sugerido.toString(),
                 categoria: service.categoria,
                 logo_url: service.logo_url,
                 logo_archivo: null,
@@ -134,7 +133,7 @@ export default function MarketplaceAdminPage() {
     const handleDelete = async () => {
         if (!serviceToDelete) return;
         try {
-            await api.delete(`/admin/market-services/${serviceToDelete.id}`);
+            await api.delete(`/admin/servicios/${serviceToDelete.id}`);
             setShowToast(true);
             setTimeout(() => setShowToast(false), 3000);
             setServiceToDelete(null);
@@ -220,9 +219,9 @@ export default function MarketplaceAdminPage() {
                                                 </div>
                                             </div>
                                         </td>
-                                        <td style={{ maxWidth: '300px', fontSize: '0.85rem', color: 'var(--text-muted)', fontWeight: 600 }}>{s.descripcion}</td>
+                                        <td style={{ maxWidth: '300px', fontSize: '0.85rem', color: 'var(--text-muted)', fontWeight: 600 }}>{s.descripcion_base}</td>
                                         <td>
-                                            <div style={{ fontSize: '1.2rem', fontWeight: 900, color: 'var(--color-primary)' }}>Bs {s.precio}</div>
+                                            <div style={{ fontSize: '1.2rem', fontWeight: 900, color: 'var(--color-primary)' }}>Bs {s.precio_sugerido}</div>
                                         </td>
                                         <td>
                                             <div className={`chip ${s.activo ? 'chip-active' : 'chip-danger'}`}>
