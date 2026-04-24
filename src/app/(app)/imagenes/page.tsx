@@ -30,6 +30,7 @@ interface ServicioBase {
 interface MiServicio { 
   id: string; 
   servicio_id: string; 
+  precio_vendedor: number;
   servicio: ServicioBase; 
 }
 
@@ -68,16 +69,32 @@ export default function MisServiciosHub() {
   const fetchData = async () => {
     try {
       setRefreshing(true);
-      const [svcData, pedidosData, imgData] = await Promise.all([
-        api.get('/mis_servicios'),
-        api.get('/pedidos'),
-        api.get('/imagenes')
-      ]);
+      
+      // Mandatory Data: Mis Servicios
+      const svcData = await api.get('/mis_servicios');
       setMisServicios(svcData);
-      setPedidos(pedidosData);
-      setImagenes(imgData);
+
+      // Optional Data: Pedidos (Resilient)
+      try {
+        const pedidosData = await api.get('/pedidos');
+        setPedidos(pedidosData);
+      } catch (err) {
+        console.warn('Could not fetch pedidos (ignoring):', err);
+        setPedidos([]);
+      }
+
+      // Optional Data: Imagenes (Resilient)
+      try {
+        const imgData = await api.get('/imagenes');
+        setImagenes(imgData);
+      } catch (err) {
+        console.warn('Could not fetch imagenes (ignoring):', err);
+        setImagenes([]);
+      }
+
     } catch (error) {
-      console.error('Error fetching hub data:', error);
+      console.error('Critical Hub error:', error);
+      triggerToast('ERROR CARGANDO DATOS CRÍTICOS', 'error');
     } finally {
       setLoading(false);
       setRefreshing(false);
@@ -221,6 +238,10 @@ export default function MisServiciosHub() {
                       }} />
                       <span style={{ fontSize: '0.65rem', fontWeight: 800, color: 'var(--text-muted)' }}>{svc.categoria}</span>
                     </div>
+                  </div>
+                  <div style={{ textAlign: 'right' }}>
+                    <p style={{ fontSize: '0.6rem', fontWeight: 900, opacity: 0.4 }}>PRECIO PÚBLICO</p>
+                    <p style={{ fontSize: '1.1rem', fontWeight: 900, color: 'var(--color-primary)' }}>{ms.precio_vendedor} BS</p>
                   </div>
                 </div>
 

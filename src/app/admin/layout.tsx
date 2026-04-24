@@ -211,7 +211,7 @@ function AdminHeader() {
     const router = useRouter();
     const pathname = usePathname();
     const [showToast, setShowToast] = useState(false);
-    
+
     // Search State
     const [searchQuery, setSearchQuery] = useState('');
     const [showResults, setShowResults] = React.useState(false);
@@ -224,7 +224,7 @@ function AdminHeader() {
             window.OneSignalDeferred.push(async (OneSignal: any) => {
                 const permission = OneSignal.Notifications.permission;
                 setPushEnabled(permission);
-                
+
                 // Forzar prompt automático en Admin si no han dado permiso
                 if (!permission) {
                     await OneSignal.Slidedown.promptPush();
@@ -258,10 +258,10 @@ function AdminHeader() {
                     api.get('/admin/pagos'),
                     api.get('/admin/pedidos')
                 ]);
-                
+
                 const pPagos = (pagos || []).filter((p: any) => p.status === 'PENDIENTE');
                 const pPedidos = (pedidos || []).filter((p: any) => p.status === 'PENDIENTE');
-                
+
                 setPendingPagos(pPagos);
                 setPendingPedidos(pPedidos);
             } catch (err: any) {
@@ -314,7 +314,7 @@ function AdminHeader() {
                         animate={{ opacity: 1, scale: 1, y: 0 }}
                         exit={{ opacity: 0, scale: 0.9 }}
                         style={{
-                            position: 'fixed', top: '80px', right: '150px', zIndex: 5000,
+                            position: 'fixed', top: '80px', right: '150px', zIndex: 99999,
                             background: 'var(--surface-base)', color: 'var(--text-primary)',
                             backdropFilter: 'blur(10px)',
                             WebkitBackdropFilter: 'blur(10px)',
@@ -371,15 +371,15 @@ function AdminHeader() {
                             ) : (
                                 <>
                                     {pendingPagos.map((p) => (
-                                        <div 
-                                            key={`pago-${p.id}`} 
-                                            onClick={() => { 
+                                        <div
+                                            key={`pago-${p.id}`}
+                                            onClick={() => {
                                                 setPendingPagos(prev => prev.filter(x => x.id !== p.id));
-                                                router.push('/admin/pagos'); 
-                                                setShowNotifications(false); 
+                                                router.push('/admin/pagos');
+                                                setShowNotifications(false);
                                             }}
-                                            style={{ 
-                                                padding: '0.8rem', borderRadius: '14px', border: '2px solid #000', 
+                                            style={{
+                                                padding: '0.8rem', borderRadius: '14px', border: '2px solid #000',
                                                 background: 'rgba(255,255,255,0.02)', cursor: 'pointer',
                                                 display: 'flex', gap: '0.8rem', alignItems: 'center', marginBottom: '0.5rem'
                                             }}
@@ -394,15 +394,15 @@ function AdminHeader() {
                                         </div>
                                     ))}
                                     {pendingPedidos.map((p) => (
-                                        <div 
-                                            key={`pedido-${p.id}`} 
-                                            onClick={() => { 
+                                        <div
+                                            key={`pedido-${p.id}`}
+                                            onClick={() => {
                                                 setPendingPedidos(prev => prev.filter(x => x.id !== p.id));
-                                                router.push('/admin/pedidos'); 
-                                                setShowNotifications(false); 
+                                                router.push('/admin/pedidos');
+                                                setShowNotifications(false);
                                             }}
-                                            style={{ 
-                                                padding: '0.8rem', borderRadius: '14px', border: '2px solid #000', 
+                                            style={{
+                                                padding: '0.8rem', borderRadius: '14px', border: '2px solid #000',
                                                 background: 'rgba(255,255,255,0.02)', cursor: 'pointer',
                                                 display: 'flex', gap: '0.8rem', alignItems: 'center', marginBottom: '0.5rem'
                                             }}
@@ -444,7 +444,7 @@ function AdminHeader() {
                         }}
                         style={{ paddingLeft: '3rem', height: '44px', boxShadow: 'none' }}
                     />
-                    
+
                     {/* Search Dropdown */}
                     <AnimatePresence>
                         {showResults && searchQuery.trim().length > 0 && (

@@ -29,7 +29,7 @@ export default function OneSignalInit() {
           appId: appId,
           safari_web_id: "web.onesignal.auto.064f268b-5776-470a-bfa1-b50577b8e100",
           notifyButton: { enable: false },
-          allowLocalhostAsSecureOrigin: true,
+          allowLocalhostAsSecureOrigin: window.location.hostname === 'localhost',
         });
       } catch (err) {
         console.error('Error initializing OneSignal v16:', err);
@@ -47,31 +47,35 @@ export default function OneSignalInit() {
   useEffect(() => {
     if (vendor && typeof window !== 'undefined') {
        window.OneSignalDeferred = window.OneSignalDeferred || [];
-       window.OneSignalDeferred.push(async (OneSignal: any) => {
-         console.log('[OneSignal] Iniciando sincronización para:', vendor.alias);
-         
-         try {
-           // 1. Vincular ID externo (Crucial para filtros del servidor)
-           await OneSignal.login(vendor.id);
-           console.log('[OneSignal] Login exitoso:', vendor.id);
-         } catch (err) {
-           console.error('[OneSignal] Error en login:', err);
-         }
+        window.OneSignalDeferred.push(async (OneSignal: any) => {
+          if (!OneSignal) return;
+          console.log('[OneSignal] Iniciando sincronización para:', vendor.alias);
+          
+          try {
+            // 1. Vincular ID externo
+            if (typeof OneSignal.login === 'function') {
+              await OneSignal.login(vendor.id);
+              console.log('[OneSignal] Login exitoso:', vendor.id);
+            }
+          } catch (err) {
+            console.error('[OneSignal] Error en login:', err);
+          }
 
-         try {
-           // 2. Añadir etiquetas (Secundario, para segmentos y filtros)
-           await OneSignal.User.addTags({
-             vendor_id: vendor.id,
-             alias: vendor.alias,
-             plan: vendor.plan || 'Básico',
-             role: vendor.role
-           });
-           console.log('[OneSignal] Tags sincronizados:', { alias: vendor.alias, plan: vendor.plan, role: vendor.role });
-         } catch (err) {
-           // No bloqueamos el flujo si fallan los tags, ya que el login (external_id) es lo principal
-           console.warn('[OneSignal] Error sincronizando tags (no crítico):', err);
-         }
-       });
+          try {
+            // 2. Añadir etiquetas
+            if (OneSignal.User && typeof OneSignal.User.addTags === 'function') {
+              await OneSignal.User.addTags({
+                vendor_id: vendor.id,
+                alias: vendor.alias,
+                plan: vendor.plan || 'Básico',
+                role: vendor.role
+              });
+              console.log('[OneSignal] Tags sincronizados:', { alias: vendor.alias, plan: vendor.plan, role: vendor.role });
+            }
+          } catch (err) {
+            console.warn('[OneSignal] Error sincronizando tags (no crítico):', err);
+          }
+        });
     }
   }, [vendor]);
 
