@@ -1,373 +1,342 @@
 /**
- * Centro de Servicios — App Vendedor Ares v2.5 (Operativa Centralizada)
- * 
- * Antes conocido como "Banco de Imágenes", ahora integra:
- * - Descarga de Flyers (Material Visual)
- * - Visualización de Credenciales (Respuestas del Admin)
- * - Solicitud de Pedidos (Pedidos Automáticos)
+ * Mis Servicios — Ares v3 (Centro operativo)
+ *
+ * Muestra servicios seleccionados del vendor con:
+ * - Solicitud de credenciales (pedidos)
+ * - Visualización de credenciales asignadas
+ * - Historial de pedidos por servicio
  */
 
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { 
-  Package, Download, Key, Send, RefreshCw, Loader2, 
-  CheckCircle2, AlertCircle, X, Zap, Image as ImageIcon,
-  ExternalLink, MessageSquare, Copy
+import {
+  Key, Send, Loader2, CheckCircle2, AlertCircle, X, Zap, Copy,
+  ExternalLink, Package, Clock, RefreshCw, Eye, EyeOff, Upload,
+  ShoppingBag, Hash
 } from 'lucide-react';
 import api from '@/lib/api';
+import { useAuth } from '@/lib/auth';
 
-interface ServicioBase { 
-  id: string; 
-  nombre: string; 
-  logo_url: string; 
-  categoria: string; 
-  estado_actual: string; 
-  descripcion_base: string;
-}
+interface ServicioBase { id: string; nombre: string; logo_url: string; categoria: string; estado_actual: string; precio_admin: number; }
+interface MiServicio { id: string; servicio_id: string; servicio: ServicioBase; }
+interface Credencial { id: string; usuario: string; password: string; perfil: string | null; servicio: { id: string; nombre: string; logo_url: string; categoria: string }; }
+interface Pedido { id: string; servicio_id: string; cantidad: number; comprobante_url: string | null; status: string; respuesta_admin: string | null; creado_en: string; servicio?: { nombre: string; logo_url: string; }; }
 
-interface MiServicio { 
-  id: string; 
-  servicio_id: string; 
-  precio_vendedor: number;
-  servicio: ServicioBase; 
-}
-
-interface Imagen { 
-  id: string; 
-  titulo: string; 
-  url_base: string; 
-  servicio_id: string; 
-}
-
-interface Pedido {
-  id: string;
-  servicio_id: string;
-  status: string;
-  respuesta_admin: string | null;
-  respondido_en: string | null;
-  creado_en: string;
-}
-
-export default function MisServiciosHub() {
+export default function MisServiciosPage() {
+  const { vendor } = useAuth();
   const [misServicios, setMisServicios] = useState<MiServicio[]>([]);
+  const [credenciales, setCredenciales] = useState<Credencial[]>([]);
   const [pedidos, setPedidos] = useState<Pedido[]>([]);
-  const [imagenes, setImagenes] = useState<Imagen[]>([]);
   const [loading, setLoading] = useState(true);
-  const [refreshing, setRefreshing] = useState(false);
-
-  // Modal states
-  const [activeGallery, setActiveGallery] = useState<{ name: string, images: Imagen[] } | null>(null);
-  const [isOrderModalOpen, setIsOrderModalOpen] = useState(false);
-  const [selectedServiceForOrder, setSelectedServiceForOrder] = useState<string>('');
+  const [toast, setToast] = useState('');
+  const [selectedService, setSelectedService] = useState<string | null>(null);
+  const [showOrderModal, setShowOrderModal] = useState(false);
+  const [orderQuantity, setOrderQuantity] = useState(1);
   const [orderNotes, setOrderNotes] = useState('');
-  const [savingOrder, setSavingOrder] = useState(false);
+  const [orderComprobante, setOrderComprobante] = useState('');
+  const [submitting, setSubmitting] = useState(false);
+  const [revealedPasswords, setRevealedPasswords] = useState<Set<string>>(new Set());
+  const [activeTab, setActiveTab] = useState<'credenciales' | 'pedidos'>('credenciales');
 
-  const [toast, setToast] = useState<{ msg: string, type: 'success' | 'error' } | null>(null);
-
-  const fetchData = async () => {
+  const load = async () => {
+    setLoading(true);
     try {
-      setRefreshing(true);
-      
-      // Mandatory Data: Mis Servicios
-      const svcData = await api.get('/mis_servicios');
-      setMisServicios(svcData);
-
-      // Optional Data: Pedidos (Resilient)
-      try {
-        const pedidosData = await api.get('/pedidos');
-        setPedidos(pedidosData);
-      } catch (err) {
-        console.warn('Could not fetch pedidos (ignoring):', err);
-        setPedidos([]);
-      }
-
-      // Optional Data: Imagenes (Resilient)
-      try {
-        const imgData = await api.get('/imagenes');
-        setImagenes(imgData);
-      } catch (err) {
-        console.warn('Could not fetch imagenes (ignoring):', err);
-        setImagenes([]);
-      }
-
-    } catch (error) {
-      console.error('Critical Hub error:', error);
-      triggerToast('ERROR CARGANDO DATOS CRÍTICOS', 'error');
-    } finally {
-      setLoading(false);
-      setRefreshing(false);
-    }
+      const [svc, cred, ped] = await Promise.all([
+        api.get('/mis_servicios'),
+        api.get('/mis_credenciales'),
+        api.get('/pedidos')
+      ]);
+      setMisServicios(svc);
+      setCredenciales(cred);
+      setPedidos(ped);
+    } catch (err) { console.error(err); }
+    finally { setLoading(false); }
   };
+  useEffect(() => { load(); }, []);
 
-  useEffect(() => { fetchData(); }, []);
+  const showToast = (msg: string) => { setToast(msg); setTimeout(() => setToast(''), 3000); };
 
-  const triggerToast = (msg: string, type: 'success' | 'error' = 'success') => {
-    setToast({ msg: msg.toUpperCase(), type });
-    setTimeout(() => setToast(null), 3000);
-  };
-
-  const copyToClipboard = (text: string) => {
+  const handleCopy = (text: string) => {
     navigator.clipboard.writeText(text);
-    triggerToast('COPIADO AL PORTAPAPELES');
+    showToast('Copiado ✅');
   };
 
-  const handleCreateOrder = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!selectedServiceForOrder) return;
-    setSavingOrder(true);
+  const togglePassword = (id: string) => {
+    const next = new Set(revealedPasswords);
+    if (next.has(id)) next.delete(id); else next.add(id);
+    setRevealedPasswords(next);
+  };
+
+  const handleOrder = async () => {
+    if (!selectedService) return;
+    setSubmitting(true);
     try {
-      await api.post('/pedidos', { 
-        servicio_id: selectedServiceForOrder,
-        notas: orderNotes 
+      await api.post('/pedidos', {
+        servicio_id: selectedService,
+        cantidad: orderQuantity,
+        comprobante_url: orderComprobante || null,
+        notas: orderNotes || null,
       });
-      triggerToast('PEDIDO ENVIADO');
-      setIsOrderModalOpen(false);
+      showToast('Pedido enviado ✅');
+      setShowOrderModal(false);
+      setOrderQuantity(1);
       setOrderNotes('');
-      fetchData();
-    } catch (error) {
-      triggerToast('ERROR AL CREAR PEDIDO', 'error');
-    } finally {
-      setSavingOrder(false);
-    }
+      setOrderComprobante('');
+      load();
+    } catch (err) { console.error(err); showToast('Error al crear pedido'); }
+    finally { setSubmitting(false); }
   };
 
-  const handleDownload = async (imgId: string, title: string) => {
-    try {
-      const token = localStorage.getItem('ares_token');
-      const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000/api';
-      const response = await fetch(`${apiUrl}/imagen/${imgId}/download`, {
-        headers: { 'Authorization': `Bearer ${token}` }
-      });
-      if (!response.ok) throw new Error();
-      const blob = await response.blob();
-      const url = window.URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = `ares_${title.replace(/\s+/g, '_')}.png`;
-      document.body.appendChild(a);
-      a.click();
-      document.body.removeChild(a);
-      triggerToast('IMAGEN DESCARGADA');
-    } catch (error) {
-      triggerToast('ERROR EN DESCARGA', 'error');
-    }
+  const getServiceCredentials = (svcId: string) => credenciales.filter(c => c.servicio.id === svcId);
+  const getServicePedidos = (svcId: string) => pedidos.filter(p => p.servicio_id === svcId);
+  const getServicePrice = (svc: MiServicio) => svc.servicio.precio_admin || 0;
+
+  const statusColor: Record<string, string> = {
+    PENDIENTE: '#F59E0B',
+    EN_PROCESO: '#3B82F6',
+    COMPLETADO: '#10B981',
+    CANCELADO: '#EF4444'
   };
 
   if (loading) {
     return (
-      <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '60vh' }}>
-        <Loader2 className="animate-spin" size={48} color="var(--color-primary)" />
+      <div style={{ padding: '5rem 0', textAlign: 'center' }}>
+        <Zap className="animate-pulse" size={40} color="var(--color-primary)" style={{ margin: '0 auto' }} />
+        <p style={{ marginTop: '1rem', fontWeight: 800, color: 'var(--text-muted)' }}>CARGANDO SERVICIOS...</p>
       </div>
     );
   }
 
   return (
-    <div style={{ padding: '1.5rem 1.5rem 8rem 1.5rem' }}>
-      
-      {/* Toast Ares Custom */}
+    <div style={{ display: 'flex', flexDirection: 'column', gap: '2rem', paddingBottom: '8rem' }}>
+      {/* Toast */}
       <AnimatePresence>
         {toast && (
-          <motion.div 
-            initial={{ opacity: 0, y: 50 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }}
+          <motion.div initial={{ y: -50, opacity: 0 }} animate={{ y: 20, opacity: 1 }} exit={{ y: -50, opacity: 0 }}
             style={{
-              position: 'fixed', bottom: '100px', left: '50%', transform: 'translateX(-50%)', zIndex: 10000,
-              background: '#000', color: 'white', padding: '1.25rem 2.5rem', borderRadius: '24px',
-              border: `2px solid ${toast.type === 'error' ? 'var(--color-danger)' : 'var(--color-primary)'}`,
-              boxShadow: '10px 10px 0px 0px rgba(0,0,0,0.5)', fontWeight: 900, display: 'flex', alignItems: 'center', gap: '1rem'
-            }}
-          >
-            {toast.type === 'error' ? <AlertCircle color="var(--color-danger)" /> : <CheckCircle2 color="var(--color-primary)" />}
-            {toast.msg}
+              position: 'fixed', top: 0, left: '50%', transform: 'translateX(-50%)', zIndex: 3000,
+              background: 'var(--surface-raised)', padding: '1rem 2rem', borderRadius: 'var(--radius-full)',
+              border: '2px solid var(--color-primary)', boxShadow: '0 10px 30px rgba(0,0,0,0.5)',
+              fontWeight: 800, fontSize: '0.9rem', color: 'var(--text-primary)'
+            }}>
+            {toast}
           </motion.div>
         )}
       </AnimatePresence>
 
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2.5rem' }}>
+      {/* Header */}
+      <div style={{ marginTop: '1rem', display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
         <div>
-          <h1 style={{ fontSize: '2.2rem', display: 'flex', alignItems: 'center', gap: '0.8rem' }}>
+          <h1 style={{ fontSize: '2.2rem', lineHeight: 1, color: 'var(--text-primary)', display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
             MIS <span className="text-gradient-primary">SERVICIOS</span>
-            <button onClick={fetchData} className="btn-secondary" style={{ padding: '0.5rem', borderRadius: '50%' }}>
-              <RefreshCw size={20} className={refreshing ? 'animate-spin' : ''} />
-            </button>
+            <button onClick={load} className="btn-secondary" style={{ padding: '0.5rem', borderRadius: '50%' }}><RefreshCw size={20} /></button>
           </h1>
-          <p style={{ fontSize: '0.75rem', fontWeight: 800, opacity: 0.5 }}>PANEL OPERATIVO Y MATERIAL VISUAL</p>
+          <p style={{ fontWeight: 800, fontSize: '0.8rem', color: 'var(--text-muted)', marginTop: '0.5rem' }}>Pide credenciales y gestiona tus cuentas</p>
         </div>
       </div>
 
       {misServicios.length === 0 ? (
-        <div className="card" style={{ padding: '4rem 2rem', textAlign: 'center', borderStyle: 'dashed' }}>
-          <ImageIcon size={48} style={{ opacity: 0.1, margin: '0 auto 1.5rem auto' }} />
-          <p style={{ fontWeight: 800, fontSize: '1rem', opacity: 0.4, marginBottom: '2rem' }}>NO TIENES SERVICIOS ACTIVOS EN TU CATÁLOGO</p>
-          <a href="/catalogo" className="btn-primary" style={{ textDecoration: 'none', display: 'inline-flex', alignItems: 'center', gap: '0.5rem' }}>
-            <Zap size={18} /> IR AL CATÁLOGO
-          </a>
+        <div className="card" style={{ textAlign: 'center', padding: '3rem 2rem' }}>
+          <Package size={50} color="var(--text-muted)" style={{ margin: '0 auto 1rem' }} />
+          <h3 style={{ fontWeight: 900, fontSize: '1.3rem', color: 'var(--text-primary)' }}>SIN SERVICIOS ACTIVOS</h3>
+          <p style={{ fontWeight: 700, color: 'var(--text-muted)', marginTop: '0.5rem' }}>Activa servicios desde el <a href="/catalogo" style={{ color: 'var(--color-primary)' }}>Catálogo</a></p>
         </div>
       ) : (
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))', gap: '1.5rem' }}>
-          {misServicios.map((ms, i) => {
-            const svc = ms.servicio;
-            // Buscar último pedido completado para este servicio
-            const lastActivePedido = pedidos
-              .filter(p => p.servicio_id === ms.servicio_id && p.status === 'COMPLETADO' && p.respuesta_admin)
-              .sort((a, b) => new Date(b.creado_en).getTime() - new Date(a.creado_en).getTime())[0];
-            
-            // Buscar flyers
-            const svcFlyers = imagenes.filter(img => img.servicio_id === ms.servicio_id);
-            
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '2rem' }}>
+          {misServicios.map((ms) => {
+            const svcCreds = getServiceCredentials(ms.servicio_id);
+            const svcPedidos = getServicePedidos(ms.servicio_id);
+            const pendingCount = svcPedidos.filter(p => p.status === 'PENDIENTE').length;
+
             return (
-              <motion.div 
-                key={ms.id} initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} transition={{ delay: i * 0.05 }}
-                className="card" style={{ padding: '0', overflow: 'hidden', display: 'flex', flexDirection: 'column' }}
-              >
-                {/* Header de Tarjeta */}
-                <div style={{ padding: '1.5rem', background: 'rgba(0,0,0,0.02)', borderBottom: '1px solid rgba(0,0,0,0.05)', display: 'flex', alignItems: 'center', gap: '1rem' }}>
-                  <div style={{ 
-                    width: '50px', height: '50px', borderRadius: '12px', background: '#fff', border: '2px solid #000', 
-                    display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden', flexShrink: 0
-                  }}>
-                    {svc.logo_url ? <img src={svc.logo_url} style={{ width: '100%', height: '100%', objectFit: 'contain' }} /> : <ImageIcon size={24} style={{ opacity: 0.1 }} />}
-                  </div>
-                  <div style={{ flex: 1 }}>
-                    <h3 style={{ fontWeight: 900, fontSize: '1rem', lineHeight: 1.2 }}>{svc.nombre.toUpperCase()}</h3>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                      <div style={{ 
-                        width: '8px', height: '8px', borderRadius: '50%', 
-                        background: svc.estado_actual === 'VERDE' ? '#10B981' : svc.estado_actual === 'AMARILLO' ? '#F59E0B' : '#EF4444' 
-                      }} />
-                      <span style={{ fontSize: '0.65rem', fontWeight: 800, color: 'var(--text-muted)' }}>{svc.categoria}</span>
+              <motion.div key={ms.id} className="card" initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}
+                style={{ padding: '1.5rem', background: 'var(--surface-raised)' }}>
+                {/* Service Header */}
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.25rem' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+                    <div style={{ width: '50px', height: '50px', borderRadius: '14px', background: 'var(--surface-base)', border: '2px solid #000', overflow: 'hidden', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                      {ms.servicio.logo_url ? <img src={ms.servicio.logo_url} style={{ width: '100%', height: '100%', objectFit: 'cover' }} /> : <Zap size={20} />}
+                    </div>
+                    <div>
+                      <div style={{ fontWeight: 900, fontSize: '1.1rem' }}>{ms.servicio.nombre.toUpperCase()}</div>
+                      <div style={{ fontSize: '0.7rem', color: 'var(--text-muted)', fontWeight: 800, display: 'flex', gap: '0.75rem' }}>
+                        <span>📦 {svcCreds.length} {svcCreds.length === 1 ? 'cuenta' : 'cuentas'}</span>
+                        {pendingCount > 0 && <span style={{ color: '#F59E0B' }}>⏳ {pendingCount} pendientes</span>}
+                      </div>
                     </div>
                   </div>
-                  <div style={{ textAlign: 'right' }}>
-                    <p style={{ fontSize: '0.6rem', fontWeight: 900, opacity: 0.4 }}>PRECIO PÚBLICO</p>
-                    <p style={{ fontSize: '1.1rem', fontWeight: 900, color: 'var(--color-primary)' }}>{ms.precio_vendedor} BS</p>
-                  </div>
+                  <button
+                    className="btn-primary"
+                    onClick={() => {
+                      setSelectedService(ms.servicio_id);
+                      setShowOrderModal(true);
+                    }}
+                    style={{ padding: '0.6rem 1.2rem', fontSize: '0.75rem', display: 'flex', alignItems: 'center', gap: '0.4rem' }}
+                  >
+                    <Send size={14} /> PEDIR
+                  </button>
                 </div>
 
-                {/* Contenido Operativo */}
-                <div style={{ padding: '1.5rem', flex: 1, display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
-                  
-                  {/* Sección Credenciales */}
-                  <div>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.75rem' }}>
-                      <Key size={14} color="var(--color-primary)" />
-                      <span style={{ fontSize: '0.7rem', fontWeight: 900, letterSpacing: '0.05em', color: 'var(--text-muted)' }}>CREDENCIALES ACTIVAS</span>
-                    </div>
-                    {lastActivePedido ? (
-                      <div style={{ 
-                        background: 'rgba(34,197,94,0.05)', border: '2px dashed rgba(34,197,94,0.3)', 
-                        padding: '1rem', borderRadius: '14px', position: 'relative'
+                {/* Tabs */}
+                <div style={{ display: 'flex', gap: '0.5rem', marginBottom: '1rem' }}>
+                  {(['credenciales', 'pedidos'] as const).map(tab => (
+                    <button key={tab} onClick={() => setActiveTab(tab)}
+                      style={{
+                        flex: 1, padding: '0.5rem', borderRadius: '10px', fontWeight: 900, fontSize: '0.7rem', cursor: 'pointer',
+                        background: activeTab === tab ? 'var(--color-primary)' : 'var(--surface-base)',
+                        color: activeTab === tab ? '#fff' : 'var(--text-muted)',
+                        border: '2px solid #000',
+                        textTransform: 'uppercase'
                       }}>
-                        <p style={{ fontSize: '0.85rem', fontWeight: 700, whiteSpace: 'pre-wrap', color: 'var(--text-primary)', paddingRight: '2rem' }}>
-                          {lastActivePedido.respuesta_admin}
-                        </p>
-                        <button 
-                          onClick={() => copyToClipboard(lastActivePedido.respuesta_admin || '')}
-                          style={{ position: 'absolute', top: '10px', right: '10px', background: 'transparent', border: 'none', cursor: 'pointer', opacity: 0.4 }}
-                        >
-                          <Copy size={16} />
-                        </button>
-                      </div>
-                    ) : (
-                      <div style={{ background: 'var(--surface-base)', padding: '1rem', borderRadius: '14px', textAlign: 'center', border: '1.5px solid rgba(0,0,0,0.05)' }}>
-                        <p style={{ fontSize: '0.7rem', fontWeight: 700, opacity: 0.3 }}>SIN CREDENCIALES ASIGNADAS</p>
-                      </div>
-                    )}
-                  </div>
-
-                  {/* Acciones Rápidas */}
-                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.75rem' }}>
-                    <button 
-                      onClick={() => setActiveGallery({ name: svc.nombre, images: svcFlyers })}
-                      className="btn-secondary" 
-                      style={{ fontSize: '0.75rem', height: '48px', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem' }}
-                    >
-                      <ImageIcon size={16} /> FLYERS ({svcFlyers.length})
+                      {tab === 'credenciales' ? `🔑 Cuentas (${svcCreds.length})` : `📋 Pedidos (${svcPedidos.length})`}
                     </button>
-                    <button 
-                      onClick={() => { setSelectedServiceForOrder(svc.id); setIsOrderModalOpen(true); }}
-                      className="btn-primary" 
-                      style={{ fontSize: '0.75rem', height: '48px', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem', boxShadow: 'none' }}
-                    >
-                      <Send size={16} /> PEDIDO
-                    </button>
-                  </div>
+                  ))}
                 </div>
+
+                {/* Content */}
+                {activeTab === 'credenciales' ? (
+                  svcCreds.length === 0 ? (
+                    <div style={{ textAlign: 'center', padding: '2rem 1rem', opacity: 0.5 }}>
+                      <Key size={30} style={{ margin: '0 auto 0.5rem' }} />
+                      <p style={{ fontWeight: 800, fontSize: '0.8rem' }}>Aún no tienes cuentas asignadas</p>
+                    </div>
+                  ) : (
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+                      {svcCreds.map((cred, idx) => (
+                        <div key={cred.id} style={{
+                          background: 'var(--surface-base)', padding: '1rem', borderRadius: '14px',
+                          border: '2px solid rgba(0,0,0,0.15)', display: 'flex', flexDirection: 'column', gap: '0.5rem'
+                        }}>
+                          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                            <span style={{ fontWeight: 900, fontSize: '0.75rem', color: 'var(--color-primary)' }}>CUENTA #{idx + 1}{cred.perfil ? ` — ${cred.perfil}` : ''}</span>
+                          </div>
+                          <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
+                            <div style={{ flex: 1, fontFamily: 'monospace', fontSize: '0.85rem', fontWeight: 700, wordBreak: 'break-all' }}>{cred.usuario}</div>
+                            <button onClick={() => handleCopy(cred.usuario)} style={{ background: 'none', border: 'none', cursor: 'pointer', padding: '0.3rem' }}><Copy size={16} color="var(--color-primary)" /></button>
+                          </div>
+                          <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
+                            <div style={{ flex: 1, fontFamily: 'monospace', fontSize: '0.85rem', fontWeight: 700 }}>
+                              {revealedPasswords.has(cred.id) ? cred.password : '••••••••'}
+                            </div>
+                            <button onClick={() => togglePassword(cred.id)} style={{ background: 'none', border: 'none', cursor: 'pointer', padding: '0.3rem' }}>
+                              {revealedPasswords.has(cred.id) ? <EyeOff size={16} /> : <Eye size={16} />}
+                            </button>
+                            <button onClick={() => handleCopy(cred.password)} style={{ background: 'none', border: 'none', cursor: 'pointer', padding: '0.3rem' }}><Copy size={16} color="var(--color-primary)" /></button>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )
+                ) : (
+                  svcPedidos.length === 0 ? (
+                    <div style={{ textAlign: 'center', padding: '2rem 1rem', opacity: 0.5 }}>
+                      <Clock size={30} style={{ margin: '0 auto 0.5rem' }} />
+                      <p style={{ fontWeight: 800, fontSize: '0.8rem' }}>Sin pedidos para este servicio</p>
+                    </div>
+                  ) : (
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '0.6rem' }}>
+                      {svcPedidos.map(p => (
+                        <div key={p.id} style={{
+                          background: 'var(--surface-base)', padding: '0.8rem 1rem', borderRadius: '12px',
+                          border: `2px solid ${statusColor[p.status] || '#666'}55`,
+                          display: 'flex', justifyContent: 'space-between', alignItems: 'center'
+                        }}>
+                          <div>
+                            <div style={{ fontWeight: 900, fontSize: '0.8rem', display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+                              <Hash size={14} /> {p.cantidad}x cuentas
+                            </div>
+                            <div style={{ fontSize: '0.65rem', color: 'var(--text-muted)', fontWeight: 700 }}>{new Date(p.creado_en).toLocaleDateString()}</div>
+                          </div>
+                          <div style={{
+                            padding: '0.3rem 0.7rem', borderRadius: '8px', fontSize: '0.65rem', fontWeight: 900,
+                            background: `${statusColor[p.status]}22`, color: statusColor[p.status], border: `1.5px solid ${statusColor[p.status]}55`
+                          }}>
+                            {p.status}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )
+                )}
               </motion.div>
             );
           })}
         </div>
       )}
 
-      {/* Modal Galería de Flyers */}
+      {/* New Order Modal */}
       <AnimatePresence>
-        {activeGallery && (
-          <div className="modal-overlay">
-            <motion.div initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} className="modal-container" style={{ maxWidth: '600px', width: '90%', padding: '2rem' }}>
+        {showOrderModal && (
+          <div className="modal-overlay" onClick={() => setShowOrderModal(false)}>
+            <motion.div className="modal-container"
+              onClick={e => e.stopPropagation()}
+              initial={{ scale: 0.8, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.8, opacity: 0 }}
+              style={{
+                background: 'var(--surface-raised)', border: '4px solid #000', borderRadius: '28px',
+                padding: '2rem', maxWidth: '420px', width: '100%'
+              }}
+            >
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
-                <h3 style={{ fontWeight: 900 }}>FLYERS: {activeGallery.name.toUpperCase()}</h3>
-                <button onClick={() => setActiveGallery(null)} style={{ background: 'none', border: 'none' }}><X size={24} /></button>
+                <h2 style={{ fontWeight: 900, fontSize: '1.3rem', color: 'var(--text-primary)' }}>NUEVO PEDIDO</h2>
+                <button onClick={() => setShowOrderModal(false)} style={{ background: 'none', border: 'none', cursor: 'pointer' }}><X size={24} /></button>
               </div>
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem', maxHeight: '60vh', overflowY: 'auto', paddingRight: '0.5rem' }}>
-                {activeGallery.images.length === 0 ? (
-                   <p style={{ gridColumn: 'span 2', textAlign: 'center', padding: '2rem', opacity: 0.4, fontWeight: 700 }}>SIN MATERIAL PARA ESTE SERVICIO</p>
-                ) : activeGallery.images.map(img => (
-                  <div key={img.id} className="card" style={{ padding: '0.5rem', position: 'relative' }}>
-                    <img src={img.url_base} style={{ width: '100%', borderRadius: '8px', marginBottom: '0.5rem' }} />
-                    <button 
-                      onClick={() => handleDownload(img.id, img.titulo)}
-                      className="btn-primary" 
-                      style={{ width: '100%', fontSize: '0.7rem', height: '36px', boxShadow: 'none' }}
-                    >
-                      <Download size={14} /> DESCARGAR
-                    </button>
-                  </div>
-                ))}
+
+              {/* Service Name */}
+              {selectedService && (
+                <div style={{ padding: '0.75rem 1rem', background: 'rgba(0,0,0,0.05)', borderRadius: '12px', marginBottom: '1rem', fontWeight: 900, fontSize: '0.9rem' }}>
+                  {misServicios.find(ms => ms.servicio_id === selectedService)?.servicio.nombre.toUpperCase()}
+                </div>
+              )}
+
+              {/* Quantity */}
+              <label style={{ fontWeight: 900, fontSize: '0.7rem', color: 'var(--text-muted)', marginBottom: '0.4rem', display: 'block' }}>CANTIDAD DE CUENTAS</label>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', marginBottom: '1.25rem' }}>
+                <button onClick={() => setOrderQuantity(Math.max(1, orderQuantity - 1))} className="btn-secondary" style={{ width: '45px', height: '45px', padding: 0, borderRadius: '14px' }}>-</button>
+                <span style={{ fontWeight: 900, fontSize: '2rem', minWidth: '40px', textAlign: 'center' }}>{orderQuantity}</span>
+                <button onClick={() => setOrderQuantity(orderQuantity + 1)} className="btn-secondary" style={{ width: '45px', height: '45px', padding: 0, borderRadius: '14px' }}>+</button>
               </div>
+
+              {/* Price Preview */}
+              {selectedService && (
+                <div style={{ background: 'rgba(var(--color-primary-rgb, 0,0,0),0.1)', padding: '0.75rem 1rem', borderRadius: '12px', marginBottom: '1.25rem', display: 'flex', justifyContent: 'space-between', fontWeight: 900, border: '2px solid var(--color-primary)' }}>
+                  <span style={{ fontSize: '0.8rem' }}>MONTO TOTAL</span>
+                  <span style={{ fontSize: '1.1rem', color: 'var(--color-primary)' }}>Bs {(orderQuantity * (misServicios.find(ms => ms.servicio_id === selectedService)?.servicio.precio_admin || 0)).toFixed(2)}</span>
+                </div>
+              )}
+
+              {/* Comprobante URL */}
+              <label style={{ fontWeight: 900, fontSize: '0.7rem', color: 'var(--text-muted)', marginBottom: '0.4rem', display: 'block' }}>COMPROBANTE DE PAGO (URL imagen)</label>
+              <input
+                className="input"
+                type="text"
+                placeholder="https://... o pega enlace de imagen"
+                value={orderComprobante}
+                onChange={e => setOrderComprobante(e.target.value)}
+                style={{ fontSize: '0.85rem', marginBottom: '1rem' }}
+              />
+
+              {/* Notes */}
+              <label style={{ fontWeight: 900, fontSize: '0.7rem', color: 'var(--text-muted)', marginBottom: '0.4rem', display: 'block' }}>NOTAS (opcional)</label>
+              <textarea
+                className="input"
+                placeholder="Instrucciones especiales..."
+                value={orderNotes}
+                onChange={e => setOrderNotes(e.target.value)}
+                style={{ fontSize: '0.85rem', minHeight: '80px', resize: 'vertical', marginBottom: '1.5rem' }}
+              />
+
+              <button className="btn-primary" onClick={handleOrder} disabled={submitting}
+                style={{ width: '100%', height: '55px', fontSize: '1rem', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem' }}>
+                {submitting ? <Loader2 className="animate-spin" size={20} /> : <><Send size={18} /> ENVIAR PEDIDO</>}
+              </button>
             </motion.div>
           </div>
         )}
       </AnimatePresence>
-
-      {/* Modal Nuevo Pedido */}
-      <AnimatePresence>
-        {isOrderModalOpen && (
-          <div className="modal-overlay">
-            <motion.div initial={{ y: 20, opacity: 0 }} animate={{ y: 0, opacity: 1 }} className="modal-container" style={{ maxWidth: '450px', width: '90%', padding: '2.5rem' }}>
-              <h2 style={{ fontSize: '1.6rem', marginBottom: '1.5rem' }}>NUEVO <span className="text-gradient-primary">PEDIDO</span></h2>
-              <form onSubmit={handleCreateOrder} style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
-                <div>
-                  <label className="input-label">Servicio Seleccionado</label>
-                  <select 
-                    className="input" value={selectedServiceForOrder} 
-                    onChange={e => setSelectedServiceForOrder(e.target.value)}
-                    style={{ fontWeight: 900 }}
-                  >
-                    <option value="">Seleccionar...</option>
-                    <option value="MATERIAL_CUSTOM">Material Personalizado / Otros</option>
-                    {misServicios.map(ms => (
-                      <option key={ms.servicio_id} value={ms.servicio_id}>{ms.servicio.nombre.toUpperCase()}</option>
-                    ))}
-                  </select>
-                </div>
-                <div>
-                  <label className="input-label">Detalles del Requerimiento</label>
-                  <textarea 
-                    className="input" rows={4} placeholder="Ej: Necesito 2 perfiles de Netflix..."
-                    value={orderNotes} onChange={e => setOrderNotes(e.target.value)} required
-                  />
-                </div>
-                <button type="submit" disabled={savingOrder || !selectedServiceForOrder} className="btn-primary" style={{ height: '60px' }}>
-                  {savingOrder ? <Loader2 className="animate-spin" /> : <><Send size={20} /> ENVIAR PEDIDO</>}
-                </button>
-                <button type="button" onClick={() => setIsOrderModalOpen(false)} className="btn-secondary" style={{ border: 'none' }}>CANCELAR</button>
-              </form>
-            </motion.div>
-          </div>
-        )}
-      </AnimatePresence>
-
     </div>
   );
 }

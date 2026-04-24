@@ -7,7 +7,7 @@
 import React, { Suspense } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { Home, ShoppingBag, Trophy, Package, User, MessageSquare, CreditCard, Calculator, Image as ImageIcon, Clapperboard, History } from 'lucide-react';
+import { Home, ShoppingBag, Trophy, Package, User, MessageSquare, CreditCard, Calculator, Image as ImageIcon, Clapperboard, History, Key, Megaphone } from 'lucide-react';
 import { AuthProvider } from '@/lib/auth';
 import './app.css';
 
@@ -17,11 +17,12 @@ function Navigation() {
     const sidebarItems = [
         { href: '/home', icon: Home, label: 'Inicio' },
         { href: '/catalogo', icon: ShoppingBag, label: 'Catálogo' },
-        { href: '/imagenes', icon: ImageIcon, label: 'Servicios' },
+        { href: '/imagenes', icon: Key, label: 'Mis Servicios' },
+        { href: '/flyers', icon: ImageIcon, label: 'Flyers' },
+        { href: '/promociones', icon: Megaphone, label: 'Promos' },
         { href: '/estrenos', icon: Clapperboard, label: 'Estrenos' },
         { href: '/partidos', icon: Trophy, label: 'Partidos' },
         { href: '/mensajes', icon: MessageSquare, label: 'Mensajes' },
-        { href: '/pedidos', icon: Package, label: 'Pedidos' },
         { href: '/historial', icon: History, label: 'Historial' },
         { href: '/plan', icon: CreditCard, label: 'Mi Plan' },
         { href: '/calculadora', icon: Calculator, label: 'Calculadora' },
@@ -30,9 +31,9 @@ function Navigation() {
 
     const bottomItems = [
         { href: '/home', icon: Home, label: 'Inicio' },
+        { href: '/imagenes', icon: Key, label: 'Servicios' },
+        { href: '/flyers', icon: ImageIcon, label: 'Flyers' },
         { href: '/catalogo', icon: ShoppingBag, label: 'Catálogo' },
-        { href: '/imagenes', icon: ImageIcon, label: 'Mis Servicios' },
-        { href: '/mensajes', icon: MessageSquare, label: 'Mensajes' },
         { href: '/perfil', icon: User, label: 'Perfil' },
     ];
 

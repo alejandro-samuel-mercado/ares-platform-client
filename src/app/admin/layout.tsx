@@ -11,7 +11,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { AuthProvider, useAuth } from '@/lib/auth';
 import api from '@/lib/api';
 import {
-    LayoutDashboard, Users, Trophy, DollarSign, Settings, LogOut, Search, Bell, X, Image as ImageIcon, Store, Rocket, Package, Clapperboard, Menu, ChevronDown
+    LayoutDashboard, Users, Trophy, DollarSign, Settings, LogOut, Search, Bell, X, Image as ImageIcon, Store, Rocket, Package, Clapperboard, Menu, ChevronDown, Key
 } from 'lucide-react';
 import './admin.css';
 
@@ -21,6 +21,7 @@ export const ADMIN_MENU_ITEMS = [
     { href: '/admin/planes', icon: Rocket, label: 'Planes', keywords: ['planes', 'suscripciones', 'precios'] },
     { href: '/admin/pedidos', icon: Package, label: 'Pedidos', keywords: ['pedidos', 'ordenes', 'compras'] },
     { href: '/admin/servicios', icon: Package, label: 'Servicios', keywords: ['servicios', 'productos'] },
+    { href: '/admin/credenciales', icon: Key, label: 'Credenciales', keywords: ['credenciales', 'cuentas', 'contraseñas', 'passwords', 'keys'] },
     { href: '/admin/imagenes', icon: ImageIcon, label: 'Imágenes', keywords: ['imagenes', 'galeria', 'fotos', 'bank'] },
     { href: '/admin/estrenos', icon: Clapperboard, label: 'Estrenos', keywords: ['estrenos', 'peliculas', 'cine', 'cartelera'] },
     { href: '/admin/partidos', icon: Trophy, label: 'Partidos', keywords: ['partidos', 'deportes', 'eventos', 'futbol'] },

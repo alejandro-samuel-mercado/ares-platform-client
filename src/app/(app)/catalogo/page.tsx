@@ -1,18 +1,20 @@
 /**
- * Mi Catálogo — Ares Redesign v2.2 (Saneamiento Temas)
+ * Mi Catálogo — Ares v3 (Solo selección de servicios)
+ *
+ * El vendedor solo activa/desactiva servicios.
+ * Los precios los define el admin desde el panel (precio_admin).
  */
 
 'use client';
 
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Package, Plus, Minus, DollarSign, ArrowUpCircle, X, CheckCircle2, Zap, Image as ImageIcon, RefreshCw } from 'lucide-react';
-import Link from 'next/link';
+import { Package, Plus, Minus, CheckCircle2, Zap, RefreshCw, ArrowUpCircle, X } from 'lucide-react';
 import api from '@/lib/api';
 import { useAuth } from '@/lib/auth';
 
-interface ServicioBase { id: string; nombre: string; descripcion_base: string; precio_sugerido: number; categoria: string; estado_actual: string; es_iptv_propio: boolean; logo_url?: string; }
-interface MiServicio { id: string; servicio_id: string; precio_venta: number; activo: boolean; servicio: ServicioBase; }
+interface ServicioBase { id: string; nombre: string; descripcion_base: string; precio_admin: number; precio_sugerido: number; categoria: string; estado_actual: string; es_iptv_propio: boolean; logo_url?: string; }
+interface MiServicio { id: string; servicio_id: string; activo: boolean; servicio: ServicioBase; }
 
 export default function CatalogoPage() {
   const { vendor } = useAuth();
@@ -21,7 +23,6 @@ export default function CatalogoPage() {
   const [loading, setLoading] = useState(true);
   const [showUpgrade, setShowUpgrade] = useState(false);
   const [toast, setToast] = useState('');
-  const [precioInput, setPrecioInput] = useState<Record<string, string>>({});
 
   const load = async () => {
     try {
@@ -40,10 +41,8 @@ export default function CatalogoPage() {
   const activeCount = misServicios.filter(ms => ms.activo).length;
 
   const handleActivate = async (svc: ServicioBase) => {
-    let precio = parseFloat(precioInput[svc.id] || svc.precio_sugerido.toString());
-    if (isNaN(precio)) precio = svc.precio_sugerido || 0;
     try {
-      await api.post('/mis_servicios', { servicio_id: svc.id, precio_venta: precio });
+      await api.post('/mis_servicios', { servicio_id: svc.id });
       showToast(`${svc.nombre} activado ✅`);
       load();
     } catch (err: any) {
@@ -60,12 +59,6 @@ export default function CatalogoPage() {
     if (!ms) return;
     await api.delete(`/mis_servicios/${ms.id}`);
     showToast('Servicio desactivado');
-    load();
-  };
-
-  const handleUpdatePrice = async (msId: string, precio: number) => {
-    await api.put(`/mis_servicios/${msId}`, { precio_venta: precio });
-    showToast('Precio actualizado ✅');
     load();
   };
 
@@ -105,7 +98,7 @@ export default function CatalogoPage() {
           </h1>
           <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginTop: '0.5rem' }}>
             <div className="chip chip-primary">{activeCount} ACTIVOS</div>
-            <p style={{ fontWeight: 800, fontSize: '0.8rem', color: 'var(--text-muted)' }}>Configura tus servicios y márgenes</p>
+            <p style={{ fontWeight: 800, fontSize: '0.8rem', color: 'var(--text-muted)' }}>Selecciona los servicios que vendes</p>
           </div>
         </div>
       </div>
@@ -118,7 +111,6 @@ export default function CatalogoPage() {
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: '1.25rem' }}>
           {serviciosBase.map((svc, index) => {
             const active = isActive(svc.id);
-            const ms = getMyService(svc.id);
             return (
               <motion.div 
                 key={svc.id} 
@@ -166,40 +158,23 @@ export default function CatalogoPage() {
                   </div>
                 </div>
 
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '1rem', marginTop: '0.5rem' }}>
-                  {active && ms ? (
-                    <div style={{ position: 'relative', flex: 1 }}>
-                      <span style={{ position: 'absolute', left: '10px', top: '50%', transform: 'translateY(-50%)', fontWeight: 900, fontSize: '0.8rem', color: 'var(--text-primary)' }}>Bs</span>
-                      <input 
-                        className="input" 
-                        type="number" 
-                        value={precioInput[svc.id] ?? ms.precio_venta} 
-                        onChange={e => setPrecioInput({ ...precioInput, [svc.id]: e.target.value })}
-                        onBlur={() => { const p = parseFloat(precioInput[svc.id] || '0'); if (p > 0 && p !== ms.precio_venta) handleUpdatePrice(ms.id, p); }}
-                        style={{ width: '100%', height: '40px', paddingLeft: '2.2rem', fontSize: '0.9rem', textAlign: 'center', margin: 0, fontWeight: 900 }} 
-                      />
-                    </div>
-                  ) : (
-                    <div style={{ position: 'relative', flex: 1 }}>
-                      <span style={{ position: 'absolute', left: '10px', top: '50%', transform: 'translateY(-50%)', fontWeight: 900, fontSize: '0.8rem', opacity: 0.4, color: 'var(--text-primary)' }}>Bs</span>
-                      <input 
-                        className="input" 
-                        type="number" 
-                        placeholder={svc.precio_sugerido.toString()} 
-                        value={precioInput[svc.id] || ''}
-                        onChange={e => setPrecioInput({ ...precioInput, [svc.id]: e.target.value })}
-                        style={{ width: '100%', height: '40px', paddingLeft: '2.2rem', fontSize: '0.8rem', textAlign: 'center', opacity: 0.6, margin: 0, fontWeight: 900 }} 
-                      />
-                    </div>
-                  )}
-
-                  {active && ms ? (
-                    <button onClick={() => handleDeactivate(svc.id)} className="btn-secondary" style={{ width: '40px', height: '40px', padding: 0, borderRadius: '12px', borderColor: 'var(--color-danger)', color: 'var(--color-danger)', boxShadow: 'none' }}>
-                      <Minus size={20} strokeWidth={3} />
+                {/* Precio del Admin (solo lectura) */}
+                <div style={{ 
+                  display: 'flex', justifyContent: 'space-between', alignItems: 'center', 
+                  padding: '0.75rem 1rem', background: 'rgba(0,0,0,0.05)', borderRadius: '12px',
+                  border: '1.5px solid rgba(0,0,0,0.1)'
+                }}>
+                  <div>
+                    <div style={{ fontSize: '0.6rem', fontWeight: 900, opacity: 0.5, marginBottom: '0.2rem' }}>PRECIO POR CUENTA</div>
+                    <div style={{ fontSize: '1.2rem', fontWeight: 900, color: 'var(--color-primary)' }}>Bs {svc.precio_admin || svc.precio_sugerido}</div>
+                  </div>
+                  {active ? (
+                    <button onClick={() => handleDeactivate(svc.id)} className="btn-secondary" style={{ width: '45px', height: '45px', padding: 0, borderRadius: '14px', borderColor: 'var(--color-danger)', color: 'var(--color-danger)', boxShadow: 'none' }}>
+                      <Minus size={22} strokeWidth={3} />
                     </button>
                   ) : (
-                    <button onClick={() => handleActivate(svc)} className="btn-primary" style={{ width: '40px', height: '40px', padding: 0, borderRadius: '12px', boxShadow: 'none' }}>
-                      <Plus size={20} strokeWidth={3} />
+                    <button onClick={() => handleActivate(svc)} className="btn-primary" style={{ width: '45px', height: '45px', padding: 0, borderRadius: '14px', boxShadow: 'none' }}>
+                      <Plus size={22} strokeWidth={3} />
                     </button>
                   )}
                 </div>
@@ -219,7 +194,7 @@ export default function CatalogoPage() {
               </div>
               <h2 style={{ fontSize: '1.8rem', fontWeight: 900, marginBottom: '1rem', color: 'var(--text-primary)' }}>SUBE DE NIVEL 🚀</h2>
               <p style={{ fontWeight: 800, color: 'var(--text-muted)', marginBottom: '2rem', fontSize: '1rem' }}>
-                Has alcanzado el límite de tu plan. Desbloquea el <span className="text-gradient-primary">Plan Galáctico</span> para disfrutar de servicios ilimitados.
+                Has alcanzado el límite de tu plan. Desbloquea el <span className="text-gradient-primary">Plan PRO</span> para disfrutar de servicios ilimitados.
               </p>
               <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
                 <a href="/plan" className="btn-primary" style={{ width: '100%', textDecoration: 'none', height: '60px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>ACTUALIZAR AHORA</a>

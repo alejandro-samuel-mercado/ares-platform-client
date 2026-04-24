@@ -3,8 +3,8 @@
  * Vendor: Feed de Estrenos — Novedades de plataformas de streaming
  */
 import React, { useState, useEffect } from 'react';
-import { Clapperboard, Search, Loader2, CalendarDays, RefreshCw } from 'lucide-react';
-import { motion } from 'framer-motion';
+import { Clapperboard, Search, Loader2, CalendarDays, RefreshCw, Download } from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
 import api from '@/lib/api';
 
 interface Estreno {
@@ -32,6 +32,32 @@ export default function EstrenosVendorPage() {
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
   const [filterPlataforma, setFilterPlataforma] = useState('TODOS');
+  const [downloading, setDownloading] = useState<Set<string>>(new Set());
+  const [downloadingAll, setDownloadingAll] = useState(false);
+  const [toast, setToast] = useState('');
+
+  const showToast = (msg: string) => { setToast(msg); setTimeout(() => setToast(''), 3000); };
+
+  const downloadImage = async (url: string, name: string, id?: string) => {
+    try {
+      if (id) setDownloading(prev => new Set(prev).add(id));
+      const response = await fetch(url);
+      const blob = await response.blob();
+      const link = document.createElement('a');
+      link.href = URL.createObjectURL(blob);
+      link.download = `${name.replace(/\s+/g, '_')}.jpg`;
+      link.click();
+      URL.revokeObjectURL(link.href);
+    } catch {} finally { if (id) { setDownloading(prev => { const n = new Set(prev); n.delete(id!); return n; }); } }
+  };
+
+  const downloadAll = async () => {
+    const withImages = filtered.filter(e => e.imagen_url);
+    setDownloadingAll(true);
+    for (const e of withImages) { await downloadImage(e.imagen_url!, e.titulo); await new Promise(r => setTimeout(r, 300)); }
+    setDownloadingAll(false);
+    showToast(`${withImages.length} imágenes descargadas ✅`);
+  };
 
   const fetchEstrenos = async () => {
     setLoading(true);
@@ -59,6 +85,14 @@ export default function EstrenosVendorPage() {
 
   return (
     <div style={{ paddingBottom: '8rem' }}>
+      {/* Toast */}
+      <AnimatePresence>{toast && (
+        <motion.div initial={{ y: -50, opacity: 0 }} animate={{ y: 20, opacity: 1 }} exit={{ y: -50, opacity: 0 }}
+          style={{ position: 'fixed', top: 0, left: '50%', transform: 'translateX(-50%)', zIndex: 3000, background: 'var(--surface-raised)', padding: '1rem 2rem', borderRadius: 'var(--radius-full)', border: '2px solid var(--color-primary)', boxShadow: '0 10px 30px rgba(0,0,0,0.5)', fontWeight: 800 }}>
+          {toast}
+        </motion.div>
+      )}</AnimatePresence>
+
       {/* Header */}
       <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} style={{ marginBottom: '2.5rem', display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
         <div>
@@ -76,6 +110,13 @@ export default function EstrenosVendorPage() {
           </h1>
           <p style={{ fontSize: '0.75rem', fontWeight: 800, opacity: 0.5 }}>LAS ÚLTIMAS NOTICIAS DE STREAMING PARA TUS CLIENTES</p>
         </div>
+        {filtered.filter(e => e.imagen_url).length > 0 && (
+          <button className="btn-primary" onClick={downloadAll} disabled={downloadingAll}
+            style={{ padding: '0.7rem 1.2rem', fontSize: '0.75rem', display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+            {downloadingAll ? <Loader2 className="animate-spin" size={16} /> : <Download size={16} />}
+            DESCARGAR TODOS
+          </button>
+        )}
       </motion.div>
 
       {/* Search */}
@@ -131,6 +172,15 @@ export default function EstrenosVendorPage() {
                   </div>
                 )}
               </div>
+              {/* Download button */}
+              {e.imagen_url && (
+                <div style={{ padding: '0 1.25rem 1.25rem' }}>
+                  <button className="btn-primary" onClick={() => downloadImage(e.imagen_url!, e.titulo, e.id)} disabled={downloading.has(e.id)}
+                    style={{ width: '100%', height: '40px', fontSize: '0.75rem', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem' }}>
+                    {downloading.has(e.id) ? <Loader2 className="animate-spin" size={14} /> : <Download size={14} />} DESCARGAR
+                  </button>
+                </div>
+              )}
             </motion.div>
           ))}
         </div>

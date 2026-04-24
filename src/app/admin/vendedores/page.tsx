@@ -9,7 +9,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import {
     Users, Ban, CheckCircle, Clock, ArrowUpCircle,
     Search, Filter, RefreshCw, Phone, ShieldCheck,
-    History, CreditCard, X, AlertCircle, Pencil, Save
+    History, CreditCard, X, AlertCircle, Pencil, Save, UserPlus, Loader2
 } from 'lucide-react';
 import api from '@/lib/api';
 
@@ -49,6 +49,11 @@ export default function VendedoresPage() {
     const [editingVendor, setEditingVendor] = useState<Vendor | null>(null);
     const [editForm, setEditForm] = useState({ nombre: '', alias: '', telefono: '', whatsapp: '', password: '' });
     const [savingEdit, setSavingEdit] = useState(false);
+
+    // Create Vendor
+    const [showCreateModal, setShowCreateModal] = useState(false);
+    const [createForm, setCreateForm] = useState({ nombre: '', alias: '', telefono: '', password: '', plan_id: '', whatsapp: '' });
+    const [creatingVendor, setCreatingVendor] = useState(false);
 
     const loadData = async () => {
         setLoading(true);
@@ -219,6 +224,9 @@ export default function VendedoresPage() {
                 <button onClick={loadData} className="btn-secondary" disabled={loading}>
                     <RefreshCw size={20} className={loading ? 'animate-spin' : ''} />
                     {loading ? 'Sincronizando...' : 'Actualizar'}
+                </button>
+                <button onClick={() => { setCreateForm({ nombre: '', alias: '', telefono: '', password: '', plan_id: planes[0]?.id || '', whatsapp: '' }); setShowCreateModal(true); }} className="btn-primary" style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                    <UserPlus size={20} /> CREAR VENDEDOR
                 </button>
             </div>
 
@@ -523,6 +531,88 @@ export default function VendedoresPage() {
                                 >
                                     {savingEdit ? <RefreshCw size={18} className="animate-spin" /> : <Save size={18} />}
                                     {savingEdit ? 'GUARDANDO...' : 'GUARDAR CAMBIOS'}
+                                </button>
+                            </div>
+                        </motion.div>
+                    </div>
+                )}
+            </AnimatePresence>
+
+            {/* Modal Crear Vendedor */}
+            <AnimatePresence>
+                {showCreateModal && (
+                    <div className="modal-overlay">
+                        <motion.div
+                            initial={{ scale: 0.95, opacity: 0, y: 20 }}
+                            animate={{ scale: 1, opacity: 1, y: 0 }}
+                            exit={{ scale: 0.95, opacity: 0, y: 20 }}
+                            className="modal-container"
+                            style={{ padding: '3rem', maxWidth: '550px', width: '90%', border: '4px solid #000', borderRadius: '32px' }}
+                        >
+                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2rem' }}>
+                                <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+                                    <div style={{ background: '#10B981', padding: '0.6rem', borderRadius: '12px', color: '#fff' }}>
+                                        <UserPlus size={24} />
+                                    </div>
+                                    <h2 style={{ fontSize: '1.8rem', fontWeight: 900, lineHeight: 1 }}>CREAR VENDEDOR</h2>
+                                </div>
+                                <button onClick={() => setShowCreateModal(false)} style={{ background: 'transparent', border: 'none', cursor: 'pointer' }}><X size={32} /></button>
+                            </div>
+
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+                                <div>
+                                    <label style={{ fontSize: '0.7rem', fontWeight: 900, opacity: 0.6, display: 'block', marginBottom: '0.4rem' }}>NOMBRE COMPLETO</label>
+                                    <input className="input" value={createForm.nombre} onChange={e => setCreateForm(f => ({ ...f, nombre: e.target.value }))} placeholder="Nombre del vendedor" />
+                                </div>
+                                <div>
+                                    <label style={{ fontSize: '0.7rem', fontWeight: 900, opacity: 0.6, display: 'block', marginBottom: '0.4rem' }}>ALIAS</label>
+                                    <input className="input" value={createForm.alias} onChange={e => setCreateForm(f => ({ ...f, alias: e.target.value }))} placeholder="alias_vendedor" />
+                                </div>
+                                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
+                                    <div>
+                                        <label style={{ fontSize: '0.7rem', fontWeight: 900, opacity: 0.6, display: 'block', marginBottom: '0.4rem' }}>TELÉFONO</label>
+                                        <input className="input" value={createForm.telefono} onChange={e => setCreateForm(f => ({ ...f, telefono: e.target.value }))} placeholder="591XXXXXXX" />
+                                    </div>
+                                    <div>
+                                        <label style={{ fontSize: '0.7rem', fontWeight: 900, opacity: 0.6, display: 'block', marginBottom: '0.4rem' }}>WHATSAPP (opcional)</label>
+                                        <input className="input" value={createForm.whatsapp} onChange={e => setCreateForm(f => ({ ...f, whatsapp: e.target.value }))} placeholder="591XXXXXXX" />
+                                    </div>
+                                </div>
+                                <div>
+                                    <label style={{ fontSize: '0.7rem', fontWeight: 900, opacity: 0.6, display: 'block', marginBottom: '0.4rem' }}>CONTRASEÑA</label>
+                                    <input className="input" type="password" value={createForm.password} onChange={e => setCreateForm(f => ({ ...f, password: e.target.value }))} placeholder="Contraseña inicial" />
+                                </div>
+                                <div>
+                                    <label style={{ fontSize: '0.7rem', fontWeight: 900, opacity: 0.6, display: 'block', marginBottom: '0.4rem' }}>PLAN</label>
+                                    <select className="input" value={createForm.plan_id} onChange={e => setCreateForm(f => ({ ...f, plan_id: e.target.value }))}>
+                                        <option value="">Seleccionar plan...</option>
+                                        {planes.map(p => <option key={p.id} value={p.id}>{p.nombre.toUpperCase()}</option>)}
+                                    </select>
+                                </div>
+                            </div>
+
+                            <div style={{ display: 'flex', gap: '1rem', marginTop: '2rem' }}>
+                                <button className="btn-secondary" style={{ flex: 1, border: 'none' }} onClick={() => setShowCreateModal(false)}>CANCELAR</button>
+                                <button
+                                    className="btn-primary"
+                                    style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem', background: '#10B981' }}
+                                    disabled={creatingVendor || !createForm.nombre || !createForm.alias || !createForm.telefono || !createForm.password || !createForm.plan_id}
+                                    onClick={async () => {
+                                        setCreatingVendor(true);
+                                        try {
+                                            await api.post('/admin/vendors', createForm);
+                                            showToast('Vendedor creado exitosamente ✅');
+                                            setShowCreateModal(false);
+                                            loadData();
+                                        } catch (err: any) {
+                                            showToast(err?.message || err?.data?.error || 'Error creando vendedor ❌');
+                                        } finally {
+                                            setCreatingVendor(false);
+                                        }
+                                    }}
+                                >
+                                    {creatingVendor ? <Loader2 size={18} className="animate-spin" /> : <UserPlus size={18} />}
+                                    {creatingVendor ? 'CREANDO...' : 'CREAR VENDEDOR'}
                                 </button>
                             </div>
                         </motion.div>
