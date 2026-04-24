@@ -144,14 +144,14 @@ export default function MisServiciosPage() {
           <p style={{ fontWeight: 700, color: 'var(--text-muted)', marginTop: '0.5rem' }}>Activa servicios desde el <a href="/catalogo" style={{ color: 'var(--color-primary)' }}>Catálogo</a></p>
         </div>
       ) : (
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '2rem' }}>
+        <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-6">
           {misServicios.map((ms) => {
             const svcCreds = getServiceCredentials(ms.servicio_id);
             const svcPedidos = getServicePedidos(ms.servicio_id);
             const pendingCount = svcPedidos.filter(p => p.status === 'PENDIENTE').length;
 
             return (
-              <motion.div key={ms.id} className="card" initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}
+              <motion.div key={ms.id} className="card flex flex-col justify-between h-full" initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}
                 style={{ padding: '1.5rem', background: 'var(--surface-raised)' }}>
                 {/* Service Header */}
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.25rem' }}>

@@ -149,11 +149,11 @@ export default function CatalogoPage() {
                       )}
                     </div>
                     <div>
-                      <div style={{ fontWeight: 900, fontSize: '1rem', display: 'flex', alignItems: 'center', gap: '0.4rem', lineHeight: 1.2 }}>
+                      <div style={{ fontWeight: 900, fontSize: '1.1rem', display: 'flex', alignItems: 'center', gap: '0.4rem', lineHeight: 1.2 }}>
                         {svc.nombre.toUpperCase()}
                         {active && <CheckCircle2 size={16} color="var(--color-primary)" />}
                       </div>
-                      <div style={{ fontSize: '0.7rem', color: 'var(--text-muted)', fontWeight: 800 }}>{svc.categoria}</div>
+                      <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', fontWeight: 800 }}>{svc.categoria}</div>
                     </div>
                   </div>
                 </div>
@@ -161,8 +161,8 @@ export default function CatalogoPage() {
                 {/* Precio del Admin (solo lectura) */}
                 <div style={{ 
                   display: 'flex', justifyContent: 'space-between', alignItems: 'center', 
-                  padding: '0.75rem 1rem', background: 'rgba(0,0,0,0.05)', borderRadius: '12px',
-                  border: '1.5px solid rgba(0,0,0,0.1)'
+                  padding: '1rem', background: 'rgba(0,0,0,0.2)', borderRadius: '14px',
+                  border: '1.5px solid rgba(255,255,255,0.05)', marginTop: 'auto'
                 }}>
                   <div>
                     <div style={{ fontSize: '0.6rem', fontWeight: 900, opacity: 0.5, marginBottom: '0.2rem' }}>PRECIO POR CUENTA</div>

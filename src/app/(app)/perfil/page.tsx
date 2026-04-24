@@ -110,9 +110,9 @@ export default function PerfilPage() {
                     <h1 style={{ fontSize: '2.2rem', fontWeight: 900, fontFamily: 'var(--font-display)' }}>
                         MI <span className="text-gradient-primary">PERFIL</span>
                     </h1>
-                    <button 
-                        onClick={refreshVendor} 
-                        className="btn-secondary" 
+                    <button
+                        onClick={refreshVendor}
+                        className="btn-secondary"
                         style={{ padding: '0.6rem', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
                         title="Refrescar Perfil"
                     >
@@ -231,7 +231,7 @@ export default function PerfilPage() {
                     }}
                 >
                     <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: '1.25rem' }}>
-                        <Globe size={20} color="var(--color-primary)" />
+                        <Globe size={20} color="#ecece9ff" />
                         <h3 style={{ fontWeight: 900, fontSize: '1rem', letterSpacing: '0.05em' }}>MI ENLACE PÚBLICO ARES</h3>
                     </div>
                     <p style={{ fontSize: '0.75rem', fontWeight: 700, opacity: 0.7, marginBottom: '1.5rem', lineHeight: 1.4 }}>
@@ -361,13 +361,13 @@ export default function PerfilPage() {
                             {['pro', 'proveedor'].includes(vendor?.plan?.toLowerCase() || '') ? (
                                 <div style={{ marginTop: '0.5rem' }}>
                                     <label style={{ fontSize: '0.65rem', fontWeight: 900, opacity: 0.5, marginBottom: '0.4rem', display: 'block' }}>API KEY / TOKEN DE ACCESO</label>
-                                    <input 
-                                        className="input" 
-                                        type="password" 
-                                        placeholder="Tu Token de WhatsApp Business" 
+                                    <input
+                                        className="input"
+                                        type="password"
+                                        placeholder="Tu Token de WhatsApp Business"
                                         value={form.whatsapp_api_token || ''}
                                         onChange={e => setForm({ ...form, whatsapp_api_token: e.target.value })}
-                                        style={{ fontSize: '0.8rem', height: '45px' }} 
+                                        style={{ fontSize: '0.8rem', height: '45px' }}
                                     />
                                     <p style={{ fontSize: '0.6rem', fontWeight: 700, marginTop: '0.5rem', color: 'var(--color-primary)' }}>* Configura tu API para automatizar tus ventas.</p>
                                 </div>

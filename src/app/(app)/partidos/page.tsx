@@ -219,7 +219,7 @@ export default function PartidosVendorPage() {
                                     <div style={{ display: 'flex', alignItems: 'center', gap: '0.3rem', justifyContent: 'flex-end', color: 'var(--color-primary)', fontWeight: 900, fontSize: '0.8rem' }}>
                                         <Tv size={14} /> {p.canal}
                                     </div>
-                                    {p.requiere_iptv && userPlan !== 'PRO' ? (
+                                    {p.requiere_iptv && userPlan?.toUpperCase() !== 'PRO' ? (
                                         <div style={{ marginTop: '0.5rem', textAlign: 'right' }}>
                                             <Link href="/plan" style={{
                                                 fontSize: '0.6rem', fontWeight: 900, color: 'var(--color-primary)',
@@ -239,7 +239,7 @@ export default function PartidosVendorPage() {
                                     )}
                                 </div>
                             </div>
-                            {(!p.requiere_iptv || userPlan === 'PRO') && (
+                            {(!p.requiere_iptv || userPlan?.toUpperCase() === 'PRO') && (
                                 <button
                                     onClick={() => downloadFixture(p.id, p.equipo_local, p.equipo_visita)}
                                     disabled={downloadingImg.has(p.id)}
