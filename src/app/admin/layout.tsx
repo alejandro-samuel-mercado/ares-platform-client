@@ -333,37 +333,7 @@ function AdminHeader() {
                             </h3>
                         </div>
 
-                        {!pushEnabled && (
-                            <div style={{ padding: '1rem', background: 'rgba(239, 68, 68, 0.1)', borderBottom: '2px solid rgba(0,0,0,0.1)', textAlign: 'center' }}>
-                                <p style={{ fontSize: '0.75rem', fontWeight: 700, marginBottom: '0.5rem', color: 'var(--color-danger)' }}>
-                                    Las notificaciones instantáneas están desactivadas en este navegador.
-                                </p>
-                                <button
-                                    onClick={async () => {
-                                        if (typeof window !== 'undefined') {
-                                            window.OneSignalDeferred = window.OneSignalDeferred || [];
-                                            window.OneSignalDeferred.push(async (OneSignal: any) => {
-                                                await OneSignal.Notifications.requestPermission();
-                                                if (OneSignal.Notifications.permission) {
-                                                    await OneSignal.User.PushSubscription.optIn();
-                                                    setPushEnabled(true);
-                                                    alert('¡Notificaciones activadas exitosamente!');
-                                                } else {
-                                                    alert('⚠️ El navegador bloqueó la solicitud. Haz clic en el ícono del "Candado" junto a la barra de direcciones (arriba a la izquierda), ve a "Configuración de sitios" y permite las Notificaciones manualmente.');
-                                                }
-                                            });
-                                        }
-                                    }}
-                                    style={{
-                                        background: 'var(--color-primary)', color: 'white', padding: '0.5rem 1rem',
-                                        borderRadius: '10px', fontWeight: 900, fontSize: '0.7rem', border: '2px solid #000',
-                                        cursor: 'pointer', boxShadow: '2px 2px 0px 0px #000'
-                                    }}
-                                >
-                                    ACTIVAR NOTIFICACIONES 🔔
-                                </button>
-                            </div>
-                        )}
+
 
                         <div style={{ flex: 1, overflowY: 'auto', padding: '1.2rem' }}>
                             {totalPending === 0 ? (

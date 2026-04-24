@@ -6,7 +6,7 @@
 import React, { useState, useEffect } from 'react';
 import {
     Settings, Save, Smartphone, Globe, ShieldCheck,
-    CheckCircle2, Megaphone, HelpCircle, Zap, Layout, Upload, ImageIcon, Link, XCircle, Terminal, RefreshCw
+    CheckCircle2, Megaphone, HelpCircle, Zap, Layout, Upload, ImageIcon, Link, XCircle, Terminal, RefreshCw, Bell, BellOff
 } from 'lucide-react';
 import api from '@/lib/api';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -29,6 +29,10 @@ export default function AjustesPage() {
     const [showToast, setShowToast] = useState(false);
     const [errorToast, setErrorToast] = useState<string | null>(null);
 
+    // Push Notifications State
+    const [pushEnabled, setPushEnabled] = useState<string | null>(null); // 'granted', 'denied', 'default'
+    const [oneSignalReady, setOneSignalReady] = useState(false);
+
     const fetchAjustes = async () => {
         try {
             // Usar cache-buster para evitar ver datos viejos
@@ -40,7 +44,27 @@ export default function AjustesPage() {
         }
     };
 
-    useEffect(() => { fetchAjustes(); }, []);
+    const checkPushStatus = () => {
+        if (typeof window !== 'undefined' && (window as any).OneSignal) {
+            const permission = (window as any).OneSignal.Notifications.permission;
+            setPushEnabled(permission ? 'granted' : 'default'); // Permission returns boolean sometimes or string
+            setOneSignalReady(true);
+        }
+    };
+
+    useEffect(() => { 
+        fetchAjustes(); 
+        
+        // OneSignal Status Check
+        if (typeof window !== 'undefined') {
+            (window as any).OneSignalDeferred = (window as any).OneSignalDeferred || [];
+            (window as any).OneSignalDeferred.push(async (OneSignal: any) => {
+                const permission = OneSignal.Notifications.permission;
+                setPushEnabled(permission ? 'granted' : 'default');
+                setOneSignalReady(true);
+            });
+        }
+    }, []);
 
     const handleSave = async () => {
         setSaving(true);
@@ -286,6 +310,62 @@ export default function AjustesPage() {
                                 )}
                             </div>
                         </div>
+                    </div>
+                </div>
+
+                {/* Sección: Notificaciones Push (NUEVO) */}
+                <div className="card ajustes-side" style={{ padding: '3rem', background: 'var(--surface-raised)', border: '4px solid #000' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '1.25rem', marginBottom: '2rem' }}>
+                        <div style={{ background: pushEnabled === 'granted' ? '#22C55E' : 'var(--color-primary)', padding: '0.75rem', borderRadius: '14px', color: 'white', border: '2.5px solid #000' }}>
+                            {pushEnabled === 'granted' ? <Bell size={24} /> : <BellOff size={24} />}
+                        </div>
+                        <h2 style={{ fontSize: '1.6rem', fontWeight: 900, color: 'var(--text-primary)' }}>PUSH ALERTS</h2>
+                    </div>
+
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
+                        <div style={{ 
+                            background: pushEnabled === 'granted' ? 'rgba(34, 197, 94, 0.1)' : 'rgba(239, 68, 68, 0.1)', 
+                            padding: '1.5rem', borderRadius: '20px', border: '2px solid rgba(0,0,0,0.1)', 
+                            textAlign: 'center' 
+                        }}>
+                            <p style={{ fontWeight: 900, fontSize: '0.8rem', color: pushEnabled === 'granted' ? '#22C55E' : '#EF4444', marginBottom: '0.5rem' }}>
+                                SISTEMA: {pushEnabled === 'granted' ? 'CONECTADO' : 'DESCONECTADO'}
+                            </p>
+                            <p style={{ fontSize: '0.7rem', fontWeight: 700, opacity: 0.7 }}>
+                                {pushEnabled === 'granted' 
+                                    ? 'Estás recibiendo alertas de pagos y pedidos en tiempo real.' 
+                                    : 'Las notificaciones están bloqueadas o no activadas en este dispositivo.'}
+                            </p>
+                        </div>
+
+                        {pushEnabled !== 'granted' && (
+                            <button
+                                onClick={() => {
+                                    if (typeof window !== 'undefined') {
+                                        (window as any).OneSignalDeferred = (window as any).OneSignalDeferred || [];
+                                        (window as any).OneSignalDeferred.push(async (OneSignal: any) => {
+                                            await OneSignal.Notifications.requestPermission();
+                                            const perm = OneSignal.Notifications.permission;
+                                            setPushEnabled(perm ? 'granted' : 'default');
+                                            if (perm) {
+                                                await OneSignal.User.PushSubscription.optIn();
+                                                alert('¡Notificaciones activadas exitosamente!');
+                                            } else {
+                                                alert('⚠️ Debes permitir las notificaciones en la configuración de tu navegador.');
+                                            }
+                                        });
+                                    }
+                                }}
+                                className="btn-primary"
+                                style={{ width: '100%', padding: '1rem', fontWeight: 900 }}
+                            >
+                                ACTIVAR ALERTAS 🔔
+                            </button>
+                        )}
+                        
+                        <p style={{ fontSize: '0.65rem', fontWeight: 700, opacity: 0.5, textAlign: 'center' }}>
+                            ID DE DISPOSITIVO: {typeof window !== 'undefined' ? 'DETECTADO' : 'NO DISPONIBLE'}
+                        </p>
                     </div>
                 </div>
 
