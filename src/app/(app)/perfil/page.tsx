@@ -16,8 +16,22 @@ export default function PerfilPage() {
     const [form, setForm] = useState({
         whatsapp: vendor?.whatsapp || '',
         alias: vendor?.alias || '',
-        nombre: vendor?.nombre || ''
+        nombre: vendor?.nombre || '',
+        whatsapp_api_enabled: (vendor as any)?.whatsapp_api_enabled || false,
+        whatsapp_api_token: (vendor as any)?.whatsapp_api_token || ''
     });
+
+    useEffect(() => {
+        if (vendor) {
+            setForm({
+                whatsapp: vendor.whatsapp || '',
+                alias: vendor.alias || '',
+                nombre: vendor.nombre || '',
+                whatsapp_api_enabled: (vendor as any).whatsapp_api_enabled || false,
+                whatsapp_api_token: (vendor as any).whatsapp_api_token || ''
+            });
+        }
+    }, [vendor]);
     const [saving, setSaving] = useState(false);
     const [showToast, setShowToast] = useState(false);
     const [notificationsEnabled, setNotificationsEnabled] = useState(false);
@@ -31,7 +45,10 @@ export default function PerfilPage() {
         }
     }, []);
 
-    const triggerToast = () => {
+    const [toastMessage, setToastMessage] = useState('');
+
+    const triggerToast = (msg: string = 'Copiado ✅') => {
+        setToastMessage(msg);
         setShowToast(true);
         setTimeout(() => setShowToast(false), 3000);
     };
@@ -72,11 +89,14 @@ export default function PerfilPage() {
         setSaving(true);
         try {
             await api.put('/perfil', form);
-            await refreshVendor();
-            triggerToast();
+            triggerToast('Perfil actualizado correctamente ✅');
+            if (refreshVendor) await refreshVendor();
+        } catch (err) {
+            console.error(err);
+            alert('Error al actualizar el perfil');
+        } finally {
+            setSaving(false);
         }
-        catch (err) { console.error(err); }
-        setSaving(false);
     };
 
     return (
@@ -104,19 +124,19 @@ export default function PerfilPage() {
             <AnimatePresence>
                 {showToast && (
                     <motion.div
-                        initial={{ opacity: 0, y: 50 }}
+                        initial={{ opacity: 0, y: 20 }}
                         animate={{ opacity: 1, y: 0 }}
-                        exit={{ opacity: 0 }}
+                        exit={{ opacity: 0, y: 20 }}
                         style={{
-                            position: 'fixed', bottom: '100px', left: '50%', transform: 'translateX(-50%)', zIndex: 10000,
-                            background: '#000', color: 'white', padding: '1rem 2rem', width: 'max-content',
-                            borderRadius: '24px', border: '2px solid var(--color-primary)',
-                            boxShadow: '10px 10px 0px 0px rgba(0,0,0,0.5)',
-                            fontWeight: 900, display: 'flex', alignItems: 'center', gap: '1rem'
+                            position: 'fixed', bottom: '100px', left: '50%', transform: 'translateX(-50%)',
+                            zIndex: 1000, background: 'var(--color-primary)', color: 'white',
+                            padding: '0.75rem 1.5rem', borderRadius: '12px', fontWeight: 900,
+                            border: '2px solid #000', boxShadow: '5px 5px 0px 0px rgba(0,0,0,0.5)',
+                            display: 'flex', alignItems: 'center', gap: '1rem'
                         }}
                     >
-                        <CheckCircle2 color="var(--color-primary)" />
-                        PERFIL ACTUALIZADO
+                        <CheckCircle2 color="white" />
+                        {toastMessage}
                     </motion.div>
                 )}
             </AnimatePresence>
@@ -311,7 +331,7 @@ export default function PerfilPage() {
                         </div>
 
                         {/* WhatsApp API Placeholder */}
-                        <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem', padding: '1rem', background: 'var(--surface-raised)', borderRadius: '16px', border: '2px solid #000', opacity: vendor?.plan === 'Pro' ? 1 : 0.5 }}>
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem', padding: '1rem', background: 'var(--surface-raised)', borderRadius: '16px', border: '2px solid #000', opacity: ['pro', 'proveedor'].includes(vendor?.plan?.toLowerCase() || '') ? 1 : 0.5 }}>
                             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
                                 <div>
                                     <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
@@ -320,15 +340,36 @@ export default function PerfilPage() {
                                     </div>
                                     <p style={{ fontSize: '0.7rem', opacity: 0.6, fontWeight: 700 }}>Envío automático de cuentas post-pago</p>
                                 </div>
-                                <div style={{ width: '50px', height: '28px', borderRadius: '14px', border: '2px solid #000', background: 'rgba(0,0,0,0.1)', position: 'relative' }}>
-                                    <div style={{ width: '20px', height: '20px', background: 'white', borderRadius: '50%', border: '2px solid #000', position: 'absolute', top: '2px', left: '2px' }} />
-                                </div>
+                                <button
+                                    onClick={() => {
+                                        if (['pro', 'proveedor'].includes(vendor?.plan?.toLowerCase() || '')) {
+                                            setForm({ ...form, whatsapp_api_enabled: !form.whatsapp_api_enabled });
+                                        }
+                                    }}
+                                    style={{
+                                        width: '50px', height: '28px', borderRadius: '14px', border: '2px solid #000',
+                                        background: form.whatsapp_api_enabled ? 'var(--color-primary)' : 'rgba(0,0,0,0.1)',
+                                        position: 'relative', cursor: ['pro', 'proveedor'].includes(vendor?.plan?.toLowerCase() || '') ? 'pointer' : 'default', transition: '0.2s'
+                                    }}
+                                >
+                                    <motion.div
+                                        animate={{ x: form.whatsapp_api_enabled ? 24 : 2 }}
+                                        style={{ width: '20px', height: '20px', background: 'white', borderRadius: '50%', border: '2px solid #000', position: 'absolute', top: '2px' }}
+                                    />
+                                </button>
                             </div>
-                            {vendor?.plan === 'Pro' ? (
+                            {['pro', 'proveedor'].includes(vendor?.plan?.toLowerCase() || '') ? (
                                 <div style={{ marginTop: '0.5rem' }}>
                                     <label style={{ fontSize: '0.65rem', fontWeight: 900, opacity: 0.5, marginBottom: '0.4rem', display: 'block' }}>API KEY / TOKEN DE ACCESO</label>
-                                    <input className="input" type="password" placeholder="••••••••••••••••" disabled style={{ fontSize: '0.8rem', height: '45px' }} />
-                                    <p style={{ fontSize: '0.6rem', fontWeight: 700, marginTop: '0.5rem', color: 'var(--color-primary)' }}>* Próximamente disponible para usuarios Pro.</p>
+                                    <input 
+                                        className="input" 
+                                        type="password" 
+                                        placeholder="Tu Token de WhatsApp Business" 
+                                        value={form.whatsapp_api_token || ''}
+                                        onChange={e => setForm({ ...form, whatsapp_api_token: e.target.value })}
+                                        style={{ fontSize: '0.8rem', height: '45px' }} 
+                                    />
+                                    <p style={{ fontSize: '0.6rem', fontWeight: 700, marginTop: '0.5rem', color: 'var(--color-primary)' }}>* Configura tu API para automatizar tus ventas.</p>
                                 </div>
                             ) : (
                                 <div style={{ border: '2px dashed var(--color-danger)', padding: '0.5rem', borderRadius: '12px', textAlign: 'center' }}>
