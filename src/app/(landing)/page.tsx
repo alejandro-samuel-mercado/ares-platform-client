@@ -22,6 +22,8 @@ export default function LandingPage() {
     const { scrollYProgress } = useScroll({ target: targetRef });
     const yPreview = useTransform(scrollYProgress, [0, 1], [0, -200]);
     const opacityHero = useTransform(scrollYProgress, [0, 0.2], [1, 0]);
+    
+    const [activeTab, setActiveTab] = useState<'inicio'|'docs'>('inicio');
 
     // Generar partículas aleatorias una sola vez
     const [particles, setParticles] = useState<any[]>([]);
@@ -70,7 +72,21 @@ export default function LandingPage() {
                     </motion.div>
                     
                     <div className="olympus-nav-actions">
-                        <div className="nav-links">
+                        <div className="nav-links" style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+                            <button 
+                                onClick={() => setActiveTab('inicio')} 
+                                className="nav-link-ghost"
+                                style={{ background: 'transparent', border: 'none', color: activeTab === 'inicio' ? 'var(--color-primary)' : 'white', cursor: 'pointer', fontWeight: 900 }}
+                            >
+                                INICIO
+                            </button>
+                            <button 
+                                onClick={() => setActiveTab('docs')} 
+                                className="nav-link-ghost"
+                                style={{ background: 'transparent', border: 'none', color: activeTab === 'docs' ? 'var(--color-primary)' : 'white', cursor: 'pointer', fontWeight: 900 }}
+                            >
+                                DOCUMENTACIÓN
+                            </button>
                             <Link href="/login" className="nav-link-ghost">ACCESO</Link>
                             <Link href="/register" className="nav-btn-action">EMPEZAR AHORA</Link>
                         </div>
@@ -78,8 +94,10 @@ export default function LandingPage() {
                 </nav>
             </header>
 
-            {/* Hero Section */}
-            <section className="olympus-hero" ref={targetRef}>
+            {activeTab === 'inicio' ? (
+                <>
+                    {/* Hero Section */}
+                    <section className="olympus-hero" ref={targetRef}>
                 <div className="landing-container">
                     <motion.div 
                         style={{ opacity: opacityHero }}
@@ -214,6 +232,10 @@ export default function LandingPage() {
                     </div>
                 </div>
             </section>
+            </>
+            ) : (
+                <DocsBlock />
+            )}
 
             {/* Footer */}
             <footer className="olympus-footer">
@@ -232,9 +254,7 @@ export default function LandingPage() {
                             </div>
                             <div className="footer-col">
                                 <h3>SOPORTE</h3>
-                                <a href="#">Documentación</a>
-                                <a href="#">API Docs</a>
-                                <a href="#">Estatus</a>
+                                <button onClick={() => setActiveTab('docs')} style={{background: 'transparent', border: 'none', color: 'var(--text-muted)', cursor: 'pointer', textAlign: 'left', display: 'block', padding: '0.2rem 0'}}>Documentación</button>
                             </div>
                         </div>
                     </div>
@@ -360,5 +380,67 @@ function PriceCard({ tier, price, features, btnText, featured }: PriceCardProps)
                 {btnText}
             </Link>
         </motion.div>
+    );
+}
+
+function DocsBlock() {
+    return (
+        <div className="landing-container" style={{ padding: '8rem 2rem 5rem', minHeight: '80vh', color: 'white' }}>
+            <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} style={{ maxWidth: '900px', margin: '0 auto' }}>
+                <h1 style={{ fontSize: '3rem', fontWeight: 900, marginBottom: '1rem' }}>SISTEMA <span className="text-gradient">ARES</span></h1>
+                <p style={{ color: 'var(--text-muted)', fontSize: '1.2rem', marginBottom: '3rem' }}>Guía de uso simplificada para revendedores (Vendors).</p>
+                
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '2rem' }}>
+                    <div className="feature-card-new" style={{ textAlign: 'left', padding: '2.5rem' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', marginBottom: '1.5rem' }}>
+                            <div className="feature-icon-new"><Smartphone size={24} color="#FFF" /></div>
+                            <h2 style={{ fontSize: '1.8rem', color: '#FFF', margin: 0 }}>Paso 1: Tu Acceso</h2>
+                        </div>
+                        <p style={{ color: 'var(--text-muted)', fontSize: '1.1rem', lineHeight: '1.7' }}>
+                            Para ingresar al sistema, entra a <strong>/login</strong> y coloca como usuario el <strong>alias o nombre de usuario</strong> que te proporcionó el Administrador general, junto con tu contraseña.
+                        </p>
+                    </div>
+
+                    <div className="feature-card-new" style={{ textAlign: 'left', padding: '2.5rem' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', marginBottom: '1.5rem' }}>
+                            <div className="feature-icon-new"><Zap size={24} color="#FACC15" /></div>
+                            <h2 style={{ fontSize: '1.8rem', color: '#FFF', margin: 0 }}>Paso 2: Haz un Pedido</h2>
+                        </div>
+                        <p style={{ color: 'var(--text-muted)', fontSize: '1.1rem', lineHeight: '1.7', marginBottom: '1rem' }}>
+                            Cuando un cliente te compre una cuenta (ej: Netflix), ve a tu sección <strong>Nuevo Pedido</strong> en el panel.
+                        </p>
+                        <ul style={{ color: 'var(--text-muted)', fontSize: '1rem', lineHeight: '1.7', paddingLeft: '1.5rem' }}>
+                            <li>Selecciona el producto que tu cliente quiere comprar.</li>
+                            <li>Sube la <strong>foto del comprobante de pago</strong> de tu cliente (o pega su link/URL) si así te lo requiere tu administrador.</li>
+                            <li>Envía el pedido. El Administrador recibirá una notificación para procesarlo inmediatamente.</li>
+                        </ul>
+                    </div>
+
+                    <div className="feature-card-new" style={{ textAlign: 'left', padding: '2.5rem' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', marginBottom: '1.5rem' }}>
+                            <div className="feature-icon-new"><Shield size={24} color="var(--color-primary)" /></div>
+                            <h2 style={{ fontSize: '1.8rem', color: '#FFF', margin: 0 }}>Paso 3: Entrega la Cuenta</h2>
+                        </div>
+                        <p style={{ color: 'var(--text-muted)', fontSize: '1.1rem', lineHeight: '1.7' }}>
+                            Ve a la sección <strong>Mis Credenciales</strong>. Tan pronto como el administrador apruebe tu pedido, el sistema revelará mágicamente el correo y contraseña de la cuenta para ti. Sólo debes copiarla y pasársela a tu cliente.
+                        </p>
+                    </div>
+
+                    <div className="feature-card-new" style={{ textAlign: 'left', padding: '2.5rem' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', marginBottom: '1.5rem' }}>
+                            <div className="feature-icon-new"><Globe size={24} color="#3B82F6" /></div>
+                            <h2 style={{ fontSize: '1.8rem', color: '#FFF', margin: 0 }}>Paso 4: Tu Propio Catálogo</h2>
+                        </div>
+                        <p style={{ color: 'var(--text-muted)', fontSize: '1.1rem', lineHeight: '1.7', marginBottom: '1rem' }}>
+                            Si vas a <strong>Imágenes (Catálogo)</strong>, podrás configurar tu <strong>Precio de Venta final</strong>. 
+                        </p>
+                        <ul style={{ color: 'var(--text-muted)', fontSize: '1rem', lineHeight: '1.7', paddingLeft: '1.5rem' }}>
+                            <li>Ponle el precio que tú quieras a tus productos para tus clientes.</li>
+                            <li>Obtén tu Enlace de Catálogo y compártelo a tus amigos y clientes para que vean todos los servicios que vendes con tu propia imagen corporativa y los precios que configuraste.</li>
+                        </ul>
+                    </div>
+                </div>
+            </motion.div>
+        </div>
     );
 }

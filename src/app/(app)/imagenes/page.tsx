@@ -9,12 +9,12 @@
 
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
     Key, Send, Loader2, CheckCircle2, AlertCircle, X, Zap, Copy,
     ExternalLink, Package, Clock, RefreshCw, Eye, EyeOff, Upload,
-    ShoppingBag, Hash
+    ShoppingBag, Hash, UploadCloud
 } from 'lucide-react';
 import api from '@/lib/api';
 import { useAuth } from '@/lib/auth';
@@ -36,6 +36,8 @@ export default function MisServiciosPage() {
     const [orderQuantity, setOrderQuantity] = useState(1);
     const [orderNotes, setOrderNotes] = useState('');
     const [orderComprobante, setOrderComprobante] = useState('');
+    const [orderComprobanteFile, setOrderComprobanteFile] = useState<File | null>(null);
+    const fileInputRef = useRef<HTMLInputElement>(null);
     const [submitting, setSubmitting] = useState(false);
     const [revealedPasswords, setRevealedPasswords] = useState<Set<string>>(new Set());
     const [activeTabs, setActiveTabs] = useState<Record<string, 'credenciales' | 'pedidos'>>({});
@@ -76,17 +78,21 @@ export default function MisServiciosPage() {
         if (!selectedService) return;
         setSubmitting(true);
         try {
-            await api.post('/pedidos', {
-                servicio_id: selectedService,
-                cantidad: orderQuantity,
-                comprobante_url: orderComprobante || null,
-                notas: orderNotes || null,
-            });
+            const formData = new FormData();
+            formData.append('servicio_id', selectedService);
+            formData.append('cantidad', orderQuantity.toString());
+            if (orderComprobante) formData.append('comprobante_url', orderComprobante);
+            if (orderComprobanteFile) formData.append('comprobante', orderComprobanteFile);
+            if (orderNotes) formData.append('notas', orderNotes);
+
+            await api.request('/pedidos', { method: 'POST', body: formData });
+            
             showToast('Pedido enviado ✅');
             setShowOrderModal(false);
             setOrderQuantity(1);
             setOrderNotes('');
             setOrderComprobante('');
+            setOrderComprobanteFile(null);
             load();
         } catch (err) { console.error(err); showToast('Error al crear pedido'); }
         finally { setSubmitting(false); }
@@ -176,25 +182,22 @@ export default function MisServiciosPage() {
                                         </div>
                                         <div>
                                             <div style={{ fontWeight: 900, fontSize: '1.1rem' }}>{ms.servicio.nombre.toUpperCase()}</div>
-                                            <div style={{ fontSize: '0.7rem', color: 'var(--text-muted)', fontWeight: 800, display: 'flex', gap: '0.75rem' }}>
-                                                <span>📦 {svcCreds.length} {svcCreds.length === 1 ? 'cuenta' : 'cuentas'}</span>
-                                                {pendingCount > 0 && <span style={{ color: '#F59E0B' }}>⏳ {pendingCount} pendientes</span>}
-                                            </div>
+
                                             <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginTop: '0.5rem', background: 'rgba(0,0,0,0.2)', padding: '0.3rem 0.5rem', borderRadius: '8px' }}>
-                                              <span style={{ fontSize: '0.65rem', fontWeight: 800 }}>PRECIO CLIENTE:</span>
-                                              <input
-                                                type="number"
-                                                value={editingPrice[ms.id] !== undefined ? editingPrice[ms.id] : ms.precio_venta}
-                                                onChange={(e) => setEditingPrice({ ...editingPrice, [ms.id]: e.target.value })}
-                                                style={{ width: '60px', background: 'transparent', border: 'none', color: 'var(--color-primary)', fontWeight: 900, fontSize: '0.8rem', outline: 'none' }}
-                                                placeholder="0.00"
-                                              />
-                                              <span style={{ fontSize: '0.65rem', fontWeight: 800 }}>Bs</span>
-                                              {(editingPrice[ms.id] !== undefined && editingPrice[ms.id] !== ms.precio_venta.toString()) && (
-                                                <button onClick={() => handleUpdatePrice(ms.id)} disabled={savingPrice === ms.id} style={{ background: 'var(--color-primary)', color: '#fff', border: 'none', borderRadius: '4px', padding: '0.2rem 0.4rem', fontSize: '0.6rem', fontWeight: 900, cursor: 'pointer' }}>
-                                                  {savingPrice === ms.id ? '...' : 'SAVE'}
-                                                </button>
-                                              )}
+                                                <span style={{ fontSize: '0.65rem', fontWeight: 800 }}>PRECIO CLIENTE:</span>
+                                                <input
+                                                    type="number"
+                                                    value={editingPrice[ms.id] !== undefined ? editingPrice[ms.id] : ms.precio_venta}
+                                                    onChange={(e) => setEditingPrice({ ...editingPrice, [ms.id]: e.target.value })}
+                                                    style={{ width: '60px', background: 'transparent', border: 'none', color: 'var(--color-primary)', fontWeight: 900, fontSize: '0.8rem', outline: 'none' }}
+                                                    placeholder="0.00"
+                                                />
+                                                <span style={{ fontSize: '0.65rem', fontWeight: 800 }}>Bs</span>
+                                                {(editingPrice[ms.id] !== undefined && editingPrice[ms.id] !== ms.precio_venta.toString()) && (
+                                                    <button onClick={() => handleUpdatePrice(ms.id)} disabled={savingPrice === ms.id} style={{ background: 'var(--color-primary)', color: '#fff', border: 'none', borderRadius: '4px', padding: '0.2rem 0.4rem', fontSize: '0.6rem', fontWeight: 900, cursor: 'pointer' }}>
+                                                        {savingPrice === ms.id ? '...' : 'SAVE'}
+                                                    </button>
+                                                )}
                                             </div>
                                         </div>
                                     </div>
@@ -365,16 +368,57 @@ export default function MisServiciosPage() {
                                 </div>
                             )}
 
-                            {/* Comprobante URL */}
-                            <label style={{ fontWeight: 900, fontSize: '0.7rem', color: 'var(--text-muted)', marginBottom: '0.4rem', display: 'block' }}>COMPROBANTE DE PAGO (URL imagen)</label>
-                            <input
-                                className="input"
-                                type="text"
-                                placeholder="https://... o pega enlace de imagen"
-                                value={orderComprobante}
-                                onChange={e => setOrderComprobante(e.target.value)}
-                                style={{ fontSize: '0.85rem', marginBottom: '1rem' }}
-                            />
+                            <label style={{ fontWeight: 900, fontSize: '0.7rem', color: 'var(--text-muted)', marginBottom: '0.4rem', display: 'block' }}>COMPROBANTE DE PAGO (Tu recibo)</label>
+                            
+                            <div style={{ display: 'flex', gap: '1rem', marginBottom: '1rem' }}>
+                                {/* Option 1: File Upload */}
+                                <div style={{ flex: 1 }}>
+                                    <input 
+                                        type="file" 
+                                        accept="image/*" 
+                                        className="hidden" 
+                                        ref={fileInputRef}
+                                        onChange={(e) => {
+                                            if (e.target.files && e.target.files[0]) setOrderComprobanteFile(e.target.files[0]);
+                                        }}
+                                        style={{ display: 'none' }}
+                                    />
+                                    <div 
+                                        onClick={() => fileInputRef.current?.click()}
+                                        style={{
+                                            border: '2px dashed var(--color-primary)', borderRadius: '12px', padding: '1rem',
+                                            display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '0.5rem',
+                                            cursor: 'pointer', background: 'var(--surface-raised)', transition: 'all 0.2s', height: '100%', justifyContent: 'center'
+                                        }}
+                                        className="hover-bright"
+                                    >
+                                        {orderComprobanteFile ? (
+                                            <>
+                                                <CheckCircle2 color="var(--color-success)" size={24} />
+                                                <span style={{ fontSize: '0.7rem', fontWeight: 900, textAlign: 'center', wordBreak: 'break-all' }}>{orderComprobanteFile.name}</span>
+                                            </>
+                                        ) : (
+                                            <>
+                                                <UploadCloud size={24} color="var(--text-muted)" />
+                                                <span style={{ fontSize: '0.7rem', fontWeight: 900, color: 'var(--text-muted)', textAlign: 'center' }}>Subir Imagen Local</span>
+                                            </>
+                                        )}
+                                    </div>
+                                </div>
+                                
+                                {/* Option 2: URL Input */}
+                                <div style={{ flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
+                                    <span style={{ fontSize: '0.7rem', fontWeight: 800, color: 'var(--text-muted)', marginBottom: '0.5rem', textAlign: 'center' }}>O PEGA UN ENLACE (URL)</span>
+                                    <input
+                                        className="input"
+                                        type="text"
+                                        placeholder="https://i.ibb.co/..."
+                                        value={orderComprobante}
+                                        onChange={e => setOrderComprobante(e.target.value)}
+                                        style={{ fontSize: '0.85rem' }}
+                                    />
+                                </div>
+                            </div>
 
                             {/* Notes */}
                             <label style={{ fontWeight: 900, fontSize: '0.7rem', color: 'var(--text-muted)', marginBottom: '0.4rem', display: 'block' }}>NOTAS (opcional)</label>

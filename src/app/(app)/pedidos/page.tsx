@@ -28,7 +28,7 @@ export default function PedidosVendorPage() {
   const [toastMsg, setToastMsg] = useState('');
 
   // Form state
-  const [newPedido, setNewPedido] = useState<{ notas: string; servicio_id: string; cantidad: number; comprobante: File | null }>({ notas: '', servicio_id: '', cantidad: 1, comprobante: null });
+  const [newPedido, setNewPedido] = useState<{ notas: string; servicio_id: string; cantidad: number; comprobante: File | null; comprobante_url: string }>({ notas: '', servicio_id: '', cantidad: 1, comprobante: null, comprobante_url: '' });
   const [misServicios, setMisServicios] = useState<any[]>([]);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -71,12 +71,13 @@ export default function PedidosVendorPage() {
       formData.append('servicio_id', newPedido.servicio_id);
       formData.append('cantidad', newPedido.cantidad.toString());
       if (newPedido.comprobante) formData.append('comprobante', newPedido.comprobante);
+      if (newPedido.comprobante_url) formData.append('comprobante_url', newPedido.comprobante_url);
 
       await api.request('/pedidos', { method: 'POST', body: formData });
       
       await fetchData();
       setIsModalOpen(false);
-      setNewPedido({ notas: '', servicio_id: '', cantidad: 1, comprobante: null });
+      setNewPedido({ notas: '', servicio_id: '', cantidad: 1, comprobante: null, comprobante_url: '' });
       triggerToast('PEDIDO ENVIADO AL EQUIPO');
     } catch (error: any) {
       if (error.status === 403 && error.data?.reason === 'plan_limit_reached') {
@@ -307,35 +308,51 @@ export default function PedidosVendorPage() {
 
                 <div>
                    <label className="input-label">Comprobante de Pago (Sólo si es una cuenta nueva)</label>
-                   <input 
-                     type="file" 
-                     accept="image/*" 
-                     className="hidden" 
-                     ref={fileInputRef}
-                     onChange={(e) => {
-                       if (e.target.files && e.target.files[0]) setNewPedido({ ...newPedido, comprobante: e.target.files[0] });
-                     }}
-                   />
-                   <div 
-                     onClick={() => fileInputRef.current?.click()}
-                     style={{
-                       border: '2px dashed var(--color-primary)', borderRadius: '18px', padding: '1.5rem',
-                       display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '0.5rem',
-                       cursor: 'pointer', background: 'var(--surface-raised)', transition: 'all 0.2s', opacity: 0.8
-                     }}
-                     className="hover-bright"
-                   >
-                     {newPedido.comprobante ? (
-                        <>
-                          <CheckCircle2 color="var(--color-success)" size={32} />
-                          <span style={{ fontSize: '0.8rem', fontWeight: 900 }}>{newPedido.comprobante.name}</span>
-                        </>
-                     ) : (
-                        <>
-                          <UploadCloud size={32} color="var(--color-primary)" />
-                          <span style={{ fontSize: '0.8rem', fontWeight: 900 }}>Subir Imagen de Pago</span>
-                        </>
-                     )}
+                   <div style={{ display: 'flex', gap: '1rem', marginTop: '0.5rem' }}>
+                       <div style={{ flex: 1 }}>
+                           <input 
+                             type="file" 
+                             accept="image/*" 
+                             style={{ display: 'none' }} 
+                             ref={fileInputRef}
+                             onChange={(e) => {
+                               if (e.target.files && e.target.files[0]) setNewPedido({ ...newPedido, comprobante: e.target.files[0] });
+                             }}
+                           />
+                           <div 
+                             onClick={() => fileInputRef.current?.click()}
+                             style={{
+                               border: '2px dashed var(--color-primary)', borderRadius: '18px', padding: '1.5rem',
+                               display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '0.5rem',
+                               cursor: 'pointer', background: 'var(--surface-raised)', transition: 'all 0.2s', opacity: 0.8,
+                               height: '100%', justifyContent: 'center'
+                             }}
+                             className="hover-bright"
+                           >
+                             {newPedido.comprobante ? (
+                                <>
+                                  <CheckCircle2 color="var(--color-success)" size={32} />
+                                  <span style={{ fontSize: '0.8rem', fontWeight: 900, textAlign: 'center', wordBreak: 'break-all' }}>{newPedido.comprobante.name}</span>
+                                </>
+                             ) : (
+                                <>
+                                  <UploadCloud size={32} color="var(--color-primary)" />
+                                  <span style={{ fontSize: '0.8rem', fontWeight: 900, textAlign: 'center' }}>Subir de Galería</span>
+                                </>
+                             )}
+                           </div>
+                       </div>
+                       <div style={{ flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
+                           <span style={{ fontSize: '0.7rem', fontWeight: 800, color: 'var(--text-muted)', marginBottom: '0.5rem', textAlign: 'center' }}>O PEGA UN ENLACE (URL)</span>
+                           <input
+                               className="input"
+                               type="text"
+                               placeholder="https://i.ibb.co/..."
+                               value={newPedido.comprobante_url}
+                               onChange={e => setNewPedido({ ...newPedido, comprobante_url: e.target.value })}
+                               style={{ fontSize: '0.85rem' }}
+                           />
+                       </div>
                    </div>
                 </div>
 
