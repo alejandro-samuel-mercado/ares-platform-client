@@ -234,7 +234,7 @@ export default function PerfilPage() {
                         <Globe size={20} color="#ecece9ff" />
                         <h3 style={{ fontWeight: 900, fontSize: '1rem', letterSpacing: '0.05em' }}>MI ENLACE PÚBLICO ARES</h3>
                     </div>
-                    <p style={{ fontSize: '0.75rem', fontWeight: 700, opacity: 0.7, marginBottom: '1.5rem', lineHeight: 1.4 }}>
+                    <p style={{ fontSize: '0.75rem', fontWeight: 700, opacity: 0.7, marginBottom: '1.5rem', lineHeight: 1.4, color: "#ecece9ff" }}>
                         Comparte este link con tus clientes para que vean tu catálogo actualizado sin necesidad de cuenta.
                     </p>
                     <div style={{

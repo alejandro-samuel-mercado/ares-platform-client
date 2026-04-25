@@ -6,7 +6,7 @@
 
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Key, Plus, Search, Trash2, Edit3, CheckCircle2, XCircle, Loader2, RefreshCw, Unlock, User, Eye, EyeOff, X } from 'lucide-react';
+import { Key, Plus, Search, Trash2, Edit3, CheckCircle2, XCircle, Loader2, RefreshCw, Unlock, User, Eye, EyeOff, X, Copy, Link as LinkIcon } from 'lucide-react';
 
 interface ServicioBase { id: string; nombre: string; logo_url: string; precio_admin: number; }
 interface Credencial {
@@ -28,6 +28,11 @@ export default function CredencialesAdminPage() {
   const [saving, setSaving] = useState(false);
   const [revealedPasswords, setRevealedPasswords] = useState<Set<string>>(new Set());
   const [toast, setToast] = useState('');
+  
+  // States para la asignación manual
+  const [vendors, setVendors] = useState<any[]>([]);
+  const [assignModal, setAssignModal] = useState<{ open: boolean; credencialId: string | null }>({ open: false, credencialId: null });
+  const [assignVendorId, setAssignVendorId] = useState('');
 
   const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'https://ares-api.unixxtech.online/api';
   const token = typeof window !== 'undefined' ? localStorage.getItem('ares_token') : null;
@@ -36,12 +41,14 @@ export default function CredencialesAdminPage() {
   const load = async () => {
     setLoading(true);
     try {
-      const [credRes, svcRes] = await Promise.all([
+      const [credRes, svcRes, venRes] = await Promise.all([
         fetch(`${API_BASE}/admin/credenciales`, { headers }).then(r => r.json()),
         fetch(`${API_BASE}/admin/servicios`, { headers }).then(r => r.json()),
+        fetch(`${API_BASE}/admin/vendedores`, { headers }).then(r => r.json()),
       ]);
       setCredenciales(credRes);
       setServiciosBase(svcRes);
+      setVendors(venRes);
     } catch (err) { console.error(err); }
     finally { setLoading(false); }
   };
@@ -83,6 +90,34 @@ export default function CredencialesAdminPage() {
     await fetch(`${API_BASE}/admin/credenciales/${id}/liberar`, { method: 'POST', headers });
     showToast('Credencial liberada ✅');
     load();
+  };
+
+  const handleCopy = (c: Credencial) => {
+    let text = `📦 SERVICIO: ${c.servicio.nombre}\n👤 USUARIO: ${c.usuario}\n🔑 CONTRASEÑA: ${c.password}`;
+    if (c.perfil) text += `\n🎬 PERFIL: ${c.perfil}`;
+    if (c.notas) text += `\n📝 NOTAS: ${c.notas}`;
+    navigator.clipboard.writeText(text);
+    showToast('Credenciales copiadas para enviar 📋');
+  };
+
+  const handleAssign = async () => {
+    if (!assignModal.credencialId || !assignVendorId) return;
+    setSaving(true);
+    try {
+      await fetch(`${API_BASE}/admin/credenciales/${assignModal.credencialId}/asignar`, {
+        method: 'POST',
+        headers,
+        body: JSON.stringify({ vendor_id: assignVendorId })
+      });
+      showToast('Credencial asignada al vendedor 🔗');
+      setAssignModal({ open: false, credencialId: null });
+      setAssignVendorId('');
+      load();
+    } catch {
+      showToast('Error asignando vendedor');
+    } finally {
+      setSaving(false);
+    }
   };
 
   const openEdit = (c: Credencial) => {
@@ -198,12 +233,16 @@ export default function CredencialesAdminPage() {
                     {c.vendor ? `@${c.vendor.alias}` : '—'}
                   </td>
                   <td style={{ padding: '0.75rem 1rem' }}>
-                    <div style={{ display: 'flex', gap: '0.4rem' }}>
-                      <button onClick={() => openEdit(c)} title="Editar" style={{ background: 'none', border: 'none', cursor: 'pointer' }}><Edit3 size={16} color="var(--color-primary)" /></button>
-                      {!c.disponible && (
-                        <button onClick={() => handleLiberar(c.id)} title="Liberar" style={{ background: 'none', border: 'none', cursor: 'pointer' }}><Unlock size={16} color="#F59E0B" /></button>
+                    <div style={{ display: 'flex', gap: '0.6rem' }}>
+                      <button onClick={() => handleCopy(c)} title="Copiar formato para WhatsApp/Pedidos" style={{ background: 'none', border: 'none', cursor: 'pointer', padding: '0.2rem' }}><Copy size={16} color="var(--text-primary)" /></button>
+                      {c.disponible && (
+                        <button onClick={() => setAssignModal({ open: true, credencialId: c.id })} title="Asignar manualmente a un vendedor" style={{ background: 'none', border: 'none', cursor: 'pointer', padding: '0.2rem' }}><LinkIcon size={16} color="#3B82F6" /></button>
                       )}
-                      <button onClick={() => handleDelete(c.id)} title="Eliminar" style={{ background: 'none', border: 'none', cursor: 'pointer' }}><Trash2 size={16} color="#EF4444" /></button>
+                      <button onClick={() => openEdit(c)} title="Editar" style={{ background: 'none', border: 'none', cursor: 'pointer', padding: '0.2rem' }}><Edit3 size={16} color="var(--color-primary)" /></button>
+                      {!c.disponible && (
+                        <button onClick={() => handleLiberar(c.id)} title="Liberar" style={{ background: 'none', border: 'none', cursor: 'pointer', padding: '0.2rem' }}><Unlock size={16} color="#F59E0B" /></button>
+                      )}
+                      <button onClick={() => handleDelete(c.id)} title="Eliminar" style={{ background: 'none', border: 'none', cursor: 'pointer', padding: '0.2rem' }}><Trash2 size={16} color="#EF4444" /></button>
                     </div>
                   </td>
                 </tr>
@@ -258,6 +297,38 @@ export default function CredencialesAdminPage() {
               </button>
             </motion.div>
           </div>
+        )}
+      </AnimatePresence>
+
+      {/* Modal Asignar Vendedor */}
+      <AnimatePresence>
+        {assignModal.open && (
+           <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, background: 'rgba(0,0,0,0.6)', zIndex: 6000, display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+           onClick={() => setAssignModal({ open: false, credencialId: null })}>
+           <motion.div onClick={e => e.stopPropagation()} initial={{ scale: 0.8, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.8, opacity: 0 }}
+             style={{ background: 'var(--surface-raised, white)', borderRadius: '24px', border: '3px solid #000', padding: '2rem', maxWidth: '450px', width: '95%', boxShadow: '12px 12px 0px 0px rgba(0,0,0,0.3)' }}>
+             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
+               <h2 style={{ fontWeight: 900, fontSize: '1.2rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}><LinkIcon color="#3B82F6" /> ASIGNAR VENDEDOR</h2>
+               <button onClick={() => setAssignModal({ open: false, credencialId: null })} style={{ background: 'none', border: 'none', cursor: 'pointer' }}><X size={24} /></button>
+             </div>
+
+             <div style={{ marginBottom: '1.5rem' }}>
+               <label style={{ fontSize: '0.7rem', fontWeight: 900, opacity: 0.5, display: 'block', marginBottom: '0.5rem' }}>BUSCAR O SELECCIONAR VENDEDOR</label>
+               <select className="input" value={assignVendorId} onChange={e => setAssignVendorId(e.target.value)}>
+                 <option value="">Selecciona un vendedor...</option>
+                 {vendors.map(v => (
+                   <option key={v.id} value={v.id}>{v.nombre} (@{v.alias})</option>
+                 ))}
+               </select>
+               <p style={{ fontSize: '0.7rem', opacity: 0.6, marginTop: '0.5rem', fontWeight: 700 }}>Esto marcará la credencial como "Asignada" y quedará ligada al vendedor para auditoría.</p>
+             </div>
+
+             <button className="btn-primary" onClick={handleAssign} disabled={saving || !assignVendorId}
+               style={{ width: '100%', height: '50px', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem', background: '#3B82F6' }}>
+               {saving ? <Loader2 className="animate-spin" size={18} /> : <><CheckCircle2 size={18} /> CONFIRMAR ASIGNACIÓN</>}
+             </button>
+           </motion.div>
+         </div>
         )}
       </AnimatePresence>
     </div>
