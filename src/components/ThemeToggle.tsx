@@ -6,8 +6,8 @@ export default function ThemeToggle() {
     const { theme, setTheme } = useTheme();
 
     const themes = [
-        { id: 'violet', color: '#F5C518', label: 'Dark' },
-        { id: 'default', color: '#4F46E5', label: 'Light' },
+        { id: 'violet', color: '#F5C518', label: 'Light' },
+        { id: 'default', color: '#4F46E5', label: 'Dark' },
 
         { id: 'red', color: '#EF4444', label: 'Neon' },
     ];
