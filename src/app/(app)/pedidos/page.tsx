@@ -28,7 +28,7 @@ export default function PedidosVendorPage() {
   const [toastMsg, setToastMsg] = useState('');
 
   // Form state
-  const [newPedido, setNewPedido] = useState<{ notas: string; servicio_id: string; comprobante: File | null }>({ notas: '', servicio_id: '', comprobante: null });
+  const [newPedido, setNewPedido] = useState<{ notas: string; servicio_id: string; cantidad: number; comprobante: File | null }>({ notas: '', servicio_id: '', cantidad: 1, comprobante: null });
   const [misServicios, setMisServicios] = useState<any[]>([]);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -68,13 +68,14 @@ export default function PedidosVendorPage() {
       const formData = new FormData();
       formData.append('notas', newPedido.notas);
       formData.append('servicio_id', newPedido.servicio_id);
+      formData.append('cantidad', newPedido.cantidad.toString());
       if (newPedido.comprobante) formData.append('comprobante', newPedido.comprobante);
 
       await api.request('/pedidos', { method: 'POST', body: formData });
       
       await fetchData();
       setIsModalOpen(false);
-      setNewPedido({ notas: '', servicio_id: '', comprobante: null });
+      setNewPedido({ notas: '', servicio_id: '', cantidad: 1, comprobante: null });
       triggerToast('PEDIDO ENVIADO AL EQUIPO');
     } catch (error) {
       triggerToast('ERROR AL PROCESAR PEDIDO');
@@ -267,10 +268,25 @@ export default function PedidosVendorPage() {
                      <option value="">Selecciona un servicio...</option>
                      <option value="MATERIAL_CUSTOM">FLYER O DISEÑO PERSONALIZADO</option>
                      {misServicios.map(s => (
-                       <option key={s.id} value={s.id}>{s.nombre} - Pedir Credencial</option>
+                       <option key={s.id} value={s.id}>{s.nombre} - Pedir Credencial (${s.precio_admin || 0})</option>
                      ))}
                   </select>
                 </div>
+
+                {newPedido.servicio_id !== 'MATERIAL_CUSTOM' && newPedido.servicio_id !== '' && (
+                  <div>
+                    <label className="input-label">Cantidad Cuentas a Pedir</label>
+                    <input 
+                      type="number"
+                      min={1}
+                      max={50}
+                      className="input"
+                      value={newPedido.cantidad}
+                      onChange={(e) => setNewPedido({ ...newPedido, cantidad: parseInt(e.target.value) || 1 })}
+                      required
+                    />
+                  </div>
+                )}
               
                 <div>
                   <label className="input-label">Detalles del Requerimiento / Referencia</label>
@@ -317,6 +333,15 @@ export default function PedidosVendorPage() {
                      )}
                    </div>
                 </div>
+
+                {newPedido.servicio_id !== 'MATERIAL_CUSTOM' && newPedido.servicio_id !== '' && (
+                  <div style={{ background: 'var(--surface-raised)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '1rem 1.5rem', borderRadius: '18px', border: '2px solid var(--color-primary)' }}>
+                    <span style={{ fontSize: '0.8rem', fontWeight: 900 }}>MONTO TOTAL A ABONAR:</span>
+                    <span style={{ fontSize: '1.5rem', fontWeight: 900, color: 'var(--color-primary)' }}>
+                      ${(misServicios.find(s => s.id === newPedido.servicio_id)?.precio_admin || 0) * newPedido.cantidad}
+                    </span>
+                  </div>
+                )}
 
                 <div className="card-static" style={{ background: 'var(--surface-raised)', borderWidth: '1.5px', padding: '1rem' }}>
                   <p style={{ fontSize: '0.7rem', fontWeight: 800, color: 'var(--color-primary)', lineHeight: 1.4 }}>

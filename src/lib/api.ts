@@ -26,14 +26,19 @@ class ApiClient {
 
     const token = this.getToken();
 
+    const isFormData = body instanceof FormData;
+    const finalHeaders: Record<string, string> = {
+      ...(!skipAuth && token ? { Authorization: `Bearer ${token}` } : {}),
+      ...headers,
+    };
+    if (!isFormData && !finalHeaders['Content-Type']) {
+      finalHeaders['Content-Type'] = 'application/json';
+    }
+
     const config: RequestInit = {
       method,
-      headers: {
-        'Content-Type': 'application/json',
-        ...(!skipAuth && token ? { Authorization: `Bearer ${token}` } : {}),
-        ...headers,
-      },
-      ...(body ? { body: JSON.stringify(body) } : {}),
+      headers: finalHeaders,
+      ...(body ? { body: isFormData ? body : JSON.stringify(body) } : {}),
     };
 
     const response = await fetch(`${API_BASE}${endpoint}`, config);
