@@ -23,12 +23,14 @@ export default function CatalogoPage() {
   const [loading, setLoading] = useState(true);
   const [showUpgrade, setShowUpgrade] = useState(false);
   const [toast, setToast] = useState('');
+  const [tasaCambio, setTasaCambio] = useState(6.96);
 
   const load = async () => {
     try {
-      const [base, mine] = await Promise.all([api.get('/servicios_base'), api.get('/mis_servicios')]);
+      const [base, mine, ajustes] = await Promise.all([api.get('/servicios_base'), api.get('/mis_servicios'), api.get('/ajustes-publicos')]);
       setServiciosBase(base);
       setMisServicios(mine);
+      if (ajustes?.tasa_cambio_bob) setTasaCambio(ajustes.tasa_cambio_bob);
     } catch (err) { console.error(err); }
     finally { setLoading(false); }
   };
@@ -166,7 +168,10 @@ export default function CatalogoPage() {
                 }}>
                   <div>
                     <div style={{ fontSize: '0.6rem', fontWeight: 900, opacity: 0.5, marginBottom: '0.2rem' }}>PRECIO POR CUENTA</div>
-                    <div style={{ fontSize: '1.2rem', fontWeight: 900, color: 'var(--color-primary)' }}>Bs {svc.precio_admin || svc.precio_sugerido}</div>
+                    <div style={{ display: 'flex', alignItems: 'baseline', gap: '0.5rem' }}>
+                      <span style={{ fontSize: '1.2rem', fontWeight: 900, color: 'var(--color-primary)' }}>Bs {svc.precio_admin || svc.precio_sugerido}</span>
+                      <span style={{ fontSize: '0.8rem', fontWeight: 800, opacity: 0.5 }}>| ${((svc.precio_admin || svc.precio_sugerido) / tasaCambio).toFixed(2)} USD</span>
+                    </div>
                   </div>
                   {active ? (
                     <button onClick={() => handleDeactivate(svc.id)} className="btn-secondary" style={{ width: '45px', height: '45px', padding: 0, borderRadius: '14px', borderColor: 'var(--color-danger)', color: 'var(--color-danger)', boxShadow: 'none' }}>

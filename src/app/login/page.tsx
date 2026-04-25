@@ -27,7 +27,7 @@ export default function LoginPage() {
 
     try {
       const user = await login(email, password);
-      if (user.role === 'SUPERADMIN' || user.role === 'ADMIN') {
+      if (user.role === 'SUPERADMIN' || user.role === 'ADMIN' || user.es_colaborador) {
         router.push('/admin/dashboard');
       } else {
         router.push('/home');

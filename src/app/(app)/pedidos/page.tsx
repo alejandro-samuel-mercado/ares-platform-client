@@ -5,7 +5,7 @@
 
 import React, { useState, useEffect, useRef } from 'react';
 import api from '@/lib/api';
-import { Package, Plus, Clock, CheckCircle2, AlertCircle, Loader2, Send, MessageSquare, X, Smartphone, Zap, RefreshCw, UploadCloud, File as FileIcon } from 'lucide-react';
+import { Package, Plus, Clock, CheckCircle2, AlertCircle, Loader2, Send, MessageSquare, X, Smartphone, Zap, RefreshCw, UploadCloud, File as FileIcon, QrCode } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 
 interface Pedido {
@@ -26,10 +26,26 @@ export default function PedidosVendorPage() {
   const [isPro, setIsPro] = useState(true); 
   const [showToast, setShowToast] = useState(false);
   const [toastMsg, setToastMsg] = useState('');
+  const [tasaCambio, setTasaCambio] = useState(6.96);
 
   // Form state
-  const [newPedido, setNewPedido] = useState<{ notas: string; servicio_id: string; cantidad: number; comprobante: File | null; comprobante_url: string }>({ notas: '', servicio_id: '', cantidad: 1, comprobante: null, comprobante_url: '' });
+  const [newPedido, setNewPedido] = useState<{ 
+    notas: string; 
+    servicio_id: string; 
+    cantidad: number; 
+    comprobante: File | null; 
+    comprobante_url: string;
+    providerPagos: any | null;
+  }>({ 
+    notas: '', 
+    servicio_id: '', 
+    cantidad: 1, 
+    comprobante: null, 
+    comprobante_url: '',
+    providerPagos: null
+  });
   const [misServicios, setMisServicios] = useState<any[]>([]);
+  const [showQRModal, setShowQRModal] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => { fetchData(); }, []);
@@ -42,15 +58,17 @@ export default function PedidosVendorPage() {
 
   const fetchData = async () => {
     try {
-      const [pedidosData, misServiciosData] = await Promise.all([
+      const [pedidosData, misServiciosData, ajustes] = await Promise.all([
         api.get('/pedidos'),
-        api.get('/mis_servicios')
+        api.get('/mis_servicios'),
+        api.get('/ajustes-publicos')
       ]);
       setPedidos(pedidosData);
       setMisServicios(misServiciosData.map((ms: any) => ({
         ...ms.servicio,
         ms_id: ms.id 
       })));
+      if (ajustes?.tasa_cambio_bob) setTasaCambio(ajustes.tasa_cambio_bob);
     } catch (error: any) {
       if (error.status === 403) setIsPro(false);
     } finally {
@@ -77,7 +95,7 @@ export default function PedidosVendorPage() {
       
       await fetchData();
       setIsModalOpen(false);
-      setNewPedido({ notas: '', servicio_id: '', cantidad: 1, comprobante: null, comprobante_url: '' });
+      setNewPedido({ notas: '', servicio_id: '', cantidad: 1, comprobante: null, comprobante_url: '', providerPagos: null });
       triggerToast('PEDIDO ENVIADO AL EQUIPO');
     } catch (error: any) {
       if (error.status === 403 && error.data?.reason === 'plan_limit_reached') {
@@ -101,7 +119,7 @@ export default function PedidosVendorPage() {
   };
 
   if (!isPro && !loading) {
-    return (
+    return (/* ... omitido por brevedad en el log, pero presente en el archivo final ... */
       <div style={{ padding: '3rem 2rem', display: 'flex', flexDirection: 'column', alignItems: 'center', textAlign: 'center' }}>
         <div style={{ 
           width: '100px', height: '100px', background: 'var(--surface-raised)', 
@@ -268,16 +286,77 @@ export default function PedidosVendorPage() {
                   <select 
                     className="input" 
                     value={newPedido.servicio_id}
-                    onChange={(e) => setNewPedido({ ...newPedido, servicio_id: e.target.value })}
+                    onChange={(e) => {
+                      setNewPedido({ ...newPedido, servicio_id: e.target.value, providerPagos: null });
+                    }}
                     required
                   >
                      <option value="">Selecciona un servicio...</option>
                      <option value="MATERIAL_CUSTOM">FLYER O DISEÑO PERSONALIZADO</option>
                      {misServicios.map(s => (
-                       <option key={s.id} value={s.id}>{s.nombre} - Pedir Credencial (Bs {s.precio_admin || s.precio_sugerido || 0})</option>
+                       <option key={s.id} value={s.id}>{s.nombre} - Bs {s.precio_admin || s.precio_sugerido || 0} | ${((s.precio_admin || s.precio_sugerido || 0) / tasaCambio).toFixed(2)} USD</option>
                      ))}
                   </select>
                 </div>
+
+                {newPedido.servicio_id && newPedido.servicio_id !== 'MATERIAL_CUSTOM' && (
+                   <div style={{ marginTop: '0.5rem' }}>
+                      <button 
+                        type="button"
+                        className="btn-secondary"
+                        style={{ width: '100%', gap: '1rem', borderStyle: 'dashed' }}
+                        onClick={async () => {
+                          const svc = misServicios.find(s => s.id === newPedido.servicio_id);
+                          if (!svc) return;
+                          
+                          if (svc.proveedor_id) {
+                            try {
+                              const data = await api.get(`/marketplace/proveedor/${svc.proveedor_id}/pagos`);
+                              setNewPedido({ ...newPedido, providerPagos: data });
+                              if (data.qr_bob) setShowQRModal(data.qr_bob);
+                              else if (data.qr_usd) setShowQRModal(data.qr_usd);
+                            } catch (e) {
+                              triggerToast('ERROR CARGANDO DATOS DE PAGO');
+                            }
+                          } else {
+                            try {
+                              const ajustes = await api.get('/ajustes-publicos');
+                              setNewPedido({ ...newPedido, providerPagos: {
+                                nombre: 'SISTEMA ARES',
+                                qr_bob: ajustes.qr_cobro_bob,
+                                qr_usd: ajustes.qr_cobro_usd,
+                                tigo_money: ajustes.tigo_money_numero
+                              }});
+                              if (ajustes.qr_cobro_bob) setShowQRModal(ajustes.qr_cobro_bob);
+                            } catch (e) {
+                              triggerToast('ERROR CARGANDO DATOS DEL ADMIN');
+                            }
+                          }
+                        }}
+                      >
+                        <QrCode size={20} /> VER QR / DATOS DE PAGO
+                      </button>
+                      
+                      {newPedido.providerPagos && (
+                        <div style={{ 
+                          marginTop: '0.75rem', padding: '1rem', 
+                          background: 'var(--surface-raised)', borderRadius: '14px', 
+                          border: '1.5px solid #000', fontSize: '0.8rem' 
+                        }}>
+                          <p style={{ fontWeight: 900, marginBottom: '0.5rem', color: 'var(--color-primary)' }}>
+                            PAGO A: {newPedido.providerPagos.nombre}
+                          </p>
+                          {newPedido.providerPagos.tigo_money && (
+                            <p style={{ fontWeight: 800 }}>Tigo Money: <span style={{ color: 'var(--color-primary)' }}>{newPedido.providerPagos.tigo_money}</span></p>
+                          )}
+                          <div style={{ display: 'flex', gap: '0.5rem', marginTop: '0.5rem' }}>
+                            {newPedido.providerPagos.qr_bob && <button type="button" onClick={() => setShowQRModal(newPedido.providerPagos.qr_bob)} className="chip" style={{ borderColor: 'var(--color-primary)' }}>QR BS</button>}
+                            {newPedido.providerPagos.qr_usd && <button type="button" onClick={() => setShowQRModal(newPedido.providerPagos.qr_usd)} className="chip" style={{ borderColor: 'var(--color-primary)' }}>QR USD</button>}
+                          </div>
+                        </div>
+                      )}
+                   </div>
+                )}
 
                 {newPedido.servicio_id !== 'MATERIAL_CUSTOM' && newPedido.servicio_id !== '' && (
                   <div>
@@ -307,7 +386,7 @@ export default function PedidosVendorPage() {
                 </div>
 
                 <div>
-                   <label className="input-label">Comprobante de Pago (Sólo si es una cuenta nueva)</label>
+                   <label className="input-label">Comprobante de Pago (Enviá a {newPedido.providerPagos?.nombre || 'Admin'})</label>
                    <div style={{ display: 'flex', gap: '1rem', marginTop: '0.5rem' }}>
                        <div style={{ flex: 1 }}>
                            <input 
@@ -358,16 +437,22 @@ export default function PedidosVendorPage() {
 
                 {newPedido.servicio_id !== 'MATERIAL_CUSTOM' && newPedido.servicio_id !== '' && (
                   <div style={{ background: 'var(--surface-raised)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '1rem 1.5rem', borderRadius: '18px', border: '2px solid var(--color-primary)' }}>
-                    <span style={{ fontSize: '0.8rem', fontWeight: 900 }}>MONTO TOTAL A ABONAR:</span>
-                    <span style={{ fontSize: '1.5rem', fontWeight: 900, color: 'var(--color-primary)' }}>
-                      Bs {(() => { const svc = misServicios.find(s => s.id === newPedido.servicio_id); return ((svc?.precio_admin || svc?.precio_sugerido || 0) * newPedido.cantidad); })()}
-                    </span>
+                    <span style={{ fontSize: '0.8rem', fontWeight: 900 }}>MONTO TOTAL:</span>
+                    <div style={{ textAlign: 'right' }}>
+                      <span style={{ fontSize: '1.5rem', fontWeight: 900, color: 'var(--color-primary)' }}>
+                        Bs {(() => { const svc = misServicios.find(s => s.id === newPedido.servicio_id); return ((svc?.precio_admin || svc?.precio_sugerido || 0) * newPedido.cantidad); })()}
+                      </span>
+                      <br />
+                      <span style={{ fontSize: '0.85rem', fontWeight: 800, opacity: 0.5 }}>
+                        ${(() => { const svc = misServicios.find(s => s.id === newPedido.servicio_id); return (((svc?.precio_admin || svc?.precio_sugerido || 0) * newPedido.cantidad) / tasaCambio).toFixed(2); })()} USD
+                      </span>
+                    </div>
                   </div>
                 )}
 
                 <div className="card-static" style={{ background: 'var(--surface-raised)', borderWidth: '1.5px', padding: '1rem' }}>
                   <p style={{ fontSize: '0.7rem', fontWeight: 800, color: 'var(--color-primary)', lineHeight: 1.4 }}>
-                    SI PEDISTE UNA CREDENCIAL Y SUBISTE COMPROBANTE, ESTARÁ LISTA EN SEGUNDOS TRAS LA APROBACIÓN.
+                    PAGÁ DIRECTAMENTE AL {newPedido.providerPagos?.nombre === 'SISTEMA ARES' ? 'ADMIN' : 'PROVEEDOR'} ESCANEANDO EL QR. SI SUBISTE COMPROBANTE CORRECTO, TU CUENTA ESTARÁ LISTA EN SEGUNDOS TRAS LA APROBACIÓN.
                   </p>
                 </div>
 
@@ -378,11 +463,46 @@ export default function PedidosVendorPage() {
                     className="btn-primary"
                     style={{ flex: 1, height: '60px', fontSize: '1rem' }}
                   >
-                    {saving ? <Loader2 size={24} className="animate-spin" /> : <><Send size={20} /> ENVIAR</>}
+                    {saving ? <Loader2 size={24} className="animate-spin" /> : <><Send size={20} /> ENVIAR PEDIDO</>}
                   </button>
                 </div>
               </form>
             </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+
+      {/* Modal Visor de QR */}
+      <AnimatePresence>
+        {showQRModal && (
+          <div className="modal-overlay" style={{ zIndex: 20000 }}>
+             <motion.div 
+               initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+               onClick={() => setShowQRModal(null)}
+               style={{ position: 'absolute', inset: 0, background: 'rgba(0,0,0,0.8)' }}
+             />
+             <motion.div 
+               initial={{ scale: 0.8, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.8, opacity: 0 }}
+               className="modal-container"
+               style={{ padding: '1rem', width: '90%', maxWidth: '400px', textAlign: 'center' }}
+             >
+                <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '1rem' }}>
+                   <span style={{ fontWeight: 900 }}>ESCANEÁ PARA PAGAR</span>
+                   <X size={24} onClick={() => setShowQRModal(null)} style={{ cursor: 'pointer' }} />
+                </div>
+                <img 
+                  src={showQRModal} 
+                  style={{ width: '100%', borderRadius: '16px', border: '2px solid #000' }} 
+                  alt="QR de Pago" 
+                />
+                <button 
+                  onClick={() => setShowQRModal(null)} 
+                  className="btn-primary" 
+                  style={{ width: '100%', marginTop: '1rem' }}
+                >
+                  LISTO, YA ESCANEÉ
+                </button>
+             </motion.div>
           </div>
         )}
       </AnimatePresence>

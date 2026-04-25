@@ -20,10 +20,17 @@ export default function PlanesPage() {
   const [editingPlan, setEditingPlan] = useState<Partial<Plan> | null>(null);
   const [showModal, setShowModal] = useState(false);
   const [showToast, setShowToast] = useState(false);
+  const [tasaCambio, setTasaCambio] = useState(6.96);
 
   const loadPlanes = () => {
     setLoading(true);
-    api.get('/admin/planes').then(setPlanes).catch(console.error).finally(() => setLoading(false));
+    Promise.all([api.get('/admin/planes'), api.get('/ajustes-publicos')])
+      .then(([data, ajustes]) => {
+        setPlanes(data);
+        if (ajustes?.tasa_cambio_bob) setTasaCambio(ajustes.tasa_cambio_bob);
+      })
+      .catch(console.error)
+      .finally(() => setLoading(false));
   };
 
   useEffect(loadPlanes, []);
@@ -134,7 +141,7 @@ export default function PlanesPage() {
               <div style={{ padding: '2rem' }}>
                 <div style={{ marginBottom: '1.5rem' }}>
                   <div style={{ fontSize: '2.5rem', fontWeight: 900, color: '#000', display: 'flex', alignItems: 'baseline', gap: '0.4rem' }}>
-                    {plan.precio} <span style={{ fontSize: '0.9rem', opacity: 0.6 }}>Bs / mes</span>
+                    {plan.precio} <span style={{ fontSize: '0.9rem', opacity: 0.6 }}>Bs / mes</span> <span style={{ fontSize: '0.8rem', opacity: 0.4 }}>| ${(plan.precio / tasaCambio).toFixed(2)} USD</span>
                   </div>
                   <div className="chip" style={{ marginTop: '0.5rem', background: '#000', color: 'white', border: 'none', boxShadow: 'none' }}>
                     {plan.dias} DÍAS DE VIGENCIA

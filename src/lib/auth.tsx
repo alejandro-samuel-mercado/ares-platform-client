@@ -23,6 +23,7 @@ interface Vendor {
   texto_limite?: string;
   plan_id: string;
   role: string;
+  es_colaborador?: boolean;
   status: string;
   fecha_vencimiento: string;
 }
@@ -32,6 +33,7 @@ interface AuthContextType {
   token: string | null;
   isLoading: boolean;
   isAdmin: boolean;
+  isColaborador: boolean;
   login: (alias: string, password: string) => Promise<Vendor>;
   register: (data: { nombre: string; alias: string; telefono: string; password: string }) => Promise<void>;
   logout: () => void;
@@ -100,10 +102,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   }, []);
 
-  const isAdmin = vendor?.role === 'SUPERADMIN';
+  const isAdmin = vendor?.role === 'SUPERADMIN' || vendor?.es_colaborador === true;
+  const isColaborador = vendor?.role !== 'SUPERADMIN' && vendor?.es_colaborador === true;
 
   return (
-    <AuthContext.Provider value={{ vendor, token, isLoading, isAdmin, login, register, logout, refreshVendor }}>
+    <AuthContext.Provider value={{ vendor, token, isLoading, isAdmin, isColaborador, login, register, logout, refreshVendor }}>
       {children}
     </AuthContext.Provider>
   );

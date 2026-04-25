@@ -16,31 +16,35 @@ import {
 import './admin.css';
 
 export const ADMIN_MENU_ITEMS = [
-    { href: '/admin/dashboard', icon: LayoutDashboard, label: 'Inicio', keywords: ['inicio', 'dashboard', 'resumen', 'home'] },
-    { href: '/admin/vendedores', icon: Users, label: 'Vendedores', keywords: ['vendedores', 'usuarios', 'clientes'] },
-    { href: '/admin/planes', icon: Rocket, label: 'Planes', keywords: ['planes', 'suscripciones', 'precios'] },
-    { href: '/admin/pedidos', icon: Package, label: 'Pedidos', keywords: ['pedidos', 'ordenes', 'compras'] },
-    { href: '/admin/servicios', icon: Package, label: 'Servicios', keywords: ['servicios', 'productos'] },
-    { href: '/admin/credenciales', icon: Key, label: 'Credenciales', keywords: ['credenciales', 'cuentas', 'contraseñas', 'passwords', 'keys'] },
-    { href: '/admin/imagenes', icon: ImageIcon, label: 'Imágenes', keywords: ['imagenes', 'galeria', 'fotos', 'bank'] },
-    { href: '/admin/estrenos', icon: Clapperboard, label: 'Estrenos', keywords: ['estrenos', 'peliculas', 'cine', 'cartelera'] },
-    { href: '/admin/partidos', icon: Trophy, label: 'Partidos', keywords: ['partidos', 'deportes', 'eventos', 'futbol'] },
-    { href: '/admin/marketplace', icon: Store, label: 'Marketplace', keywords: ['marketplace', 'tienda', 'compras'] },
-    { href: '/admin/pagos', icon: DollarSign, label: 'Pagos', keywords: ['pagos', 'finanzas', 'facturacion', 'dinero'] },
-    { href: '/admin/mensajes', icon: Bell, label: 'Mensajes', keywords: ['mensajes', 'textos', 'whatsapp', 'plantillas'] },
-    { href: '/admin/ajustes', icon: Settings, label: 'Ajustes', keywords: ['ajustes', 'configuracion', 'sistema', 'settings'] },
+    { href: '/admin/dashboard', icon: LayoutDashboard, label: 'Inicio', keywords: ['inicio', 'dashboard', 'resumen', 'home'], collab: true },
+
+
+    { href: '/admin/vendedores', icon: Users, label: 'Vendedores', keywords: ['vendedores', 'usuarios', 'clientes'], collab: true },
+    { href: '/admin/planes', icon: Rocket, label: 'Planes', keywords: ['planes', 'suscripciones', 'precios'], collab: false },
+    { href: '/admin/pedidos', icon: Package, label: 'Pedidos', keywords: ['pedidos', 'ordenes', 'compras'], collab: false },
+    { href: '/admin/servicios', icon: Package, label: 'Servicios', keywords: ['servicios', 'productos'], collab: false },
+    { href: '/admin/credenciales', icon: Key, label: 'Credenciales', keywords: ['credenciales', 'cuentas', 'contraseñas', 'passwords', 'keys'], collab: false },
+    { href: '/admin/imagenes', icon: ImageIcon, label: 'Imágenes', keywords: ['imagenes', 'galeria', 'fotos', 'bank'], collab: true },
+    { href: '/admin/estrenos', icon: Clapperboard, label: 'Estrenos', keywords: ['estrenos', 'peliculas', 'cine', 'cartelera'], collab: true },
+    { href: '/admin/partidos', icon: Trophy, label: 'Partidos', keywords: ['partidos', 'deportes', 'eventos', 'futbol'], collab: true },
+    { href: '/admin/marketplace', icon: Store, label: 'Marketplace', keywords: ['marketplace', 'tienda', 'compras'], collab: false },
+    { href: '/admin/pagos', icon: DollarSign, label: 'Pagos', keywords: ['pagos', 'finanzas', 'facturacion', 'dinero'], collab: false },
+    { href: '/admin/mensajes', icon: Bell, label: 'Mensajes', keywords: ['mensajes', 'textos', 'whatsapp', 'plantillas'], collab: true },
+    { href: '/admin/ajustes', icon: Settings, label: 'Ajustes', keywords: ['ajustes', 'configuracion', 'sistema', 'settings'], collab: false },
 ];
 
 function AdminSidebar() {
     const pathname = usePathname();
+    const { isColaborador } = useAuth();
     const [mobileOpen, setMobileOpen] = useState(false);
     const [showScrollIndicator, setShowScrollIndicator] = React.useState(false);
     const scrollRef = React.useRef<HTMLDivElement>(null);
 
+    const visibleItems = isColaborador ? ADMIN_MENU_ITEMS.filter(item => item.collab) : ADMIN_MENU_ITEMS;
+
     const checkScroll = () => {
         if (scrollRef.current) {
             const { scrollTop, scrollHeight, clientHeight } = scrollRef.current;
-            // Si hay más de 20px de scroll disponible hacia abajo, mostrar indicador
             setShowScrollIndicator(scrollHeight > clientHeight + scrollTop + 20);
         }
     };
@@ -51,7 +55,7 @@ function AdminSidebar() {
         return () => window.removeEventListener('resize', checkScroll);
     }, []);
 
-    const renderLinks = (onClick?: () => void) => ADMIN_MENU_ITEMS.map((item) => {
+    const renderLinks = (onClick?: () => void) => visibleItems.map((item) => {
         const isActive = pathname === item.href;
         return (
             <Link
@@ -208,7 +212,7 @@ function AdminSidebar() {
 }
 
 function AdminHeader() {
-    const { logout } = useAuth();
+    const { logout, isColaborador } = useAuth();
     const router = useRouter();
     const pathname = usePathname();
     const [showToast, setShowToast] = useState(false);
@@ -522,8 +526,8 @@ function AdminHeader() {
 
                 <div className="admin-header-user">
                     <div style={{ textAlign: 'right' }}>
-                        <p style={{ fontWeight: 800, fontSize: '0.9rem' }}>Admin Ares</p>
-                        <p style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>Super Usuario</p>
+                        <p style={{ fontWeight: 800, fontSize: '0.9rem' }}>{isColaborador ? 'Colaborador' : 'Admin Ares'}</p>
+                        <p style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>{isColaborador ? 'Acceso Limitado' : 'Super Usuario'}</p>
                     </div>
                     <div style={{
                         width: '44px', height: '44px', minWidth: '44px',

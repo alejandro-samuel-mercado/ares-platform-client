@@ -7,22 +7,32 @@
 import React, { Suspense } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { Home, ShoppingBag, Trophy, Package, User, MessageSquare, CreditCard, Calculator, Image as ImageIcon, Clapperboard, History, Key, Megaphone } from 'lucide-react';
-import { AuthProvider } from '@/lib/auth';
+import { Home, ShoppingBag, Trophy, Package, User, MessageSquare, CreditCard, Calculator, Image as ImageIcon, Clapperboard, History, Key, Megaphone, Store } from 'lucide-react';
+import { useAuth } from '@/lib/auth';
 import './app.css';
 
 function Navigation() {
     const pathname = usePathname();
+    const { vendor } = useAuth();
+    const isProvider = vendor?.plan === 'Proveedor' || vendor?.role === 'SUPERADMIN';
 
     const sidebarItems = [
         { href: '/home', icon: Home, label: 'Inicio' },
+        ...(isProvider ? [
+            { href: '/marketplace/gestion', icon: Store, label: 'Mi Marketplace' },
+            { href: '/marketplace/credenciales', icon: Key, label: 'Mis Cuentas' }
+        ] : []),
+        { href: '/mensajes', icon: MessageSquare, label: 'Mensajes' },
+
+        { href: '/flyers', icon: ImageIcon, label: 'Flyers' },
+        { href: '/partidos', icon: Trophy, label: 'Partidos' },
+        { href: '/estrenos', icon: Clapperboard, label: 'Estrenos' },
+        { href: '/promociones', icon: Megaphone, label: 'Promos' },
+
+
         { href: '/catalogo', icon: ShoppingBag, label: 'Catálogo' },
         { href: '/imagenes', icon: Key, label: 'Servicios' },
-        { href: '/flyers', icon: ImageIcon, label: 'Flyers' },
-        { href: '/promociones', icon: Megaphone, label: 'Promos' },
-        { href: '/estrenos', icon: Clapperboard, label: 'Estrenos' },
-        { href: '/partidos', icon: Trophy, label: 'Partidos' },
-        { href: '/mensajes', icon: MessageSquare, label: 'Mensajes' },
+
         { href: '/historial', icon: History, label: 'Historial' },
         { href: '/plan', icon: CreditCard, label: 'Mi Plan' },
         { href: '/calculadora', icon: Calculator, label: 'Calculadora' },

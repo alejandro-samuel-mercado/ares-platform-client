@@ -36,11 +36,18 @@ export default function PublicVendorPage() {
   const [data, setData] = useState<PublicData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [tasaCambio, setTasaCambio] = useState(6.96);
 
   useEffect(() => {
     if (alias) {
-      api.get(`/public/u/${alias}`)
-        .then(res => setData(res))
+      Promise.all([
+        api.get(`/public/u/${alias}`),
+        api.get('/ajustes-publicos')
+      ])
+        .then(([res, ajustes]) => {
+          setData(res);
+          if (ajustes?.tasa_cambio_bob) setTasaCambio(ajustes.tasa_cambio_bob);
+        })
         .catch(err => {
           console.error(err);
           setError(err.response?.data?.error || 'No se pudo cargar el perfil');
@@ -198,13 +205,16 @@ export default function PublicVendorPage() {
               }}>
                 <div>
                   <p style={{ fontSize: '0.7rem', fontWeight: 900, opacity: 0.4, letterSpacing: '0.1em' }}>INVERSIÓN MENSUAL</p>
-                  <p style={{ fontSize: '2rem', fontWeight: 900, color: 'white', lineHeight: 1 }}>
-                    <span style={{ fontSize: '1rem', color: 'var(--color-primary)', marginRight: '4px' }}>Bs</span>
-                    {s.precio_venta}
-                  </p>
+                  <div style={{ display: 'flex', alignItems: 'baseline', gap: '0.5rem' }}>
+                    <p style={{ fontSize: '2rem', fontWeight: 900, color: 'white', lineHeight: 1 }}>
+                      <span style={{ fontSize: '1rem', color: 'var(--color-primary)', marginRight: '4px' }}>Bs</span>
+                      {s.precio_venta}
+                    </p>
+                    <span style={{ fontSize: '0.9rem', fontWeight: 800, opacity: 0.4 }}>| ${(s.precio_venta / tasaCambio).toFixed(2)} USD</span>
+                  </div>
                 </div>
                 <button 
-                  onClick={() => window.open(`https://wa.me/${vendor.whatsapp}?text=Hola%20${vendor.nombre},%20me%20interesa%20contratar%20el%20servicio%20${s.servicio.nombre}%20que%20vi%20en%20tu%20catálogo%20Ares.%20(Precio:%20Bs%20${s.precio_venta})`, '_blank')}
+                  onClick={() => window.open(`https://wa.me/${vendor.whatsapp}?text=Hola%20${vendor.nombre},%20me%20interesa%20contratar%20el%20servicio%20${s.servicio.nombre}%20que%20vi%20en%20tu%20catálogo%20Ares.%20(Precio:%20Bs%20${s.precio_venta}%20/%20$${(s.precio_venta / tasaCambio).toFixed(2)}%20USD)`, '_blank')}
                   className="btn-primary" 
                   style={{ 
                     padding: '0.8rem 1.5rem', fontSize: '0.9rem', borderRadius: '100px',

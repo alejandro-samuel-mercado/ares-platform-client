@@ -14,7 +14,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import {
     Key, Send, Loader2, CheckCircle2, AlertCircle, X, Zap, Copy,
     ExternalLink, Package, Clock, RefreshCw, Eye, EyeOff, Upload,
-    ShoppingBag, Hash, UploadCloud
+    ShoppingBag, Hash, UploadCloud, AlertTriangle
 } from 'lucide-react';
 import api from '@/lib/api';
 import { useAuth } from '@/lib/auth';
@@ -43,19 +43,22 @@ export default function MisServiciosPage() {
     const [activeTabs, setActiveTabs] = useState<Record<string, 'credenciales' | 'pedidos'>>({});
     const [editingPrice, setEditingPrice] = useState<Record<string, string>>({});
     const [savingPrice, setSavingPrice] = useState<string | null>(null);
+    const [tasaCambio, setTasaCambio] = useState(6.96);
 
     const load = async () => {
         setLoading(true);
         try {
-            const [svc, cred, ped] = await Promise.all([
+            const [svc, cred, ped, ajustes] = await Promise.all([
                 api.get('/mis_servicios'),
                 api.get('/mis_credenciales'),
-                api.get('/pedidos')
+                api.get('/pedidos'),
+                api.get('/ajustes-publicos')
             ]);
             console.log("FETCHED MIS SERVICIOS: ", svc);
             setMisServicios(svc);
             setCredenciales(cred);
             setPedidos(ped);
+            if (ajustes?.tasa_cambio_bob) setTasaCambio(ajustes.tasa_cambio_bob);
         } catch (err) { console.error(err); }
         finally { setLoading(false); }
     };
@@ -193,6 +196,7 @@ export default function MisServiciosPage() {
                                                     placeholder="0.00"
                                                 />
                                                 <span style={{ fontSize: '0.65rem', fontWeight: 800 }}>Bs</span>
+                                                <span style={{ fontSize: '0.6rem', fontWeight: 700, opacity: 0.5 }}>| ${(ms.precio_venta / tasaCambio).toFixed(2)}</span>
                                                 {(editingPrice[ms.id] !== undefined && editingPrice[ms.id] !== ms.precio_venta.toString()) && (
                                                     <button onClick={() => handleUpdatePrice(ms.id)} disabled={savingPrice === ms.id} style={{ background: 'var(--color-primary)', color: '#fff', border: 'none', borderRadius: '4px', padding: '0.2rem 0.4rem', fontSize: '0.6rem', fontWeight: 900, cursor: 'pointer' }}>
                                                         {savingPrice === ms.id ? '...' : 'SAVE'}
@@ -345,19 +349,32 @@ export default function MisServiciosPage() {
                                 <button onClick={() => setShowOrderModal(false)} style={{ background: 'none', border: 'none', cursor: 'pointer' }}><X size={24} /></button>
                             </div>
 
-                            {/* Service Name */}
-                            {selectedService && (
-                                <div style={{ padding: '0.75rem 1rem', background: 'rgba(0,0,0,0.05)', borderRadius: '12px', marginBottom: '1rem', fontWeight: 900, fontSize: '0.9rem' }}>
-                                    {misServicios.find(ms => ms.servicio_id === selectedService)?.servicio.nombre.toUpperCase()}
-                                </div>
-                            )}
+                            {/* Service Name & Stock Warning */}
+                            {selectedService && (() => {
+                                const svcData = misServicios.find(ms => ms.servicio_id === selectedService)?.servicio;
+                                const stock = (svcData as any)?._count?.credenciales || 0;
+                                return (
+                                    <div style={{ padding: '0.75rem 1rem', background: 'rgba(0,0,0,0.05)', borderRadius: '12px', marginBottom: '1rem', fontWeight: 900, fontSize: '0.9rem' }}>
+                                        {svcData?.nombre.toUpperCase()}
+                                        {stock === 0 && (
+                                            <div style={{ background: '#EF444422', color: '#EF4444', border: '2px solid #EF4444', padding: '0.4rem', borderRadius: '8px', fontSize: '0.7rem', marginTop: '0.5rem', display: 'flex', alignItems: 'center', gap: '0.3rem' }}>
+                                                <AlertTriangle size={14} /> AGOTADO TEMPORALMENTE: Máximo 2 reservas
+                                            </div>
+                                        )}
+                                    </div>
+                                );
+                            })()}
 
                             {/* Quantity */}
                             <label style={{ fontWeight: 900, fontSize: '0.7rem', color: 'var(--text-muted)', marginBottom: '0.4rem', display: 'block' }}>CANTIDAD DE CUENTAS</label>
                             <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', marginBottom: '1.25rem' }}>
                                 <button onClick={() => setOrderQuantity(Math.max(1, orderQuantity - 1))} className="btn-secondary" style={{ width: '45px', height: '45px', padding: 0, borderRadius: '14px' }}>-</button>
                                 <span style={{ fontWeight: 900, fontSize: '2rem', minWidth: '40px', textAlign: 'center' }}>{orderQuantity}</span>
-                                <button onClick={() => setOrderQuantity(orderQuantity + 1)} className="btn-secondary" style={{ width: '45px', height: '45px', padding: 0, borderRadius: '14px' }}>+</button>
+                                <button onClick={() => {
+                                    const stock = (misServicios.find(ms => ms.servicio_id === selectedService)?.servicio as any)?._count?.credenciales || 0;
+                                    const maxQty = stock === 0 ? 2 : 999;
+                                    setOrderQuantity(Math.min(maxQty, orderQuantity + 1));
+                                }} className="btn-secondary" style={{ width: '45px', height: '45px', padding: 0, borderRadius: '14px' }}>+</button>
                             </div>
 
                             {/* Price Preview */}
@@ -365,6 +382,7 @@ export default function MisServiciosPage() {
                                 <div style={{ background: 'rgba(var(--color-primary-rgb, 0,0,0),0.1)', padding: '0.75rem 1rem', borderRadius: '12px', marginBottom: '1.25rem', display: 'flex', justifyContent: 'space-between', fontWeight: 900, border: '2px solid var(--color-primary)' }}>
                                     <span style={{ fontSize: '0.8rem' }}>MONTO TOTAL</span>
                                     <span style={{ fontSize: '1.1rem', color: 'var(--color-primary)' }}>Bs {(orderQuantity * (misServicios.find(ms => ms.servicio_id === selectedService)?.servicio.precio_admin || 0)).toFixed(2)}</span>
+                                    <span style={{ fontSize: '0.8rem', opacity: 0.5, marginLeft: '0.5rem' }}>| ${((orderQuantity * (misServicios.find(ms => ms.servicio_id === selectedService)?.servicio.precio_admin || 0)) / tasaCambio).toFixed(2)} USD</span>
                                 </div>
                             )}
 

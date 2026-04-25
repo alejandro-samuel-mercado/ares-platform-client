@@ -13,16 +13,20 @@ import { motion, AnimatePresence } from 'framer-motion';
 
 export default function AjustesPage() {
     const [ajustes, setAjustes] = useState({
-        qr_cobro_url: '',
+        qr_cobro_bob: '',
+        qr_cobro_usd: '',
+        tasa_cambio_bob: 6.96,
         tigo_money_numero: '',
         texto_legal: '',
         nombre_plataforma: 'Ares',
         logo_url: '',
         noticia_global: '',
-        whatsapp_soporte: ''
+        whatsapp_soporte: '',
+        qr_cobro_url: '' // Legacy
     });
 
-    const [qrArchivo, setQrArchivo] = useState<File | null>(null);
+    const [qrArchivoBob, setQrArchivoBob] = useState<File | null>(null);
+    const [qrArchivoUsd, setQrArchivoUsd] = useState<File | null>(null);
     const [logoArchivo, setLogoArchivo] = useState<File | null>(null);
 
     const [saving, setSaving] = useState(false);
@@ -76,17 +80,21 @@ export default function AjustesPage() {
             data.append('texto_legal', ajustes.texto_legal);
             data.append('noticia_global', ajustes.noticia_global);
             data.append('whatsapp_soporte', ajustes.whatsapp_soporte);
-            if (!qrArchivo) {
-                data.append('qr_cobro_url', ajustes.qr_cobro_url);
-            }
+            data.append('tasa_cambio_bob', ajustes.tasa_cambio_bob.toString());
+            
+            if (!qrArchivoBob) data.append('qr_cobro_bob', ajustes.qr_cobro_bob || '');
+            if (!qrArchivoUsd) data.append('qr_cobro_usd', ajustes.qr_cobro_usd || '');
+            
             if (!logoArchivo) {
                 data.append('logo_url', ajustes.logo_url || '');
             }
 
             console.log("[DIAGNOSTIC] Preparing Payload...");
-            if (qrArchivo) {
-                console.log("[DIAGNOSTIC] Attaching QR File Unique:", qrArchivo.name);
-                data.append('archivo_qr', qrArchivo);
+            if (qrArchivoBob) {
+                data.append('qr_bob', qrArchivoBob);
+            }
+            if (qrArchivoUsd) {
+                data.append('qr_usd', qrArchivoUsd);
             }
             if (logoArchivo) {
                 console.log("[DIAGNOSTIC] Attaching Logo File:", logoArchivo.name);
@@ -121,7 +129,8 @@ export default function AjustesPage() {
             setShowToast(true);
             setTimeout(() => setShowToast(false), 3000);
 
-            setQrArchivo(null);
+            setQrArchivoBob(null);
+            setQrArchivoUsd(null);
             setLogoArchivo(null);
 
             console.log("[DIAGNOSTIC] Verifying persistence...");
@@ -273,41 +282,66 @@ export default function AjustesPage() {
 
                     <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
                         <div>
+                            <label className="input-label" style={{ color: 'var(--color-accent)', opacity: 0.8 }}>TASA CAMBIO USD a BOB</label>
+                            <input type="number" step="0.01" className="input" value={ajustes.tasa_cambio_bob} onChange={e => setAjustes({ ...ajustes, tasa_cambio_bob: parseFloat(e.target.value) || 6.96 })} style={{ background: 'rgba(255,255,255,0.2)', border: '2.5px solid #000', color: '#000', fontWeight: 900 }} />
+                        </div>
+                        
+                        <div>
                             <label className="input-label" style={{ color: 'var(--color-accent)', opacity: 0.8 }}>TIGO MONEY (NÚMERO)</label>
                             <input className="input" value={ajustes.tigo_money_numero} onChange={e => setAjustes({ ...ajustes, tigo_money_numero: e.target.value })} style={{ background: 'rgba(255,255,255,0.2)', border: '2.5px solid #000', color: '#000', fontWeight: 900 }} />
                         </div>
 
-                        <div>
-                            <label className="input-label" style={{ color: 'var(--color-accent)', opacity: 0.8 }}>URL QR DE COBRO</label>
-                            <input className="input" value={ajustes.qr_cobro_url} onChange={e => setAjustes({ ...ajustes, qr_cobro_url: e.target.value })} placeholder="Enlace al QR..." style={{ background: 'rgba(255,255,255,0.2)', border: '2.5px solid #000', color: '#000' }} />
-                        </div>
+                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
+                            {/* QR BOB */}
+                            <div className="upload-zone upload-zone-dark" style={{ minHeight: '180px' }}>
+                                <input type="file" accept="image/*" onChange={e => {
+                                    const file = e.target.files?.[0];
+                                    if (file) setQrArchivoBob(file);
+                                }} />
+                                <div style={{ zIndex: 1, pointerEvents: 'none' }}>
+                                    {qrArchivoBob ? (
+                                        <div style={{ fontWeight: 900, color: '#000' }}>
+                                            <ImageIcon size={24} style={{ margin: '0 auto 8px', color: 'var(--color-primary)' }} />
+                                            <p style={{ fontSize: '0.6rem' }}>LISTO</p>
+                                        </div>
+                                    ) : ajustes.qr_cobro_bob ? (
+                                        <div style={{ textAlign: 'center' }}>
+                                            <img src={ajustes.qr_cobro_bob} style={{ width: '60px', height: '60px', objectFit: 'cover', margin: '0 auto 0.5rem', border: '2px solid #000', padding: '2px', background: 'white', borderRadius: '10px' }} />
+                                            <p style={{ fontWeight: 900, fontSize: '0.65rem' }}>QR Bs.</p>
+                                        </div>
+                                    ) : (
+                                        <div style={{ opacity: 0.6, color: '#000' }}>
+                                            <Upload size={28} style={{ margin: '0 auto 0.5rem' }} />
+                                            <p style={{ fontWeight: 900, fontSize: '0.7rem' }}>SUBIR QR Bs.</p>
+                                        </div>
+                                    )}
+                                </div>
+                            </div>
 
-                        <div className="upload-zone upload-zone-dark">
-                            {/* Input invisible que cubre TODO el área */}
-                            <input type="file" accept="image/*" onChange={e => {
-                                const file = e.target.files?.[0];
-                                if (file) setQrArchivo(file);
-                            }} />
-
-                            {/* Contenido visual con pointer-events: none para no bloquear el clic al input */}
-                            <div style={{ zIndex: 1, pointerEvents: 'none' }}>
-                                {qrArchivo ? (
-                                    <div style={{ fontWeight: 900, color: '#000' }}>
-                                        <ImageIcon size={28} style={{ margin: '0 auto 8px', color: 'var(--color-primary)' }} />
-                                        <p style={{ fontSize: '0.7rem' }}>{qrArchivo.name.toUpperCase()}</p>
-                                        <p style={{ fontSize: '0.6rem', opacity: 0.5 }}>CARGA PENDIENTE</p>
-                                    </div>
-                                ) : ajustes.qr_cobro_url ? (
-                                    <div style={{ textAlign: 'center' }}>
-                                        <img src={ajustes.qr_cobro_url} style={{ width: '90px', height: '90px', objectFit: 'contain', margin: '0 auto 0.75rem', border: '3px solid #000', padding: '6px', background: 'white', borderRadius: '12px' }} />
-                                        <p style={{ fontWeight: 900, fontSize: '0.7rem', color: 'var(--color-accent)0' }}>CAMBIAR QR (LOCAL)</p>
-                                    </div>
-                                ) : (
-                                    <div style={{ opacity: 0.6, color: '#000' }}>
-                                        <Upload size={36} style={{ margin: '0 auto 0.75rem' }} />
-                                        <p style={{ fontWeight: 900, fontSize: '0.9rem' }}>SUBIR QR LOCAL</p>
-                                    </div>
-                                )}
+                            {/* QR USD */}
+                            <div className="upload-zone upload-zone-dark" style={{ minHeight: '180px', borderColor: 'rgba(52, 211, 153, 0.4)' }}>
+                                <input type="file" accept="image/*" onChange={e => {
+                                    const file = e.target.files?.[0];
+                                    if (file) setQrArchivoUsd(file);
+                                }} />
+                                <div style={{ zIndex: 1, pointerEvents: 'none' }}>
+                                    {qrArchivoUsd ? (
+                                        <div style={{ fontWeight: 900, color: '#000' }}>
+                                            <ImageIcon size={24} style={{ margin: '0 auto 8px', color: '#10B981' }} />
+                                            <p style={{ fontSize: '0.6rem' }}>LISTO</p>
+                                        </div>
+                                    ) : ajustes.qr_cobro_usd ? (
+                                        <div style={{ textAlign: 'center' }}>
+                                            <img src={ajustes.qr_cobro_usd} style={{ width: '60px', height: '60px', objectFit: 'cover', margin: '0 auto 0.5rem', border: '2px solid #000', padding: '2px', background: 'white', borderRadius: '10px' }} />
+                                            <p style={{ fontWeight: 900, fontSize: '0.65rem', color: '#10B981' }}>QR USD</p>
+                                        </div>
+                                    ) : (
+                                        <div style={{ opacity: 0.6, color: '#000' }}>
+                                            <Upload size={28} style={{ margin: '0 auto 0.5rem', color: '#10B981' }} />
+                                            <p style={{ fontWeight: 900, fontSize: '0.7rem', color: '#10B981' }}>SUBIR QR USD</p>
+                                        </div>
+                                    )}
+                                </div>
                             </div>
                         </div>
                     </div>

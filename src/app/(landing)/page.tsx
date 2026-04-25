@@ -204,8 +204,13 @@ export default function LandingPage() {
                         />
                         <FeatureCard 
                             icon={<Trophy size={38} color="var(--text-primary)" />} 
-                            title="Inteligencia de Campo" 
-                            desc="Alertas en tiempo real de eventos masivos para que nunca pierdas una oportunidad de venta."
+                            title="Pagos B2B Directos" 
+                            desc="Los proveedores reciben sus pagos directamente vía QR o Tigo Money, eliminando intermediarios financieros."
+                        />
+                        <FeatureCard 
+                            icon={<ShoppingBag size={38} color="var(--color-primary)" />} 
+                            title="Marketplace Abierto" 
+                            desc="Publica tus propios servicios de streaming y deja que miles de vendedores los distribuyan por ti."
                         />
                     </div>
                 </div>
@@ -443,6 +448,21 @@ function DocsBlock() {
                         <ul style={{ color: 'var(--text-muted)', fontSize: '1rem', lineHeight: '1.7', paddingLeft: '1.5rem' }}>
                             <li>Ponle el precio que tú quieras a tus productos para tus clientes.</li>
                             <li>Obtén tu Enlace de Catálogo y compártelo a tus amigos y clientes para que vean todos los servicios que vendes con tu propia imagen corporativa y los precios que configuraste.</li>
+                        </ul>
+                    </div>
+
+                    <div className="feature-card-new" style={{ textAlign: 'left', padding: '2.5rem' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', marginBottom: '1.5rem' }}>
+                            <div className="feature-icon-new"><ShoppingBag size={24} color="var(--color-primary)" /></div>
+                            <h2 style={{ fontSize: '1.8rem', color: '#FFF', margin: 0 }}>Especial: Plan Proveedor</h2>
+                        </div>
+                        <p style={{ color: 'var(--text-muted)', fontSize: '1.1rem', lineHeight: '1.7', marginBottom: '1rem' }}>
+                            Si eres Proveedor, tienes herramientas exclusivas para dominar el mercado:
+                        </p>
+                        <ul style={{ color: 'var(--text-muted)', fontSize: '1rem', lineHeight: '1.7', paddingLeft: '1.5rem' }}>
+                            <li><strong>Pagos Propios</strong>: En tu perfil, sube tus QRs y Tigo Money. Tus compradores te pagarán directamente a ti.</li>
+                            <li><strong>Gestión de Inventario</strong>: Usa "Mis Cuentas" para cargar stock masivo de credenciales.</li>
+                            <li><strong>Marketplace</strong>: Publica servicios que aparecerán en el catálogo global de todos los vendedores de Ares.</li>
                         </ul>
                     </div>
                 </div>

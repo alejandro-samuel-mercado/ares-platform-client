@@ -38,6 +38,7 @@ export default function MarketplacePage() {
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
   const [showModal, setShowModal] = useState(false);
+  const [tasaCambio, setTasaCambio] = useState(6.96);
   
   // Form state for proposal
   const [form, setForm] = useState({
@@ -49,8 +50,9 @@ export default function MarketplacePage() {
 
   const loadMarketplace = async () => {
     try {
-      const data = await api.get('/marketplace');
+      const [data, ajustes] = await Promise.all([api.get('/marketplace'), api.get('/ajustes-publicos')]);
       setServices(data);
+      if (ajustes?.tasa_cambio_bob) setTasaCambio(ajustes.tasa_cambio_bob);
     } catch (err) {
       console.error(err);
     } finally {
@@ -154,7 +156,7 @@ export default function MarketplacePage() {
                   <div style={{ fontSize: '0.65rem', fontWeight: 900, color: 'var(--color-primary)', display: 'flex', alignItems: 'center', justifyContent: 'flex-end', gap: '0.25rem' }}>
                     <ShieldCheck size={12} /> PROVEEDOR VERIFICADO
                   </div>
-                  <div style={{ fontWeight: 900, fontSize: '1.2rem', marginTop: '0.25rem' }}>Bs {svc.precio_sugerido}</div>
+                  <div style={{ fontWeight: 900, fontSize: '1.2rem', marginTop: '0.25rem' }}>Bs {svc.precio_sugerido} <span style={{ fontSize: '0.8rem', opacity: 0.4 }}>| ${(svc.precio_sugerido / tasaCambio).toFixed(2)}</span></div>
                 </div>
               </div>
 

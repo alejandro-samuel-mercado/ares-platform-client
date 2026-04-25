@@ -21,6 +21,7 @@ interface Partido {
     hora: string;
     canal: string;
     requiere_iptv: boolean;
+    imagen_personalizada?: string;
 }
 
 export default function PartidosVendorPage() {
@@ -48,9 +49,24 @@ export default function PartidosVendorPage() {
         }
     };
 
-    const downloadFixture = async (id: string, equipoLocal: string, equipoVisita: string) => {
+    const downloadFixture = async (id: string, equipoLocal: string, equipoVisita: string, customImage?: string) => {
         try {
             setDownloadingImg(prev => new Set(prev).add(id));
+
+            if (customImage && customImage.startsWith('http')) {
+                const response = await fetch(customImage);
+                const blob = await response.blob();
+                const url = window.URL.createObjectURL(blob);
+                const link = document.createElement('a');
+                link.download = `Flyer_${equipoLocal}_vs_${equipoVisita}.jpg`.replace(/\s+/g, '_');
+                link.href = url;
+                document.body.appendChild(link);
+                link.click();
+                link.remove();
+                window.URL.revokeObjectURL(url);
+                return;
+            }
+
             const node = document.getElementById(`fixture-export-${id}`);
             if (!node) return;
             const canvas = await html2canvas(node, {
@@ -79,7 +95,7 @@ export default function PartidosVendorPage() {
         setDownloadingAll(true);
         for (const p of partidos) {
             if (!p.requiere_iptv || userPlan?.toUpperCase() === 'PRO') {
-                await downloadFixture(p.id, p.equipo_local, p.equipo_visita);
+                await downloadFixture(p.id, p.equipo_local, p.equipo_visita, p.imagen_personalizada);
                 await new Promise(r => setTimeout(r, 400));
             }
         }
@@ -219,58 +235,87 @@ export default function PartidosVendorPage() {
                                 </div>
                             </div>
 
-                            <div style={{ padding: '1.5rem', display: 'flex', alignItems: 'center', gap: '1rem' }}>
-                                <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '0.5rem' }}>
-                                    <div style={{ width: '60px', height: '60px', borderRadius: '18px', border: '2px solid #000', padding: '6px', background: 'white', boxShadow: '4px 4px 0px 0px #000', overflow: 'hidden', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                                        {p.logo_local && p.logo_local.startsWith('http') ? (
-                                           <img src={p.logo_local} crossOrigin="anonymous" alt="Local" style={{ width: '100%', height: '100%', objectFit: 'contain' }} />
-                                        ) : (
-                                           <Trophy size={20} style={{ opacity: 0.1 }} />
-                                        )}
-                                    </div>
-                                    <span style={{ fontSize: '0.75rem', fontWeight: 900, textAlign: 'center' }}>{p.equipo_local}</span>
-                                </div>
-
-                                <div style={{ fontWeight: 900, opacity: 0.2, fontSize: '1.2rem' }}>VS</div>
-
-                                <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '0.5rem' }}>
-                                    <div style={{ width: '60px', height: '60px', borderRadius: '18px', border: '2px solid #000', padding: '6px', background: 'white', boxShadow: '4px 4px 0px 0px #000', overflow: 'hidden', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                                        {p.logo_visita && p.logo_visita.startsWith('http') ? (
-                                           <img src={p.logo_visita} crossOrigin="anonymous" alt="Visita" style={{ width: '100%', height: '100%', objectFit: 'contain' }} />
-                                        ) : (
-                                           <Trophy size={20} style={{ opacity: 0.1 }} />
-                                        )}
-                                    </div>
-                                    <span style={{ fontSize: '0.75rem', fontWeight: 900, textAlign: 'center' }}>{p.equipo_visita}</span>
-                                </div>
-
-                                <div style={{ flex: 1, borderLeft: '2px dashed #000', paddingLeft: '1rem', textAlign: 'right' }}>
-                                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.3rem', justifyContent: 'flex-end', color: 'var(--color-primary)', fontWeight: 900, fontSize: '0.8rem' }}>
-                                        <Tv size={14} /> {p.canal}
+                            {p.imagen_personalizada && p.imagen_personalizada.startsWith('http') ? (
+                                <div style={{ width: '100%', height: '220px', background: '#000', overflow: 'hidden', position: 'relative' }}>
+                                    <img src={p.imagen_personalizada} crossOrigin="anonymous" alt="Flyer" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                                    <div style={{ position: 'absolute', bottom: '10px', right: '10px', padding: '0.4rem 0.8rem', background: 'rgba(0,0,0,0.8)', backdropFilter: 'blur(10px)', borderRadius: '12px', border: '1px solid rgba(255,255,255,0.2)' }}>
+                                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.3rem', color: 'var(--color-primary)', fontWeight: 900, fontSize: '0.7rem' }}>
+                                            <Tv size={12} /> {p.canal}
+                                        </div>
                                     </div>
                                     {p.requiere_iptv && userPlan?.toUpperCase() !== 'PRO' ? (
-                                        <div style={{ marginTop: '0.5rem', textAlign: 'right' }}>
+                                        <div style={{ position: 'absolute', top: '10px', right: '10px' }}>
                                             <Link href="/plan" style={{
-                                                fontSize: '0.6rem', fontWeight: 900, color: 'var(--color-primary)',
-                                                textDecoration: 'none', border: '1px solid var(--color-primary)',
+                                                fontSize: '0.6rem', fontWeight: 900, color: '#fff',
+                                                textDecoration: 'none', border: '1px solid gold',
                                                 padding: '0.3rem 0.6rem', borderRadius: '8px',
-                                                display: 'flex', alignItems: 'center', justifyContent: 'flex-end', gap: '0.2rem',
-                                                background: 'rgba(79, 70, 229, 0.1)'
+                                                display: 'flex', alignItems: 'center', gap: '0.2rem',
+                                                background: 'rgba(0,0,0,0.8)'
                                             }}>
-                                               UPGRADE PRO <Zap size={10} fill="currentColor" />
+                                               UPGRADE PRO <Zap size={10} color="gold" />
                                             </Link>
                                         </div>
                                     ) : (
-                                        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: '0.2rem' }}>
+                                        <div style={{ position: 'absolute', top: '10px', right: '10px', display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: '0.2rem' }}>
                                             <div className="chip chip-gold" style={{ fontSize: '0.55rem', border: 'none', background: '#000', color: 'white', padding: '0.1rem 0.5rem' }}>LIVE</div>
-                                            {p.requiere_iptv && <div style={{ fontSize: '0.5rem', fontWeight: 900, color: 'gold' }}>⭐ CONTENIDO PRO</div>}
+                                            {p.requiere_iptv && <div style={{ fontSize: '0.5rem', fontWeight: 900, color: 'gold', background: 'rgba(0,0,0,0.8)', padding: '0.2rem 0.4rem', borderRadius: '4px' }}>⭐ PRO</div>}
                                         </div>
                                     )}
                                 </div>
-                            </div>
+                            ) : (
+                                <div style={{ padding: '1.5rem', display: 'flex', alignItems: 'center', gap: '1rem' }}>
+                                    <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '0.5rem' }}>
+                                        <div style={{ width: '60px', height: '60px', borderRadius: '18px', border: '2px solid #000', padding: '6px', background: 'white', boxShadow: '4px 4px 0px 0px #000', overflow: 'hidden', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                                            {p.logo_local && p.logo_local.startsWith('http') ? (
+                                            <img src={p.logo_local} crossOrigin="anonymous" alt="Local" style={{ width: '100%', height: '100%', objectFit: 'contain' }} />
+                                            ) : (
+                                            <Trophy size={20} style={{ opacity: 0.1 }} />
+                                            )}
+                                        </div>
+                                        <span style={{ fontSize: '0.75rem', fontWeight: 900, textAlign: 'center' }}>{p.equipo_local}</span>
+                                    </div>
+
+                                    <div style={{ fontWeight: 900, opacity: 0.2, fontSize: '1.2rem' }}>VS</div>
+
+                                    <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '0.5rem' }}>
+                                        <div style={{ width: '60px', height: '60px', borderRadius: '18px', border: '2px solid #000', padding: '6px', background: 'white', boxShadow: '4px 4px 0px 0px #000', overflow: 'hidden', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                                            {p.logo_visita && p.logo_visita.startsWith('http') ? (
+                                            <img src={p.logo_visita} crossOrigin="anonymous" alt="Visita" style={{ width: '100%', height: '100%', objectFit: 'contain' }} />
+                                            ) : (
+                                            <Trophy size={20} style={{ opacity: 0.1 }} />
+                                            )}
+                                        </div>
+                                        <span style={{ fontSize: '0.75rem', fontWeight: 900, textAlign: 'center' }}>{p.equipo_visita}</span>
+                                    </div>
+
+                                    <div style={{ flex: 1, borderLeft: '2px dashed #000', paddingLeft: '1rem', textAlign: 'right' }}>
+                                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.3rem', justifyContent: 'flex-end', color: 'var(--color-primary)', fontWeight: 900, fontSize: '0.8rem' }}>
+                                            <Tv size={14} /> {p.canal}
+                                        </div>
+                                        {p.requiere_iptv && userPlan?.toUpperCase() !== 'PRO' ? (
+                                            <div style={{ marginTop: '0.5rem', textAlign: 'right' }}>
+                                                <Link href="/plan" style={{
+                                                    fontSize: '0.6rem', fontWeight: 900, color: 'var(--color-primary)',
+                                                    textDecoration: 'none', border: '1px solid var(--color-primary)',
+                                                    padding: '0.3rem 0.6rem', borderRadius: '8px',
+                                                    display: 'flex', alignItems: 'center', justifyContent: 'flex-end', gap: '0.2rem',
+                                                    background: 'rgba(79, 70, 229, 0.1)'
+                                                }}>
+                                                UPGRADE PRO <Zap size={10} fill="currentColor" />
+                                                </Link>
+                                            </div>
+                                        ) : (
+                                            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: '0.2rem' }}>
+                                                <div className="chip chip-gold" style={{ fontSize: '0.55rem', border: 'none', background: '#000', color: 'white', padding: '0.1rem 0.5rem' }}>LIVE</div>
+                                                {p.requiere_iptv && <div style={{ fontSize: '0.5rem', fontWeight: 900, color: 'gold' }}>⭐ CONTENIDO PRO</div>}
+                                            </div>
+                                        )}
+                                    </div>
+                                </div>
+                            )}
                             {(!p.requiere_iptv || userPlan?.toUpperCase() === 'PRO') && (
                                 <button
-                                    onClick={() => downloadFixture(p.id, p.equipo_local, p.equipo_visita)}
+                                    onClick={() => downloadFixture(p.id, p.equipo_local, p.equipo_visita, p.imagen_personalizada)}
                                     disabled={downloadingImg.has(p.id)}
                                     style={{
                                         display: 'flex', width: '100%', padding: '0.75rem', background: 'var(--color-primary)',

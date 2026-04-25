@@ -12,6 +12,7 @@ import {
     History, CreditCard, X, AlertCircle, Pencil, Save, UserPlus, Loader2
 } from 'lucide-react';
 import api from '@/lib/api';
+import { useAuth } from '@/lib/auth';
 
 interface Vendor {
     id: string;
@@ -23,6 +24,7 @@ interface Vendor {
     plan_id: string;
     status: string;
     role: string;
+    es_colaborador?: boolean;
     fecha_registro: string;
     fecha_vencimiento: string;
     rating: number;
@@ -35,6 +37,7 @@ interface Plan {
 }
 
 export default function VendedoresPage() {
+    const { isColaborador } = useAuth();
     const [vendors, setVendors] = useState<Vendor[]>([]);
     const [planes, setPlanes] = useState<Plan[]>([]);
     const [loading, setLoading] = useState(true);
@@ -271,8 +274,9 @@ export default function VendedoresPage() {
                             <th>Identidad / Alias</th>
                             <th>Suscripción</th>
                             <th>Estado</th>
+                            <th>Colaborador</th>
                             <th>Vencimiento</th>
-                            <th style={{ textAlign: 'center' }}>Acciones Maestras</th>
+                            {!isColaborador && <th style={{ textAlign: 'center' }}>Acciones Maestras</th>}
                         </tr>
                     </thead>
                     <tbody>
@@ -311,6 +315,31 @@ export default function VendedoresPage() {
                                         <td>{getPlanChip(v.plan)}</td>
                                         <td>{getStatusChip(v.status)}</td>
                                         <td>
+                                            <button
+                                                onClick={async () => {
+                                                    if (isColaborador) return;
+                                                    try {
+                                                        await api.patch(`/admin/vendors/${v.id}/colaborador`);
+                                                        loadData();
+                                                        showToast(v.es_colaborador ? 'Colaborador desactivado' : 'Colaborador activado ✅');
+                                                    } catch (err) { console.error(err); }
+                                                }}
+                                                disabled={isColaborador}
+                                                style={{
+                                                    width: '44px', height: '24px', borderRadius: '12px', border: '2px solid #000',
+                                                    background: v.es_colaborador ? 'var(--color-primary)' : 'var(--surface-raised)',
+                                                    cursor: isColaborador ? 'not-allowed' : 'pointer', position: 'relative', transition: '0.3s',
+                                                    opacity: isColaborador ? 0.5 : 1
+                                                }}
+                                            >
+                                                <div style={{
+                                                    width: '18px', height: '18px', borderRadius: '50%', background: '#fff',
+                                                    border: '2px solid #000', position: 'absolute', top: '1px',
+                                                    left: v.es_colaborador ? '20px' : '2px', transition: '0.3s'
+                                                }} />
+                                            </button>
+                                        </td>
+                                        <td>
                                             <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
                                                 <Clock size={14} color={days <= 3 ? 'var(--color-danger)' : 'var(--text-muted)'} />
                                                 <span style={{
@@ -322,6 +351,7 @@ export default function VendedoresPage() {
                                                 </span>
                                             </div>
                                         </td>
+                                        {!isColaborador && (
                                         <td>
                                             <div style={{ display: 'flex', gap: '0.75rem', justifyContent: 'center' }}>
                                                 {v.status === 'ACTIVE' ? (
@@ -352,6 +382,7 @@ export default function VendedoresPage() {
                                                 </select>
                                             </div>
                                         </td>
+                                        )}
                                     </motion.tr>
                                 );
                             })}

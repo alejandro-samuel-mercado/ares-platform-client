@@ -18,7 +18,10 @@ export default function PerfilPage() {
         alias: vendor?.alias || '',
         nombre: vendor?.nombre || '',
         whatsapp_api_enabled: (vendor as any)?.whatsapp_api_enabled || false,
-        whatsapp_api_token: (vendor as any)?.whatsapp_api_token || ''
+        whatsapp_api_token: (vendor as any)?.whatsapp_api_token || '',
+        qr_bob: (vendor as any)?.qr_bob || '',
+        qr_usd: (vendor as any)?.qr_usd || '',
+        tigo_money: (vendor as any)?.tigo_money || ''
     });
 
     useEffect(() => {
@@ -28,7 +31,10 @@ export default function PerfilPage() {
                 alias: vendor.alias || '',
                 nombre: vendor.nombre || '',
                 whatsapp_api_enabled: (vendor as any).whatsapp_api_enabled || false,
-                whatsapp_api_token: (vendor as any).whatsapp_api_token || ''
+                whatsapp_api_token: (vendor as any).whatsapp_api_token || '',
+                qr_bob: (vendor as any).qr_bob || '',
+                qr_usd: (vendor as any).qr_usd || '',
+                tigo_money: (vendor as any).tigo_money || ''
             });
         }
     }, [vendor]);
@@ -379,6 +385,49 @@ export default function PerfilPage() {
                         </div>
                     </div>
                 </div>
+
+                {/* Métodos de Pago B2B (Solo para Proveedores) */}
+                {vendor?.plan?.toLowerCase() === 'proveedor' && (
+                  <div className="card-static" style={{ padding: '2rem' }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', marginBottom: '2rem' }}>
+                          <div style={{ background: '#000', color: 'white', padding: '0.6rem', borderRadius: '12px' }}><QrCode size={20} /></div>
+                          <h3 style={{ fontWeight: 900, fontSize: '1.2rem' }}>PAGOS MARKETPLACE</h3>
+                      </div>
+                      <p style={{ fontSize: '0.7rem', fontWeight: 700, opacity: 0.6, marginBottom: '1.5rem', lineHeight: 1.4 }}>
+                        Configura tus métodos de cobro para que otros vendedores puedan pagarte directamente.
+                      </p>
+                      
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: '1.75rem' }}>
+                          <div>
+                              <label className="input-label">Enlace de Imagen QR (Bs)</label>
+                              <input 
+                                className="input" 
+                                placeholder="https://i.ibb.co/..." 
+                                value={form.qr_bob} 
+                                onChange={e => setForm({ ...form, qr_bob: e.target.value })} 
+                              />
+                          </div>
+                          <div>
+                              <label className="input-label">Enlace de Imagen QR ($ USD)</label>
+                              <input 
+                                className="input" 
+                                placeholder="https://i.ibb.co/..." 
+                                value={form.qr_usd} 
+                                onChange={e => setForm({ ...form, qr_usd: e.target.value })} 
+                              />
+                          </div>
+                          <div>
+                              <label className="input-label">Número Tigo Money</label>
+                              <input 
+                                className="input" 
+                                placeholder="7XXXXXXX" 
+                                value={form.tigo_money} 
+                                onChange={e => setForm({ ...form, tigo_money: e.target.value })} 
+                              />
+                          </div>
+                      </div>
+                  </div>
+                )}
 
                 {/* Logout Section */}
                 <button

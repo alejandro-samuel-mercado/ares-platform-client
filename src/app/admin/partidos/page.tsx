@@ -21,6 +21,7 @@ interface Partido {
   canal: string;
   requiere_iptv: boolean;
   activo: boolean;
+  imagen_personalizada?: string;
 }
 
 export default function PartidosAdminPage() {
@@ -45,7 +46,9 @@ export default function PartidosAdminPage() {
     fecha: '', 
     hora: '', 
     canal: '', 
-    requiere_iptv: false
+    requiere_iptv: false,
+    imagen_personalizada: '',
+    imagen_personalizada_archivo: null as File | null
   });
 
   useEffect(() => { fetchPartidos(); }, []);
@@ -92,6 +95,11 @@ export default function PartidosAdminPage() {
         data.append('logo_visita', formData.logo_visita_archivo);
       }
 
+      data.append('imagen_personalizada', formData.imagen_personalizada || '');
+      if (formData.imagen_personalizada_archivo) {
+        data.append('imagen_personalizada', formData.imagen_personalizada_archivo);
+      }
+
       const token = localStorage.getItem('ares_token');
       const apiUrl = `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000/api'}/admin/partidos`;
 
@@ -130,14 +138,17 @@ export default function PartidosAdminPage() {
         fecha: partido.fecha ? new Date(partido.fecha).toISOString().split('T')[0] : getTodayStr(),
         hora: partido.hora,
         canal: partido.canal,
-        requiere_iptv: partido.requiere_iptv || false
+        requiere_iptv: partido.requiere_iptv || false,
+        imagen_personalizada: partido.imagen_personalizada || '',
+        imagen_personalizada_archivo: null
       });
     } else {
       setEditingId(null);
       setFormData({ 
           equipo_local: '', equipo_visita: '', logo_local: '', logo_visita: '', 
           logo_local_archivo: null, logo_visita_archivo: null,
-          liga: '', fecha: getTodayStr(), hora: '', canal: '', requiere_iptv: false 
+          liga: '', fecha: getTodayStr(), hora: '', canal: '', requiere_iptv: false,
+          imagen_personalizada: '', imagen_personalizada_archivo: null 
       });
     }
     setIsModalOpen(true);
@@ -149,7 +160,8 @@ export default function PartidosAdminPage() {
     setFormData({ 
         equipo_local: '', equipo_visita: '', logo_local: '', logo_visita: '', 
         logo_local_archivo: null, logo_visita_archivo: null,
-        liga: '', fecha: '', hora: '', canal: '', requiere_iptv: false 
+        liga: '', fecha: '', hora: '', canal: '', requiere_iptv: false,
+        imagen_personalizada: '', imagen_personalizada_archivo: null
     });
     setErrorToast(null);
   };
@@ -400,6 +412,35 @@ export default function PartidosAdminPage() {
                          )}
                     </div>
                   </div>
+                </div>
+
+                <div className="card" style={{ padding: '1.25rem', background: 'var(--surface-raised)', borderWidth: '2px', display: 'flex', flexDirection: 'column', gap: '1rem', marginTop: '1rem' }}>
+                    <div>
+                        <span style={{ fontWeight: 900, fontSize: '0.9rem', color: 'var(--color-primary)' }}>FLYER DEL PARTIDO (OPCIONAL)</span>
+                        <p style={{ fontSize: '0.7rem', opacity: 0.6, fontWeight: 700 }}>Si subes una foto publicitaria, los vendedores podrán descargar esta foto en lugar de ver la tarjeta autogenerada.</p>
+                    </div>
+                    <div className="upload-zone" style={{ borderStyle: 'solid', borderColor: 'rgba(0,0,0,0.1)' }}>
+                        <input type="file" accept="image/*" onChange={e => {
+                            const file = e.target.files?.[0];
+                            if (file) setFormData({...formData, imagen_personalizada_archivo: file});
+                        }} />
+                        {formData.imagen_personalizada_archivo ? (
+                            <div style={{ fontSize: '0.8rem', fontWeight: 900, color: 'var(--color-primary)', zIndex: 1, padding: '1rem' }}>
+                                <ImageIcon size={24} style={{margin: '0 auto 8px'}}/>
+                                {formData.imagen_personalizada_archivo.name.toUpperCase()}
+                            </div>
+                        ) : formData.imagen_personalizada ? (
+                            <div style={{ textAlign: 'center', zIndex: 1, padding: '0.5rem' }}>
+                                <img src={formData.imagen_personalizada} style={{ width: '80px', height: '60px', objectFit: 'cover', margin: '0 auto', borderRadius: '8px', border: '2px solid #000' }} />
+                                <p style={{ fontSize: '0.7rem', fontWeight: 900, marginTop: '8px' }}>CLIC PARA REEMPLAZAR</p>
+                            </div>
+                        ) : (
+                            <div style={{ opacity: 0.5, zIndex: 1, padding: '1rem' }}>
+                                <Upload size={24} style={{margin: '0 auto 8px'}}/>
+                                <p style={{fontSize: '0.8rem', fontWeight: 900}}>SUBIR FLYER .JPG/PNG</p>
+                            </div>
+                        )}
+                    </div>
                 </div>
 
                 <div>

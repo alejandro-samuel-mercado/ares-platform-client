@@ -17,6 +17,7 @@ interface MarketService {
     categoria: string;
     logo_url: string;
     activo: boolean;
+    proveedor_alias?: string;
 }
 
 export default function MarketplaceAdminPage() {
@@ -198,6 +199,7 @@ export default function MarketplaceAdminPage() {
                         <thead>
                             <tr>
                                 <th>Servicio / Categoría</th>
+                                <th>Propuesto Por</th>
                                 <th>Descripción</th>
                                 <th>Inversión</th>
                                 <th>Estado</th>
@@ -217,6 +219,11 @@ export default function MarketplaceAdminPage() {
                                                     <div style={{ fontWeight: 900, fontSize: '1rem', color: 'var(--text-primary)' }}>{s.nombre}</div>
                                                     <div style={{ fontSize: '0.75rem', fontWeight: 700, color: 'var(--color-primary)', letterSpacing: '1px' }}>{s.categoria.toUpperCase()}</div>
                                                 </div>
+                                            </div>
+                                        </td>
+                                        <td>
+                                            <div style={{ fontWeight: 800, fontSize: '0.85rem', color: s.proveedor_alias === 'SISTEMA' ? 'var(--text-muted)' : 'var(--color-primary)' }}>
+                                                {s.proveedor_alias === 'SISTEMA' ? 'PLATAFORMA' : `@${s.proveedor_alias}`}
                                             </div>
                                         </td>
                                         <td style={{ maxWidth: '300px', fontSize: '0.85rem', color: 'var(--text-muted)', fontWeight: 600 }}>{s.descripcion_base}</td>

@@ -1,13 +1,11 @@
 /**
- * Página: Gestión de Suscripción (Mi Plan) — App Vendedor Ares v2
- * 
- * Interfaz de "Power Meter" para el estado de la cuenta.
+ * Página: Gestión de Suscripción (Mi Plan) — Dashboard Premium Vendedor
  */
 'use client';
 
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { CreditCard, Upload, Clock, Zap, CheckCircle2, AlertTriangle, ShieldCheck, QrCode, RefreshCw } from 'lucide-react';
+import { CreditCard, Upload, Clock, Zap, CheckCircle2, ShieldCheck, QrCode, RefreshCw, Layers, Calendar, ChevronRight, X } from 'lucide-react';
 import api from '@/lib/api';
 import { useAuth } from '@/lib/auth';
 
@@ -15,12 +13,22 @@ export default function PlanPage() {
   const { vendor } = useAuth();
   const [ajustes, setAjustes] = useState<any>(null);
   const [pagos, setPagos] = useState<any[]>([]);
+  const [planes, setPlanes] = useState<any[]>([]);
+  
   const [uploading, setUploading] = useState(false);
   const [showToast, setShowToast] = useState(false);
 
-  // Reload payments
+  // Modal State
+  const [selectedPlan, setSelectedPlan] = useState<any>(null);
+  const [currency, setCurrency] = useState<'BOB' | 'USD'>('BOB');
+  const [file, setFile] = useState<File | null>(null);
+
   const fetchPagos = () => {
     api.get('/pagos').then(setPagos).catch(console.error);
+  };
+
+  const fetchPlanes = () => {
+    api.get('/planes').then(setPlanes).catch(console.error);
   };
 
   useEffect(() => { 
@@ -28,6 +36,7 @@ export default function PlanPage() {
       .then(setAjustes)
       .catch(console.error);
     fetchPagos();
+    fetchPlanes();
   }, []);
 
   const hasPending = pagos.some(p => p.status === 'PENDIENTE');
@@ -42,18 +51,20 @@ export default function PlanPage() {
   const progress = Math.min(100, (daysLeft / totalDays) * 100);
   const isDanger = daysLeft <= 5;
 
-  const [file, setFile] = useState<File | null>(null);
-
   const handleSendReceipt = async () => {
-    if (!file) {
-      alert('Por favor selecciona una imagen de tu comprobante');
+    if (!file || !selectedPlan) {
+      alert('Por favor completa los campos del comprobante');
       return;
     }
     setUploading(true);
     try {
+      const isBob = currency === 'BOB';
+      const tasa = ajustes?.tasa_cambio_bob || 6.96;
+      const amount = isBob ? selectedPlan.precio.toString() : (selectedPlan.precio / tasa).toFixed(2);
+
       const formData = new FormData();
-      formData.append('monto', '70'); // Esto se podría hacer dinámico según el plan
-      formData.append('plan_id', vendor?.plan_id || '');
+      formData.append('monto', amount);
+      formData.append('plan_id', selectedPlan.id);
       formData.append('comprobante', file);
 
       const token = localStorage.getItem('ares_token');
@@ -71,7 +82,8 @@ export default function PlanPage() {
       
       triggerToast();
       setFile(null);
-      fetchPagos(); // Reload payments to show the "Pending" state
+      setSelectedPlan(null); // Cierra modal
+      fetchPagos(); // Recarga pagos
     } catch (err) { 
       console.error(err);
       alert('Error al enviar el comprobante. Reintenta pronto.');
@@ -80,7 +92,7 @@ export default function PlanPage() {
   };
 
   return (
-    <div style={{ padding: '1.5rem 1.5rem 8rem 1.5rem' }}>
+    <div style={{ padding: '1.5rem 1.5rem 8rem 1.5rem', maxWidth: '1000px', margin: '0 auto' }}>
       
       {/* Toast Ares v2 */}
       <AnimatePresence>
@@ -107,12 +119,12 @@ export default function PlanPage() {
         <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
           <div>
             <h1 style={{ fontSize: '2rem', display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-              GESTIÓN DE <span className="text-gradient-primary">PLAN</span>
+              MI <span className="text-gradient-primary">CUENTA</span>
             </h1>
-            <p style={{ fontSize: '0.7rem', fontWeight: 800, opacity: 0.5 }}>PANEL DE SUSCRIPCIÓN POWER-ARES</p>
+            <p style={{ fontSize: '0.7rem', fontWeight: 800, opacity: 0.5 }}>DASHBOARD PREMIUM</p>
           </div>
           <button 
-                onClick={fetchPagos} 
+                onClick={() => { fetchPagos(); fetchPlanes(); }} 
                 className="btn-secondary" 
                 style={{ padding: '0.5rem', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
                 title="Refrescar Estado"
@@ -122,140 +134,249 @@ export default function PlanPage() {
         </div>
       </div>
 
-      {/* Main Stats Card (Power Meter) */}
-      <div className="card" style={{ padding: '2rem', textAlign: 'center', marginBottom: '2rem' }}>
-        <div style={{ position: 'absolute', top: '1rem', right: '1rem' }}>
-          <Zap size={24} color={isDanger ? 'var(--color-secondary)' : 'var(--color-primary)'} className={!isDanger ? 'animate-pulse' : ''} />
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '2rem', marginBottom: '4rem' }}>
+        {/* Panel Principal */}
+        <div className="card" style={{ padding: '2rem', textAlign: 'center', position: 'relative' }}>
+          <div style={{ position: 'absolute', top: '1rem', right: '1rem' }}>
+            <Zap size={24} color={isDanger ? 'var(--color-secondary)' : 'var(--color-primary)'} className={!isDanger ? 'animate-pulse' : ''} />
+          </div>
+
+          <h2 style={{ fontSize: '2rem', fontFamily: 'var(--font-display)', fontWeight: 900, lineHeight: 1, marginBottom: '0.5rem' }}>
+            {vendor?.plan ? `PLAN ${vendor.plan.toUpperCase()}` : 'SIN PLAN'}
+          </h2>
+          
+          <div style={{ fontSize: '1rem', fontWeight: 900, color: isDanger ? '#EF4444' : 'var(--color-primary)', marginBottom: '1.5rem' }}>
+            ESTADO: {isDanger ? (daysLeft === 0 ? 'VENCIDO' : 'PRECAUCIÓN') : 'AL DÍA'}
+          </div>
+
+          <div style={{ 
+            height: '16px', background: '#000', borderRadius: '10px', padding: '3px',
+            border: '1.5px solid #000', marginBottom: '1.5rem', boxShadow: 'inset 0 2px 4px rgba(0,0,0,0.5)'
+          }}>
+            <motion.div 
+              initial={{ width: 0 }}
+              animate={{ width: `${progress}%` }}
+              style={{ 
+                height: '100%', 
+                background: isDanger ? 'var(--color-secondary)' : 'var(--color-primary)', 
+                borderRadius: '6px',
+                boxShadow: `0 0 15px ${isDanger ? 'var(--color-secondary)' : 'var(--color-primary)'}`
+              }} 
+            />
+          </div>
+
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '0.75rem', fontWeight: 800 }}>
+            <span>{daysLeft} DÍAS RESTANTES</span>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '4px', opacity: 0.7 }}>
+              <Calendar size={14} />
+              VENCE {vendor ? new Date(vendor.fecha_vencimiento).toLocaleDateString('es-BO', { day: '2-digit', month: '2-digit', year: 'numeric' }) : '--/--'}
+            </div>
+          </div>
         </div>
 
-        <h2 style={{ fontSize: '2.2rem', fontFamily: 'var(--font-display)', fontWeight: 900, lineHeight: 1, marginBottom: '0.5rem' }}>
-          {vendor?.plan ? `PLAN ${vendor.plan.toUpperCase()}` : 'SIN PLAN'}
-        </h2>
-        
-        <div style={{ fontSize: '0.9rem', fontWeight: 800, color: isDanger ? 'var(--color-secondary)' : 'var(--color-primary)', marginBottom: '1.5rem' }}>
-          {daysLeft} DÍAS RESTANTES
-        </div>
-
-        {/* Custom Progress Bar Ares v2 */}
-        <div style={{ 
-          height: '16px', background: '#000', borderRadius: '10px', padding: '3px',
-          border: '1.5px solid #000', marginBottom: '1.5rem', boxShadow: 'inset 0 2px 4px rgba(0,0,0,0.5)'
-        }}>
-          <motion.div 
-            initial={{ width: 0 }}
-            animate={{ width: `${progress}%` }}
-            style={{ 
-              height: '100%', 
-              background: isDanger ? 'var(--color-secondary)' : 'var(--color-primary)', 
-              borderRadius: '6px',
-              boxShadow: `0 0 15px ${isDanger ? 'var(--color-secondary)' : 'var(--color-primary)'}`
-            }} 
-          />
-        </div>
-
-        <div style={{ display: 'flex', justifyContent: 'center', gap: '0.5rem', alignItems: 'center', opacity: 0.5, fontSize: '0.75rem', fontWeight: 800 }}>
-          <Clock size={14} />
-          VENCE EL {vendor ? new Date(vendor.fecha_vencimiento).toLocaleDateString('es-BO', { day: '2-digit', month: 'long' }) : '--/--'}
+        {/* Historial de Pagos Recientes */}
+        <div className="card" style={{ padding: '2rem', display: 'flex', flexDirection: 'column' }}>
+          <h3 style={{ fontSize: '1.2rem', fontWeight: 900, marginBottom: '1rem', display: 'flex', gap: '8px', alignItems: 'center' }}>
+            <Clock size={20} className="text-gradient-primary" /> HISTORIAL DE PAGOS
+          </h3>
+          <div style={{ flex: 1, overflowY: 'auto', maxHeight: '180px', paddingRight: '10px' }}>
+            {pagos.length === 0 ? (
+              <div style={{ textAlign: 'center', opacity: 0.5, marginTop: '2rem', fontWeight: 800 }}>
+                AÚN NO HAY PAGOS REGISTRADOS
+              </div>
+            ) : (
+              pagos.slice(0, 5).map(p => (
+                <div key={p.id} style={{ display: 'flex', justifyContent: 'space-between', padding: '1rem 0', borderBottom: '2px dashed rgba(255,255,255,0.1)' }}>
+                  <div>
+                    <p style={{ fontWeight: 800, fontSize: '0.85rem' }}>{new Date(p.fecha).toLocaleDateString('es-BO', { day: '2-digit', month: 'short' }).toUpperCase()}</p>
+                    <span style={{ fontSize: '0.7rem', fontWeight: 900, color: p.status === 'APROBADO' ? '#22C55E' : (p.status === 'RECHAZADO' ? '#EF4444' : '#F59E0B') }}>
+                      {p.status}
+                    </span>
+                  </div>
+                  <div style={{ fontWeight: 900 }}>${p.monto.toFixed(2)}</div>
+                </div>
+              ))
+            )}
+          </div>
         </div>
       </div>
 
-      {/* Payment Instructions */}
-      <div className="card" style={{ padding: '2.5rem 1.5rem', textAlign: 'center' }}>
-        <div style={{ 
-          display: 'inline-flex', background: 'var(--surface-raised)', 
-          padding: '1rem', borderRadius: '20px', border: '2px solid #000',
-          marginBottom: '1.5rem', boxShadow: '5px 5px 0px 0px #000'
-        }}>
-          <CreditCard size={32} />
-        </div>
-        
-        <h3 style={{ fontWeight: 900, fontSize: '1.2rem', marginBottom: '1.5rem' }}>RENOVAR LICENCIA</h3>
-        
-        <div style={{ marginBottom: '2rem' }}>
-          <p style={{ fontSize: '0.75rem', fontWeight: 900, color: 'var(--color-primary)', marginBottom: '1rem' }}>PASO 1: ESCANEA Y PAGA</p>
-          <div style={{ 
-            background: 'white', padding: '1rem', borderRadius: '24px', 
-            border: '2px solid #000', width: '220px', margin: '0 auto 1.5rem',
-            boxShadow: '10px 10px 0px 0px rgba(0,0,0,0.1)'
-          }}>
-            {ajustes?.qr_cobro_url ? (
-              <img src={ajustes.qr_cobro_url} style={{ width: '100%', borderRadius: '12px' }} alt="QR" />
-            ) : (
-              <div style={{ height: '200px', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#ccc' }}>
-                <QrCode size={64} />
-              </div>
-            )}
-          </div>
-          <p style={{ fontSize: '0.65rem', fontWeight: 900, color: 'var(--text-muted)', marginBottom: '0.25rem' }}>O TRANSFERENCIA A:</p>
-          <div style={{ fontSize: '1.2rem', fontWeight: 900, color: '#000' }}>
-            {ajustes?.tigo_money_numero || 'PENDIENTE'}
-          </div>
-        </div>
+      <div style={{ textAlign: 'center', marginBottom: '3rem' }}>
+        <h2 style={{ fontSize: '2.5rem', fontWeight: 900, letterSpacing: '-1px' }}>LICENCIAS DE ACTIVACIÓN</h2>
+        <p style={{ fontWeight: 800, opacity: 0.6 }}>SELECCIONA EL PLAN PARA RENOVAR TU CUENTA</p>
+      </div>
 
-        <div style={{ borderTop: '2px dashed #00000020', paddingTop: '2rem' }}>
-          {hasPending ? (
-            <div style={{ background: 'rgba(245, 158, 11, 0.1)', border: '2px dashed #F59E0B', padding: '1.5rem', borderRadius: '24px' }}>
-              <Clock size={40} color="#F59E0B" style={{ margin: '0 auto 1rem' }} />
-              <h4 style={{ fontWeight: 900, color: '#F59E0B', fontSize: '1.1rem', marginBottom: '0.5rem' }}>PAGO EN REVISIÓN</h4>
-              <p style={{ fontSize: '0.8rem', fontWeight: 800, color: 'var(--text-primary)', opacity: 0.8 }}>
-                Hemos recibido tu comprobante y estamos validando la transacción. Tu plan se activará en breve.
-              </p>
-            </div>
-          ) : (
-            <>
-              <p style={{ fontSize: '0.75rem', fontWeight: 900, color: 'var(--color-primary)', marginBottom: '1rem' }}>PASO 2: SUBE TU COMPROBANTE</p>
+      {hasPending && (
+          <div style={{ background: 'rgba(245, 158, 11, 0.1)', border: '2px dashed #F59E0B', padding: '1.5rem', borderRadius: '24px', marginBottom: '3rem', textAlign: 'center' }}>
+            <Clock size={40} color="#F59E0B" style={{ margin: '0 auto 1rem' }} />
+            <h4 style={{ fontWeight: 900, color: '#F59E0B', fontSize: '1.1rem', marginBottom: '0.5rem' }}>PAGO EN REVISIÓN</h4>
+            <p style={{ fontSize: '0.8rem', fontWeight: 800, color: 'var(--text-primary)', opacity: 0.8 }}>
+              Hemos recibido tu comprobante y estamos validando la transacción. No puedes enviar un nuevo comprobante hasta que se valide el anterior.
+            </p>
+          </div>
+      )}
+
+      {/* Grid de Planes */}
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '2rem', placeItems: 'center' }}>
+        {planes.map((plan, index) => {
+          const isMiddle = planes.length === 3 ? index === 1 : index === planes.length - 1;
+          
+          return (
+            <div key={plan.id} className="card" style={{ 
+              padding: '2.5rem', 
+              width: '100%', 
+              background: isMiddle ? 'linear-gradient(135deg, rgba(255,255,255,0.05), rgba(0,0,0,0.5))' : 'var(--surface-raised)',
+              border: isMiddle ? '4px solid var(--color-primary)' : '4px solid #000',
+              transform: isMiddle ? 'scale(1.05)' : 'scale(1)',
+              position: 'relative'
+            }}>
+              {isMiddle && (
+                <div style={{ position: 'absolute', top: '-15px', left: '50%', transform: 'translateX(-50%)', background: 'var(--color-primary)', color: '#000', fontWeight: 900, padding: '4px 16px', borderRadius: '12px', fontSize: '0.7rem' }}>MÁS POPULAR</div>
+              )}
               
-              <div style={{ position: 'relative', marginBottom: '1.5rem', minHeight: '120px', border: '3px dashed #000', borderRadius: '24px', display: 'flex', alignItems: 'center', justifyContent: 'center', flexDirection: 'column', background: 'var(--surface-raised)' }}>
-                <input 
-                  type="file" 
-                  accept="image/*" 
-                  onChange={(e) => setFile(e.target.files?.[0] || null)}
-                  style={{ position: 'absolute', inset: 0, opacity: 0, cursor: 'pointer', zIndex: 10, width: '100%', height: '100%' }}
-                />
-                <div style={{ pointerEvents: 'none' }}>
-                  {file ? (
-                    <div style={{ color: 'var(--color-primary)', fontWeight: 900 }}>
-                       <CheckCircle2 size={32} style={{ margin: '0 auto 0.5rem' }} />
-                       {file.name}
-                    </div>
-                  ) : (
-                    <div style={{ opacity: 0.4 }}>
-                      <Upload size={32} style={{ margin: '0 auto 0.5rem' }} />
-                      <p style={{ fontWeight: 900, fontSize: '0.7rem' }}>CLIC AQUÍ PARA SELECCIONAR IMAGEN</p>
-                    </div>
-                  )}
+              <h3 style={{ fontSize: '1.5rem', fontWeight: 900, textAlign: 'center', marginBottom: '1rem' }}>{plan.nombre.toUpperCase()}</h3>
+              <div style={{ textAlign: 'center', marginBottom: '2rem' }}>
+                <span style={{ fontSize: '3rem', fontWeight: 900, letterSpacing: '-2px' }}>Bs.{plan.precio}</span>
+                <p style={{ fontSize: '0.8rem', fontWeight: 800, opacity: 0.5, marginTop: '5px' }}>{plan.dias} DÍAS DE ACCESO</p>
+              </div>
+
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.8rem', marginBottom: '2.5rem' }}>
+                <div style={{ display: 'flex', gap: '10px', alignItems: 'flex-start' }}>
+                  <CheckCircle2 size={18} color="var(--color-primary)" style={{ flexShrink: 0, marginTop: '2px' }} />
+                  <span style={{ fontSize: '0.85rem', fontWeight: 800 }}>Módulo de Ventas {plan.tipo === 'COMBO_IPTV' ? '+ IPTV' : 'Clásico'}</span>
                 </div>
+                <div style={{ display: 'flex', gap: '10px', alignItems: 'flex-start' }}>
+                  <CheckCircle2 size={18} color="var(--color-primary)" style={{ flexShrink: 0, marginTop: '2px' }} />
+                  <span style={{ fontSize: '0.85rem', fontWeight: 800 }}>Descarga Directa de Flyers</span>
+                </div>
+                {plan.pedidos_automaticos && (
+                  <div style={{ display: 'flex', gap: '10px', alignItems: 'flex-start' }}>
+                    <CheckCircle2 size={18} color="var(--color-primary)" style={{ flexShrink: 0, marginTop: '2px' }} />
+                    <span style={{ fontSize: '0.85rem', fontWeight: 800 }}>Pedidos Automáticos</span>
+                  </div>
+                )}
+                {plan.limite_servicios ? (
+                  <div style={{ display: 'flex', gap: '10px', alignItems: 'flex-start' }}>
+                    <CheckCircle2 size={18} color="var(--color-primary)" style={{ flexShrink: 0, marginTop: '2px' }} />
+                    <span style={{ fontSize: '0.85rem', fontWeight: 800 }}>Límite: {plan.limite_servicios} Créditos</span>
+                  </div>
+                ) : (
+                  <div style={{ display: 'flex', gap: '10px', alignItems: 'flex-start' }}>
+                    <CheckCircle2 size={18} color="var(--color-primary)" style={{ flexShrink: 0, marginTop: '2px' }} />
+                    <span style={{ fontSize: '0.85rem', fontWeight: 800 }}>Credenciales Ilimitadas</span>
+                  </div>
+                )}
               </div>
 
               <button 
-                onClick={handleSendReceipt} 
-                disabled={uploading || !file} 
+                onClick={() => setSelectedPlan(plan)}
+                disabled={hasPending}
                 className="btn-primary" 
-                style={{ width: '100%', justifyContent: 'center', height: '60px', opacity: !file ? 0.5 : 1 }}
+                style={{ width: '100%', height: '54px', fontSize: '1rem', background: isMiddle ? 'var(--color-primary)' : 'var(--surface-base)' }}
               >
-                {uploading ? 'ENVIANDO...' : (
-                  <>
-                    <Zap size={18} /> ENVIAR COMPROBANTE
-                  </>
-                )}
+                R E N O V A R
               </button>
-            </>
-          )}
-        </div>
+            </div>
+          );
+        })}
       </div>
 
-      {/* Security Info */}
-      <div style={{ 
-        marginTop: '2rem', padding: '1.25rem', background: 'var(--surface-raised)',
-        borderRadius: '20px', border: '2px solid #000', display: 'flex', gap: '1rem', alignItems: 'center'
-      }}>
-        <div style={{ background: '#000', color: 'var(--color-primary)', padding: '0.5rem', borderRadius: '12px' }}>
-          <ShieldCheck size={20} />
+      {/* Modal De Pago Custom */}
+      {selectedPlan && (
+        <div style={{ position: 'fixed', inset: 0, zIndex: 9999, background: 'rgba(0,0,0,0.85)', backdropFilter: 'blur(10px)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '1.5rem' }}>
+          <motion.div 
+            initial={{ scale: 0.9, opacity: 0 }}
+            animate={{ scale: 1, opacity: 1 }}
+            className="card"
+            style={{ width: '100%', maxWidth: '500px', background: 'var(--surface-base)', padding: '2rem', border: '5px solid #000' }}
+          >
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2rem' }}>
+              <h2 style={{ fontSize: '1.8rem', fontWeight: 900 }}>RENOVAR LICENCIA</h2>
+              <button className="btn-secondary" onClick={() => { setSelectedPlan(null); setFile(null); }} style={{ padding: '8px', borderRadius: '50%' }}>
+                <X size={24} />
+              </button>
+            </div>
+
+            {/* Selector de Moneda */}
+            <div style={{ display: 'flex', background: 'rgba(255,255,255,0.05)', borderRadius: '16px', padding: '4px', marginBottom: '2rem', border: '2px solid rgba(255,255,255,0.1)' }}>
+              <button 
+                onClick={() => setCurrency('BOB')}
+                style={{ flex: 1, padding: '12px', borderRadius: '12px', background: currency === 'BOB' ? 'var(--color-primary)' : 'transparent', color: currency === 'BOB' ? '#000' : 'var(--text-primary)', fontWeight: 900, transition: '0.3s' }}
+              >
+                BOLIVIANOS (Bs)
+              </button>
+              <button 
+                onClick={() => setCurrency('USD')}
+                style={{ flex: 1, padding: '12px', borderRadius: '12px', background: currency === 'USD' ? 'var(--color-primary)' : 'transparent', color: currency === 'USD' ? '#000' : 'var(--text-primary)', fontWeight: 900, transition: '0.3s' }}
+              >
+                DÓLARES (USD)
+              </button>
+            </div>
+
+            {/* Monto Dinámico */}
+            <div style={{ textAlign: 'center', marginBottom: '2rem' }}>
+              <p style={{ fontSize: '0.75rem', fontWeight: 900, color: 'var(--color-primary)', marginBottom: '0.5rem' }}>IMPORTE A DEPOSITAR:</p>
+              <p style={{ fontSize: '2.5rem', fontWeight: 900, lineHeight: 1 }}>
+                {currency === 'BOB' ? `Bs. ${selectedPlan.precio}` : `$${(selectedPlan.precio / (ajustes?.tasa_cambio_bob || 6.96)).toFixed(2)} USD`}
+              </p>
+            </div>
+
+            {/* QR Dinámico */}
+            <div style={{ 
+              background: 'white', padding: '1rem', borderRadius: '24px', 
+              border: '4px solid #000', width: '220px', margin: '0 auto 2rem',
+              boxShadow: '10px 10px 0px 0px rgba(0,0,0,0.2)'
+            }}>
+              {(currency === 'BOB' ? ajustes?.qr_cobro_bob : ajustes?.qr_cobro_usd) ? (
+                <img src={currency === 'BOB' ? ajustes.qr_cobro_bob : ajustes.qr_cobro_usd} style={{ width: '100%', borderRadius: '12px' }} alt="QR" />
+              ) : (
+                <div style={{ height: '200px', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#ccc', flexDirection: 'column' }}>
+                  <QrCode size={64} style={{ marginBottom: '10px' }} />
+                  <span style={{ fontSize: '10px', fontWeight: 900, textAlign: 'center' }}>QR NO DISPONIBLE EN GLOBAL</span>
+                </div>
+              )}
+            </div>
+
+            {/* Uploader Comprobante */}
+            <div style={{ position: 'relative', marginBottom: '2rem', height: '100px', border: '3px dashed #000', borderRadius: '24px', display: 'flex', alignItems: 'center', justifyItems: 'center', flexDirection: 'column', background: 'var(--surface-raised)' }}>
+              <input 
+                type="file" 
+                accept="image/*" 
+                onChange={(e) => setFile(e.target.files?.[0] || null)}
+                style={{ position: 'absolute', inset: 0, opacity: 0, cursor: 'pointer', zIndex: 10, width: '100%', height: '100%' }}
+              />
+              <div style={{ pointerEvents: 'none', marginTop: '24px' }}>
+                {file ? (
+                  <div style={{ color: 'var(--color-primary)', fontWeight: 900, textAlign: 'center' }}>
+                     <CheckCircle2 size={24} style={{ margin: '0 auto 0.25rem' }} />
+                     {file.name}
+                  </div>
+                ) : (
+                  <div style={{ opacity: 0.4, textAlign: 'center' }}>
+                    <Upload size={24} style={{ margin: '0 auto 0.25rem' }} />
+                    <p style={{ fontWeight: 900, fontSize: '0.7rem' }}>CARGAR COMPROBANTE DE PAGO</p>
+                  </div>
+                )}
+              </div>
+            </div>
+
+            <button 
+              onClick={handleSendReceipt} 
+              disabled={uploading || !file} 
+              className="btn-primary" 
+              style={{ width: '100%', height: '60px', opacity: !file ? 0.5 : 1, fontSize: '1.1rem' }}
+            >
+              {uploading ? 'ENVIANDO...' : ( currency === 'BOB' ? 'Confirmar y Notificar' : 'Confirm and Notify' )}
+            </button>
+            <div style={{ textAlign: 'center', marginTop: '1rem' }}>
+               <p style={{ fontSize: '0.65rem', fontWeight: 800, color: 'var(--text-muted)' }}>
+                 Tu pago será validado por un agente antes de ser activado
+               </p>
+            </div>
+          </motion.div>
         </div>
-        <p style={{ fontSize: '0.65rem', fontWeight: 800, color: 'var(--text-muted)', lineHeight: 1.4 }}>
-          Los pagos son validados manualmente por el equipo de soporte de Ares. Tu plan se activará en un lapso de 5 a 15 minutos.
-        </p>
-      </div>
+      )}
+
     </div>
   );
 }

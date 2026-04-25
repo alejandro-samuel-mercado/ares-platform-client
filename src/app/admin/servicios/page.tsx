@@ -19,6 +19,8 @@ interface Servicio {
   estado_actual: string; 
   nota_estado?: string; 
   activo: boolean; 
+  proveedor_alias?: string;
+  proveedor_nombre?: string;
 }
 
 export default function ServiciosPage() {
@@ -28,10 +30,17 @@ export default function ServiciosPage() {
   const [showModal, setShowModal] = useState(false);
   const [showToast, setShowToast] = useState(false);
   const [toastMsg, setToastMsg] = useState('');
+  const [tasaCambio, setTasaCambio] = useState(6.96);
 
   const load = () => { 
     setLoading(true);
-    api.get('/admin/servicios').then(setServicios).catch(console.error).finally(() => setLoading(false)); 
+    Promise.all([api.get('/admin/servicios'), api.get('/ajustes-publicos')])
+      .then(([svcs, ajustes]) => {
+        setServicios(svcs);
+        if (ajustes?.tasa_cambio_bob) setTasaCambio(ajustes.tasa_cambio_bob);
+      })
+      .catch(console.error)
+      .finally(() => setLoading(false)); 
   };
   
   useEffect(load, []);
@@ -131,16 +140,17 @@ export default function ServiciosPage() {
           <thead>
             <tr>
               <th>Status</th>
-              <th>Producto / Marca</th>
+              <th>Imagen</th>
+              <th>Propuesto Por</th>
               <th>Categoría</th>
-              <th>Precio por Cuenta</th>
-              <th>Propiedad</th>
+              <th>Costo Adm.</th>
+              <th>Propio</th>
               <th>Acciones</th>
             </tr>
           </thead>
           <tbody>
             {loading ? (
-              <tr><td colSpan={6} style={{ textAlign: 'center', padding: '5rem' }}><div className="animate-pulse" style={{ fontWeight: 900 }}>EXTRAYENDO INVENTARIO...</div></td></tr>
+              <tr><td colSpan={7} style={{ textAlign: 'center', padding: '5rem' }}><div className="animate-pulse" style={{ fontWeight: 900 }}>EXTRAYENDO INVENTARIO...</div></td></tr>
             ) : servicios.map((s, i) => (
               <motion.tr 
                 key={s.id} 
@@ -166,10 +176,15 @@ export default function ServiciosPage() {
                   </div>
                 </td>
                 <td>
+                  <div style={{ fontWeight: 800, fontSize: '0.85rem', color: s.proveedor_alias === 'SISTEMA' ? 'var(--text-muted)' : 'var(--color-primary)' }}>
+                    {s.proveedor_alias === 'SISTEMA' ? 'PLATAFORMA' : `@${s.proveedor_alias}`}
+                  </div>
+                </td>
+                <td>
                   <div className="chip chip-blue" style={{ fontSize: '0.7rem' }}>{s.categoria}</div>
                 </td>
                 <td>
-                  <div style={{ fontWeight: 900, color: 'var(--color-primary)', fontSize: '1.2rem' }}>{s.precio_admin} <span style={{ fontSize: '0.8rem', opacity: 0.6 }}>Bs</span></div>
+                  <div style={{ fontWeight: 900, color: 'var(--color-primary)', fontSize: '1.2rem' }}>{s.precio_admin} <span style={{ fontSize: '0.8rem', opacity: 0.6 }}>Bs</span> <span style={{ fontSize: '0.8rem', opacity: 0.4 }}>| ${(s.precio_admin / tasaCambio).toFixed(2)}</span></div>
                 </td>
                 <td>
                   {s.es_iptv_propio ? <div className="chip chip-gold" style={{ fontSize: '0.7rem' }}>SISTEMA PROPIO</div> : <span style={{ opacity: 0.3, fontWeight: 800, fontSize: '0.7rem' }}>EXTERNO</span>}
