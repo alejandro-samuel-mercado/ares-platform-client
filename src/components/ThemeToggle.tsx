@@ -6,9 +6,8 @@ export default function ThemeToggle() {
     const { theme, setTheme } = useTheme();
 
     const themes = [
-        { id: 'violet', color: '#F5C518', label: 'Light' },
-        { id: 'default', color: '#4F46E5', label: 'Dark' },
-
+        { id: 'default', color: 'linear-gradient(135deg, #F5C518, #B45309)', label: 'Dark Orange' },
+        { id: 'violet', color: '#310c96', label: 'Morado' },
         { id: 'red', color: '#EF4444', label: 'Neon' },
     ];
 
@@ -21,7 +20,7 @@ export default function ThemeToggle() {
                     key={t.id}
                     onClick={() => setTheme(t.id as any)}
                     style={{
-                        background: t.id === 'violet' ? 'linear-gradient(135deg, #F5C518, #B45309)' : t.color,
+                        background: t.color,
                         width: '32px',
                         height: '32px',
                         borderRadius: '50%',

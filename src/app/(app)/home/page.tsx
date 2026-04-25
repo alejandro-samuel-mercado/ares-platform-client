@@ -82,7 +82,7 @@ export default function VendorHome() {
         { title: 'PEDIDOS', desc: 'Solicitudes Pro', icon: Package, color: 'var(--color-primary)', href: '/pedidos' },
         { title: 'HISTORIAL', desc: 'Mis activaciones', icon: History, color: '#8B5CF6', href: '/historial' },
         { title: 'MI PLAN', desc: 'Suscripción y pagos', icon: CreditCard, color: '#E50914', href: '/plan' },
-        { title: 'CALCULADORA', desc: 'Margen de ganancia', icon: Calculator, color: 'var(--color-secondary)', href: '/calculadora' },
+        { title: 'CALCULADORA', desc: 'Margen de ganancia', icon: Calculator, color: '#8B5CF6', href: '/calculadora' },
         { title: 'PERFIL', desc: 'Ajustes de cuenta', icon: User, color: '#F59E0B', href: '/perfil' },
     ].filter(card => {
         if (card.title === 'PARTIDOS' && nextMatches.length > 0) return false;

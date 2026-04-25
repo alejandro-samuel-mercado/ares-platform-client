@@ -43,9 +43,7 @@
     --radius-full: 999px;
 }
 
-/* ====================================================
-  TEMA 2: DARK (Ares Black Gold)
-  ==================================================== */
+
 :root[data-theme='violet'] {
     --surface-base: #f8f4f4f8;
     --surface-card: rgba(255, 255, 255, 0.7);
@@ -54,7 +52,7 @@
 
     --text-primary: #4a4a4a;
     --text-muted: #71717a;
-    --text-inverse: #18181b;
+    --text-inverse: #d4d4da;
 
     --color-primary: #310c96;
     /* Indigo */
