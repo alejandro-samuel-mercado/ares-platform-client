@@ -53,13 +53,14 @@ export default function PartidosVendorPage() {
             setDownloadingImg(prev => new Set(prev).add(id));
             const node = document.getElementById(`fixture-${id}`);
             if (!node) return;
-            const dataUrl = await toJpeg(node, { quality: 0.95, backgroundColor: '#000' });
+            const dataUrl = await toJpeg(node, { quality: 0.95, backgroundColor: '#000', pixelRatio: 2 });
             const link = document.createElement('a');
             link.download = `Fixture_${equipoLocal}_vs_${equipoVisita}.jpg`.replace(/\s+/g, '_');
             link.href = dataUrl;
             link.click();
         } catch (err) {
             console.error('Error downloading fixture:', err);
+            alert('Error generando la imagen. Revisa la consola para más detalles.');
         } finally {
             const next = new Set(downloadingImg);
             next.delete(id);
@@ -215,7 +216,7 @@ export default function PartidosVendorPage() {
                                 <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '0.5rem' }}>
                                     <div style={{ width: '60px', height: '60px', borderRadius: '18px', border: '2px solid #000', padding: '6px', background: 'white', boxShadow: '4px 4px 0px 0px #000', overflow: 'hidden', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                                         {p.logo_local && p.logo_local.startsWith('http') ? (
-                                           <img src={p.logo_local} alt="Local" style={{ width: '100%', height: '100%', objectFit: 'contain' }} />
+                                           <img src={p.logo_local} crossOrigin="anonymous" alt="Local" style={{ width: '100%', height: '100%', objectFit: 'contain' }} />
                                         ) : (
                                            <Trophy size={20} style={{ opacity: 0.1 }} />
                                         )}
@@ -228,7 +229,7 @@ export default function PartidosVendorPage() {
                                 <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '0.5rem' }}>
                                     <div style={{ width: '60px', height: '60px', borderRadius: '18px', border: '2px solid #000', padding: '6px', background: 'white', boxShadow: '4px 4px 0px 0px #000', overflow: 'hidden', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                                         {p.logo_visita && p.logo_visita.startsWith('http') ? (
-                                           <img src={p.logo_visita} alt="Visita" style={{ width: '100%', height: '100%', objectFit: 'contain' }} />
+                                           <img src={p.logo_visita} crossOrigin="anonymous" alt="Visita" style={{ width: '100%', height: '100%', objectFit: 'contain' }} />
                                         ) : (
                                            <Trophy size={20} style={{ opacity: 0.1 }} />
                                         )}
