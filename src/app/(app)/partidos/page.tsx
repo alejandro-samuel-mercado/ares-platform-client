@@ -8,7 +8,7 @@ import api from '@/lib/api';
 import Link from 'next/link';
 import { Trophy, Clock, Tv, Copy, Calendar as CalendarIcon, Zap, Loader2, Star, MessageCircle, RefreshCw, Download } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { toJpeg } from 'html-to-image';
+import html2canvas from 'html2canvas';
 
 interface Partido {
     id: string;
@@ -53,7 +53,14 @@ export default function PartidosVendorPage() {
             setDownloadingImg(prev => new Set(prev).add(id));
             const node = document.getElementById(`fixture-${id}`);
             if (!node) return;
-            const dataUrl = await toJpeg(node, { quality: 0.95, backgroundColor: '#000', pixelRatio: 2 });
+            const canvas = await html2canvas(node, {
+                useCORS: true,
+                allowTaint: true,
+                backgroundColor: '#000',
+                scale: 2, // better quality
+                imageTimeout: 15000,
+            });
+            const dataUrl = canvas.toDataURL('image/jpeg', 0.95);
             const link = document.createElement('a');
             link.download = `Fixture_${equipoLocal}_vs_${equipoVisita}.jpg`.replace(/\s+/g, '_');
             link.href = dataUrl;
