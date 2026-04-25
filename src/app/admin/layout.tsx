@@ -542,6 +542,18 @@ function AdminHeader() {
 }
 
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
+    const { isColaborador, isLoading } = useAuth();
+    const router = useRouter();
+
+    React.useEffect(() => {
+        if (!isLoading && isColaborador) {
+            router.push('/home');
+        }
+    }, [isColaborador, isLoading, router]);
+
+    if (isLoading) return <div style={{ padding: '2rem', textAlign: 'center' }}>Cargando...</div>;
+    if (isColaborador) return null;
+
     return (
         <div style={{ position: 'relative' }}>
             <AdminSidebar />

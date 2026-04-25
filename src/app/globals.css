@@ -12,7 +12,8 @@
     --color-accent: var(--color-accent);
 }
 
-:root {
+:root,
+:root[data-theme='orange'] {
 
     --surface-base: #0B0B0B;
     --surface-card: rgba(30, 30, 30, 0.6);

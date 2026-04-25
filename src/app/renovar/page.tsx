@@ -72,26 +72,47 @@ export default function RenovarPage() {
                         <>
                             <div style={{ textAlign: 'center' }}>
                                 <p style={{ fontWeight: 800, fontSize: '0.75rem', letterSpacing: '0.2em', marginBottom: '1.5rem', opacity: 0.4 }}>MÉTODO DE PAGO OFICIAL</p>
-                                {ajustes?.qr_cobro_url ? (
-                                    <div style={{ 
-                                        padding: '1.5rem', background: 'white', borderRadius: '30px', 
-                                        border: '4.5px solid #000', display: 'inline-block',
-                                        boxShadow: '10px 10px 0px 0px #000'
-                                    }}>
-                                        <img src={ajustes.qr_cobro_url} style={{ width: '220px', height: '220px', objectFit: 'contain' }} />
-                                    </div>
-                                ) : (
-                                    <div style={{ padding: '3rem', background: 'var(--surface-base)', borderRadius: '24px', border: '2px dashed #000', fontWeight: 900, opacity: 0.3 }}>
-                                        <QrCode size={48} style={{ margin: '0 auto 1rem' }} />
-                                        QR NO DISPONIBLE
-                                    </div>
-                                )}
+                                
+                                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))', gap: '1rem', justifyContent: 'center' }}>
+                                    {(ajustes?.qr_cobro_bob || ajustes?.qr_cobro_url) ? (
+                                        <div style={{ textAlign: 'center' }}>
+                                            <div style={{ 
+                                                padding: '1rem', background: 'white', borderRadius: '24px', 
+                                                border: '3px solid #000', display: 'inline-block',
+                                                boxShadow: '6px 6px 0px 0px #000', marginBottom: '0.5rem'
+                                            }}>
+                                                <img src={ajustes.qr_cobro_bob || ajustes.qr_cobro_url} style={{ width: '140px', height: '140px', objectFit: 'contain' }} />
+                                            </div>
+                                            <p style={{ fontSize: '0.65rem', fontWeight: 900, opacity: 0.8 }}>BOLIVIA (BOB)</p>
+                                        </div>
+                                    ) : null}
+
+                                    {ajustes?.qr_cobro_usd && (
+                                        <div style={{ textAlign: 'center' }}>
+                                            <div style={{ 
+                                                padding: '1rem', background: 'white', borderRadius: '24px', 
+                                                border: '3px solid #000', display: 'inline-block',
+                                                boxShadow: '6px 6px 0px 0px #000', marginBottom: '0.5rem'
+                                            }}>
+                                                <img src={ajustes.qr_cobro_usd} style={{ width: '140px', height: '140px', objectFit: 'contain' }} />
+                                            </div>
+                                            <p style={{ fontSize: '0.65rem', fontWeight: 900, opacity: 0.8 }}>DÓLARES (USD)</p>
+                                        </div>
+                                    )}
+
+                                    {(!ajustes?.qr_cobro_bob && !ajustes?.qr_cobro_url && !ajustes?.qr_cobro_usd) && (
+                                        <div style={{ gridColumn: '1/-1', padding: '2rem', background: 'var(--surface-base)', borderRadius: '24px', border: '2px dashed #000', fontWeight: 900, opacity: 0.3 }}>
+                                            <QrCode size={48} style={{ margin: '0 auto 1rem' }} />
+                                            QR NO DISPONIBLE
+                                        </div>
+                                    )}
+                                </div>
                             </div>
 
                             {ajustes?.tigo_money_numero && (
                                 <div style={{ 
                                     background: 'var(--surface-base)', padding: '1.25rem', borderRadius: '20px', 
-                                    border: '2px solid #000', display: 'flex', justifyContent: 'space-between', alignItems: 'center'
+                                    border: '2px solid #000', display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '1rem'
                                 }}>
                                     <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
                                         <CreditCard size={20} color="var(--color-primary)" />

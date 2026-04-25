@@ -34,32 +34,20 @@ export default function AjustesPage() {
     const [errorToast, setErrorToast] = useState<string | null>(null);
 
     // Push Notifications State
-    const [pushEnabled, setPushEnabled] = useState<string | null>(null); // 'granted', 'denied', 'default'
+    const [pushEnabled, setPushEnabled] = useState<string | null>(null); 
     const [oneSignalReady, setOneSignalReady] = useState(false);
 
     const fetchAjustes = async () => {
         try {
-            // Usar cache-buster para evitar ver datos viejos
             const data = await api.get(`/admin/ajustes?_t=${Date.now()}`);
-            console.log("[DIAGNOSTIC] Current Ajustes from DB:", data);
             if (data) setAjustes(data);
         } catch (err) {
             console.error("[DIAGNOSTIC] Error fetching ajustes:", err);
         }
     };
 
-    const checkPushStatus = () => {
-        if (typeof window !== 'undefined' && (window as any).OneSignal) {
-            const permission = (window as any).OneSignal.Notifications.permission;
-            setPushEnabled(permission ? 'granted' : 'default'); // Permission returns boolean sometimes or string
-            setOneSignalReady(true);
-        }
-    };
-
     useEffect(() => { 
         fetchAjustes(); 
-        
-        // OneSignal Status Check
         if (typeof window !== 'undefined') {
             (window as any).OneSignalDeferred = (window as any).OneSignalDeferred || [];
             (window as any).OneSignalDeferred.push(async (OneSignal: any) => {
@@ -84,32 +72,15 @@ export default function AjustesPage() {
             
             if (!qrArchivoBob) data.append('qr_cobro_bob', ajustes.qr_cobro_bob || '');
             if (!qrArchivoUsd) data.append('qr_cobro_usd', ajustes.qr_cobro_usd || '');
-            
-            if (!logoArchivo) {
-                data.append('logo_url', ajustes.logo_url || '');
-            }
+            if (!logoArchivo) data.append('logo_url', ajustes.logo_url || '');
 
-            console.log("[DIAGNOSTIC] Preparing Payload...");
-            if (qrArchivoBob) {
-                data.append('qr_bob', qrArchivoBob);
-            }
-            if (qrArchivoUsd) {
-                data.append('qr_usd', qrArchivoUsd);
-            }
-            if (logoArchivo) {
-                console.log("[DIAGNOSTIC] Attaching Logo File:", logoArchivo.name);
-                data.append('logo', logoArchivo);
-            }
+            if (qrArchivoBob) data.append('qr_bob', qrArchivoBob);
+            if (qrArchivoUsd) data.append('qr_usd', qrArchivoUsd);
+            if (logoArchivo) data.append('logo', logoArchivo);
 
-            // IMPORTANTE: NO usamos el cliente api.put porque stringifica el body.
-            // Usamos fetch manual pero construyendo la URL igual que el cliente api.
             const token = localStorage.getItem('ares_token');
-
-            // Intentar obtener la base URL del mismo modo que el cliente api
             const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000/api';
             const apiUrl = `${API_BASE}/admin/ajustes`;
-
-            console.log("[DIAGNOSTIC] Target URL:", apiUrl);
 
             const res = await fetch(apiUrl, {
                 method: 'PUT',
@@ -117,31 +88,41 @@ export default function AjustesPage() {
                 body: data
             });
 
-            if (!res.ok) {
-                const errText = await res.text();
-                console.error("[DIAGNOSTIC] Server Rejection:", errText);
-                throw new Error(`Error ${res.status}: ${errText}`);
-            }
+            if (!res.ok) throw new Error(await res.text());
 
-            const result = await res.json();
-            console.log("[DIAGNOSTIC] Save Success! Server Response:", result);
-
-            setShowToast(true);
-            setTimeout(() => setShowToast(false), 3000);
-
+            showToastCustom('SINCRO EXITOSA: MATRIZ ACTUALIZADA');
             setQrArchivoBob(null);
             setQrArchivoUsd(null);
             setLogoArchivo(null);
-
-            console.log("[DIAGNOSTIC] Verifying persistence...");
             await fetchAjustes();
 
         } catch (err: any) {
-            console.error("[DIAGNOSTIC] Protocol Failure:", err);
             setErrorToast(err.message || "Error fatal en el servidor");
             setTimeout(() => setErrorToast(null), 5000);
         }
         setSaving(false);
+    };
+
+    const [confirmAction, setConfirmAction] = useState<{ type: 'RESTORE', filename: string } | null>(null);
+
+    const handleRestore = async () => {
+        if (!confirmAction) return;
+        setSaving(true);
+        try {
+            await api.post('/admin/backups/restore', { filename: confirmAction.filename });
+            showToastCustom('RESTAURACIÓN COMPLETADA 🔄');
+            setTimeout(() => window.location.reload(), 2000);
+        } catch (err: any) {
+            setErrorToast(err.message || 'Error fatal en restauración');
+        } finally {
+            setConfirmAction(null);
+            setSaving(false);
+        }
+    };
+
+    const showToastCustom = (msg: string) => {
+        setShowToast(true);
+        setTimeout(() => setShowToast(false), 3000);
     };
 
     return (
@@ -150,29 +131,27 @@ export default function AjustesPage() {
                 {showToast && (
                     <motion.div initial={{ opacity: 0, y: 50 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, scale: 0.9 }}
                         style={{
-                            position: 'fixed', bottom: '40px', right: '40px', zIndex: 5000,
+                            position: 'fixed', bottom: '40px', right: '40px', zIndex: 10000,
                             background: 'var(--surface-raised)', color: 'var(--text-primary)', padding: '1.25rem 2.5rem',
                             borderRadius: '24px', border: '3px solid var(--color-primary)',
-                            boxShadow: '10px 10px 0px 0px rgba(0,0,0,0.5)',
+                            boxShadow: '12px 12px 0px 0px rgba(0,0,0,0.5)',
                             display: 'flex', alignItems: 'center', gap: '1rem', fontWeight: 900
                         }}
                     >
-                        <CheckCircle2 color="var(--color-primary)" />
-                        SINCRO EXITOSA: MATRIZ ACTUALIZADA
+                        <CheckCircle2 color="var(--color-primary)" /> SINCRO EXITOSA: MATRIZ ACTUALIZADA
                     </motion.div>
                 )}
                 {errorToast && (
                     <motion.div initial={{ opacity: 0, scale: 0.8 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0 }}
                         style={{
-                            position: 'fixed', bottom: '40px', right: '40px', zIndex: 5000,
-                            background: '#EF4444', color: 'white', padding: '1.25rem 2.5rem',
+                            position: 'fixed', bottom: '40px', right: '40px', zIndex: 10000,
+                            background: 'var(--color-danger)', color: 'white', padding: '1.25rem 2.5rem',
                             borderRadius: '24px', border: '4px solid #000',
-                            boxShadow: '10px 10px 0px 0px rgba(0,0,0,0.5)',
+                            boxShadow: '12px 12px 0px 0px rgba(0,0,0,0.5)',
                             display: 'flex', alignItems: 'center', gap: '1rem', fontWeight: 900
                         }}
                     >
-                        <XCircle color="white" />
-                        ERROR: {errorToast.toUpperCase()}
+                        <XCircle color="white" /> ERROR: {errorToast.toUpperCase()}
                     </motion.div>
                 )}
             </AnimatePresence>
@@ -191,7 +170,7 @@ export default function AjustesPage() {
                     <button 
                         onClick={fetchAjustes} 
                         className="btn-secondary" 
-                        style={{ padding: '0.6rem', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+                        style={{ padding: '0.6rem', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: 'none', border: '2px solid #000' }}
                         title="Refrescar Ajustes"
                     >
                         <RefreshCw size={24} className={saving ? 'animate-spin' : ''} />
@@ -215,7 +194,7 @@ export default function AjustesPage() {
             <div className="ajustes-grid">
 
                 {/* Sección: Identidad */}
-                <div className="card ajustes-main" style={{ padding: '3rem', background: 'var(--surface-raised)' }}>
+                <div className="card ajustes-main" style={{ padding: '3rem', background: 'var(--surface-raised)', border: '3px solid #000' }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '1.25rem', marginBottom: '2.5rem' }}>
                         <div style={{ background: 'var(--surface-base)', padding: '0.75rem', borderRadius: '14px', color: 'var(--color-primary)', border: '2.5px solid #000' }}>
                             <Globe size={24} />
@@ -238,14 +217,14 @@ export default function AjustesPage() {
                             </div>
                         </div>
 
-                        <div className="upload-zone">
+                        <div className="upload-zone" style={{ border: '3px dashed var(--color-primary)' }}>
                             <input type="file" accept="image/*" onChange={e => {
                                 const file = e.target.files?.[0];
                                 if (file) setLogoArchivo(file);
                             }} />
                             <div style={{ zIndex: 1, pointerEvents: 'none' }}>
                                 {logoArchivo ? (
-                                    <div style={{ color: 'var(--color-accent)', fontWeight: 900 }}>
+                                    <div style={{ color: 'var(--color-primary)', fontWeight: 900 }}>
                                         <ImageIcon size={32} style={{ margin: '0 auto 0.5rem', opacity: 0.8 }} />
                                         <p style={{ fontSize: '0.7rem' }}>{logoArchivo.name.toUpperCase()}</p>
                                         <p style={{ fontSize: '0.6rem', opacity: 0.5 }}>PENDIENTE DE GUARDAR</p>
@@ -272,7 +251,7 @@ export default function AjustesPage() {
                 </div>
 
                 {/* Sección: Pagos */}
-                <div className="card ajustes-side" style={{ padding: '3rem', background: 'var(--surface-raised)', borderColor: 'var(--color-accent)', boxShadow: '10px 10px 0px 0px var(--color-accent)' }}>
+                <div className="card ajustes-side" style={{ padding: '3rem', background: 'var(--surface-raised)', borderColor: 'var(--color-accent)', boxShadow: '10px 10px 0px 0px var(--color-accent)', border: '3px solid #000' }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '1.25rem', marginBottom: '2.5rem' }}>
                         <div style={{ background: 'var(--color-accent)', padding: '0.75rem', borderRadius: '14px', color: '#000', border: '2.5px solid #000' }}>
                             <Zap size={24} />
@@ -283,25 +262,24 @@ export default function AjustesPage() {
                     <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
                         <div>
                             <label className="input-label" style={{ color: 'var(--color-accent)', opacity: 0.8 }}>TASA CAMBIO USD a BOB</label>
-                            <input type="number" step="0.01" className="input" value={ajustes.tasa_cambio_bob} onChange={e => setAjustes({ ...ajustes, tasa_cambio_bob: parseFloat(e.target.value) || 6.96 })} style={{ background: 'rgba(255,255,255,0.2)', border: '2.5px solid #000', color: '#000', fontWeight: 900 }} />
+                            <input type="number" step="0.01" className="input" value={ajustes.tasa_cambio_bob} onChange={e => setAjustes({ ...ajustes, tasa_cambio_bob: parseFloat(e.target.value) || 6.96 })} style={{ background: 'var(--surface-base)', border: '2.5px solid #000', color: 'var(--text-primary)', fontWeight: 900 }} />
                         </div>
                         
                         <div>
                             <label className="input-label" style={{ color: 'var(--color-accent)', opacity: 0.8 }}>TIGO MONEY (NÚMERO)</label>
-                            <input className="input" value={ajustes.tigo_money_numero} onChange={e => setAjustes({ ...ajustes, tigo_money_numero: e.target.value })} style={{ background: 'rgba(255,255,255,0.2)', border: '2.5px solid #000', color: '#000', fontWeight: 900 }} />
+                            <input className="input" value={ajustes.tigo_money_numero} onChange={e => setAjustes({ ...ajustes, tigo_money_numero: e.target.value })} style={{ background: 'var(--surface-base)', border: '2.5px solid #000', color: 'var(--text-primary)', fontWeight: 900 }} />
                         </div>
 
                         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
-                            {/* QR BOB */}
-                            <div className="upload-zone upload-zone-dark" style={{ minHeight: '180px' }}>
+                            <div className="upload-zone" style={{ minHeight: '180px', border: '2px dashed var(--color-primary)' }}>
                                 <input type="file" accept="image/*" onChange={e => {
                                     const file = e.target.files?.[0];
                                     if (file) setQrArchivoBob(file);
                                 }} />
                                 <div style={{ zIndex: 1, pointerEvents: 'none' }}>
                                     {qrArchivoBob ? (
-                                        <div style={{ fontWeight: 900, color: '#000' }}>
-                                            <ImageIcon size={24} style={{ margin: '0 auto 8px', color: 'var(--color-primary)' }} />
+                                        <div style={{ fontWeight: 900, color: 'var(--color-primary)' }}>
+                                            <ImageIcon size={24} style={{ margin: '0 auto 8px' }} />
                                             <p style={{ fontSize: '0.6rem' }}>LISTO</p>
                                         </div>
                                     ) : ajustes.qr_cobro_bob ? (
@@ -310,7 +288,7 @@ export default function AjustesPage() {
                                             <p style={{ fontWeight: 900, fontSize: '0.65rem' }}>QR Bs.</p>
                                         </div>
                                     ) : (
-                                        <div style={{ opacity: 0.6, color: '#000' }}>
+                                        <div style={{ opacity: 0.6 }}>
                                             <Upload size={28} style={{ margin: '0 auto 0.5rem' }} />
                                             <p style={{ fontWeight: 900, fontSize: '0.7rem' }}>SUBIR QR Bs.</p>
                                         </div>
@@ -318,27 +296,26 @@ export default function AjustesPage() {
                                 </div>
                             </div>
 
-                            {/* QR USD */}
-                            <div className="upload-zone upload-zone-dark" style={{ minHeight: '180px', borderColor: 'rgba(52, 211, 153, 0.4)' }}>
+                            <div className="upload-zone" style={{ minHeight: '180px', border: '2px dashed var(--color-accent)' }}>
                                 <input type="file" accept="image/*" onChange={e => {
                                     const file = e.target.files?.[0];
                                     if (file) setQrArchivoUsd(file);
                                 }} />
                                 <div style={{ zIndex: 1, pointerEvents: 'none' }}>
                                     {qrArchivoUsd ? (
-                                        <div style={{ fontWeight: 900, color: '#000' }}>
-                                            <ImageIcon size={24} style={{ margin: '0 auto 8px', color: '#10B981' }} />
+                                        <div style={{ fontWeight: 900, color: 'var(--color-accent)' }}>
+                                            <ImageIcon size={24} style={{ margin: '0 auto 8px' }} />
                                             <p style={{ fontSize: '0.6rem' }}>LISTO</p>
                                         </div>
                                     ) : ajustes.qr_cobro_usd ? (
                                         <div style={{ textAlign: 'center' }}>
                                             <img src={ajustes.qr_cobro_usd} style={{ width: '60px', height: '60px', objectFit: 'cover', margin: '0 auto 0.5rem', border: '2px solid #000', padding: '2px', background: 'white', borderRadius: '10px' }} />
-                                            <p style={{ fontWeight: 900, fontSize: '0.65rem', color: '#10B981' }}>QR USD</p>
+                                            <p style={{ fontWeight: 900, fontSize: '0.65rem', color: 'var(--color-accent)' }}>QR USD</p>
                                         </div>
                                     ) : (
-                                        <div style={{ opacity: 0.6, color: '#000' }}>
-                                            <Upload size={28} style={{ margin: '0 auto 0.5rem', color: '#10B981' }} />
-                                            <p style={{ fontWeight: 900, fontSize: '0.7rem', color: '#10B981' }}>SUBIR QR USD</p>
+                                        <div style={{ opacity: 0.6 }}>
+                                            <Upload size={28} style={{ margin: '0 auto 0.5rem', color: 'var(--color-accent)' }} />
+                                            <p style={{ fontWeight: 900, fontSize: '0.7rem', color: 'var(--color-accent)' }}>SUBIR QR USD</p>
                                         </div>
                                     )}
                                 </div>
@@ -347,10 +324,10 @@ export default function AjustesPage() {
                     </div>
                 </div>
 
-                {/* Sección: Notificaciones Push (NUEVO) */}
-                <div className="card ajustes-side" style={{ padding: '3rem', background: 'var(--surface-raised)', border: '4px solid #000' }}>
+                {/* Sección: Notificaciones Push */}
+                <div className="card ajustes-side" style={{ padding: '3rem', background: 'var(--surface-raised)', border: '3px solid #000' }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '1.25rem', marginBottom: '2rem' }}>
-                        <div style={{ background: pushEnabled === 'granted' ? '#22C55E' : 'var(--color-primary)', padding: '0.75rem', borderRadius: '14px', color: 'white', border: '2.5px solid #000' }}>
+                        <div style={{ background: pushEnabled === 'granted' ? 'var(--color-primary)' : 'var(--surface-base)', padding: '0.75rem', borderRadius: '14px', color: pushEnabled === 'granted' ? 'white' : 'var(--text-muted)', border: '2.5px solid #000' }}>
                             {pushEnabled === 'granted' ? <Bell size={24} /> : <BellOff size={24} />}
                         </div>
                         <h2 style={{ fontSize: '1.6rem', fontWeight: 900, color: 'var(--text-primary)' }}>PUSH ALERTS</h2>
@@ -358,11 +335,11 @@ export default function AjustesPage() {
 
                     <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
                         <div style={{ 
-                            background: pushEnabled === 'granted' ? 'rgba(34, 197, 94, 0.1)' : 'rgba(239, 68, 68, 0.1)', 
+                            background: pushEnabled === 'granted' ? 'rgba(var(--color-primary-rgb), 0.1)' : 'var(--ambient-1)', 
                             padding: '1.5rem', borderRadius: '20px', border: '2px solid rgba(0,0,0,0.1)', 
                             textAlign: 'center' 
                         }}>
-                            <p style={{ fontWeight: 900, fontSize: '0.8rem', color: pushEnabled === 'granted' ? '#22C55E' : '#EF4444', marginBottom: '0.5rem' }}>
+                            <p style={{ fontWeight: 900, fontSize: '0.8rem', color: pushEnabled === 'granted' ? 'var(--color-primary)' : 'var(--text-muted)', marginBottom: '0.5rem' }}>
                                 SISTEMA: {pushEnabled === 'granted' ? 'CONECTADO' : 'DESCONECTADO'}
                             </p>
                             <p style={{ fontSize: '0.7rem', fontWeight: 700, opacity: 0.7 }}>
@@ -383,9 +360,9 @@ export default function AjustesPage() {
                                             setPushEnabled(perm ? 'granted' : 'default');
                                             if (perm) {
                                                 await OneSignal.User.PushSubscription.optIn();
-                                                alert('¡Notificaciones activadas exitosamente!');
+                                                showToastCustom('¡NOTIFICACIONES ACTIVADAS! 🔔');
                                             } else {
-                                                alert('⚠️ Debes permitir las notificaciones en la configuración de tu navegador.');
+                                                setErrorToast('⚠️ DEBES PERMITIR EL ACCESO EN EL NAVEGADOR');
                                             }
                                         });
                                     }
@@ -398,7 +375,7 @@ export default function AjustesPage() {
                         )}
                         
                         <p style={{ fontSize: '0.65rem', fontWeight: 700, opacity: 0.5, textAlign: 'center' }}>
-                            ID DE DISPOSITIVO: {typeof window !== 'undefined' ? 'DETECTADO' : 'NO DISPONIBLE'}
+                            PROTOCOL: {oneSignalReady ? 'READY' : 'INITIALIZING...'}
                         </p>
                     </div>
                 </div>
@@ -406,14 +383,14 @@ export default function AjustesPage() {
                 {/* Sección: Respaldo (Backup) */}
                 <div className="card" style={{ gridColumn: 'span 12', padding: '3rem', background: 'var(--surface-raised)', border: '4px solid #000', marginBottom: '2.5rem' }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '1.25rem', marginBottom: '2rem' }}>
-                        <div style={{ background: '#10B981', padding: '0.75rem', borderRadius: '14px', color: '#000', border: '2.5px solid #000' }}>
+                        <div style={{ background: 'var(--color-primary)', padding: '0.75rem', borderRadius: '14px', color: 'white', border: '2.5px solid #000' }}>
                             <Save size={24} />
                         </div>
                         <h2 style={{ fontSize: '1.8rem', fontWeight: 900, color: 'var(--text-primary)' }}>COPIAS DE SEGURIDAD (BACKUP)</h2>
                     </div>
                     <div style={{ display: 'flex', gap: '2rem', alignItems: 'center', flexWrap: 'wrap' }}>
                          <div style={{ flex: 1, minWidth: '300px' }}>
-                             <p style={{ fontWeight: 800, color: 'var(--text-muted)', marginBottom: '1rem' }}>
+                             <p style={{ fontWeight: 800, color: 'var(--text-muted)', marginBottom: '1.5rem' }}>
                                  Crea un archivo JSON exportable de toda tu base de datos y config, o restaura un respaldo previo. Las restauraciones reescriben los datos.
                              </p>
                              <button className="btn-primary" 
@@ -421,30 +398,25 @@ export default function AjustesPage() {
                                     try {
                                         const res = await api.post('/admin/backups/create', {});
                                         if (res.file) {
-                                            alert('✅ Backup creado exitosamente: ' + res.file);
+                                            showToastCustom('BACKUP GENERADO: ' + res.file);
                                         }
-                                    } catch (err: any) { alert('ERROR: ' + err.message); }
+                                    } catch (err: any) { setErrorToast('FALLO EN RESPALDO'); }
                                 }}
-                                style={{ background: '#10B981', color: 'white' }}>
+                                style={{ background: 'var(--color-primary)', color: 'white' }}>
                                  + GENERAR NUEVA COPIA
                              </button>
                          </div>
-                         <div style={{ flex: 1, minWidth: '300px', background: 'rgba(0,0,0,0.2)', padding: '1.5rem', borderRadius: '16px', border: '2px solid rgba(255,255,255,0.1)' }}>
-                              <h4 style={{ fontWeight: 900, marginBottom: '1rem' }}><Terminal size={18} style={{display:'inline', marginRight: 5}}/> RESTAURACIÓN PELIGROSA</h4>
-                              <input id="restore-filename" type="text" className="input" placeholder="Ej: ares_backup_2026-X.json" style={{ marginBottom: '1rem', width: '100%' }} />
+                         <div style={{ flex: 1, minWidth: '300px', background: 'var(--surface-base)', padding: '2rem', borderRadius: '24px', border: '2px solid rgba(255,255,255,0.05)' }}>
+                              <h4 style={{ fontWeight: 900, marginBottom: '1rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}><Terminal size={18} color="var(--color-danger)"/> RESTAURACIÓN PELIGROSA</h4>
+                              <input id="restore-filename" type="text" className="input" placeholder="Ej: ares_backup_2026-X.json" style={{ marginBottom: '1.25rem', width: '100%', height: '50px' }} />
                               <button className="btn-primary" 
-                                onClick={async () => {
+                                onClick={() => {
                                     const filename = (document.getElementById('restore-filename') as HTMLInputElement).value;
-                                    if (!filename) return alert('Debes escribir el nombre del archivo primero.');
-                                    if (!confirm('⚠️ ALERTA ROJA: Esto borrará la base de datos actual y cargará el backup. ESTÁS SEGURO?')) return;
-                                    try {
-                                        await api.post('/admin/backups/restore', { filename });
-                                        alert('✅ RESTAURACIÓN COMPLETADA. EL SISTEMA SE REINICIARÁ.');
-                                        window.location.reload();
-                                    } catch (err: any) { alert('ERROR FATAL: ' + err.message); }
+                                    if (!filename) return setErrorToast('ESCRIBE EL NOMBRE DEL ARCHIVO');
+                                    setConfirmAction({ type: 'RESTORE', filename });
                                 }}
-                                style={{ background: '#EF4444', color: 'white', width: '100%' }}>
-                                 RESTAURAR ARCHIVO DE BACKUP (JSON)
+                                style={{ background: 'var(--color-danger)', color: 'white', width: '100%', boxShadow: '8px 8px 0px 0px #000' }}>
+                                 RESTAURAR ARCHIVO JSON
                              </button>
                          </div>
                     </div>
@@ -452,17 +424,17 @@ export default function AjustesPage() {
 
                 {/* Sección: Avisos y Soporte */}
                 <div className="card" style={{ gridColumn: 'span 12', padding: '3rem', background: 'var(--surface-overlay)', border: '4px solid #000' }}>
-                    <div style={{ display: 'flex', gap: '4rem', alignItems: 'start' }}>
-                        <div style={{ flex: 2 }}>
+                    <div style={{ display: 'flex', gap: '4rem', alignItems: 'start', flexWrap: 'wrap' }}>
+                        <div style={{ flex: 2, minWidth: '350px' }}>
                             <div style={{ display: 'flex', alignItems: 'center', gap: '1.25rem', marginBottom: '2rem' }}>
                                 <div style={{ background: 'var(--color-secondary)', color: 'white', padding: '0.6rem', borderRadius: '12px', border: '2px solid #000' }}>
                                     <Megaphone size={24} />
                                 </div>
                                 <h3 style={{ fontWeight: 900, fontSize: '1.5rem', color: 'var(--text-primary)' }}>NOTICIA GLOBAL (DASHBOARD VENDEDOR)</h3>
                             </div>
-                            <textarea className="input" style={{ background: 'var(--surface-base)', color: 'var(--text-primary)', border: '3px solid #000', padding: '1.5rem' }} value={ajustes.noticia_global} onChange={e => setAjustes({ ...ajustes, noticia_global: e.target.value })} placeholder="Anuncio principal..." />
+                            <textarea className="input" style={{ background: 'var(--surface-base)', color: 'var(--text-primary)', border: '3px solid #000', padding: '1.5rem' }} value={ajustes.noticia_global} onChange={e => setAjustes({ ...ajustes, noticia_global: e.target.value })} placeholder="Anuncio principal del sistema..." />
                         </div>
-                        <div style={{ flex: 1 }}>
+                        <div style={{ flex: 1, minWidth: '300px' }}>
                             <div style={{ display: 'flex', alignItems: 'center', gap: '1.25rem', marginBottom: '2rem' }}>
                                 <div style={{ background: '#25D366', color: 'white', padding: '0.6rem', borderRadius: '12px', border: '2px solid #000' }}>
                                     <HelpCircle size={24} />
@@ -474,17 +446,37 @@ export default function AjustesPage() {
                     </div>
                 </div>
 
-                {/* Botón de Acción */}
-                <div style={{ gridColumn: 'span 12', display: 'flex', justifyContent: 'center', marginTop: '2rem' }}>
-                    <button className="btn-primary" onClick={handleSave} disabled={saving} style={{ padding: '1.5rem 6rem', fontSize: '1.5rem', height: '80px', boxShadow: '15px 15px 0px 0px #000', borderRadius: '24px' }}>
-                        {saving ? 'SINCRONIZANDO PROTOCOLO...' : (
-                            <div style={{ display: 'flex', alignItems: 'center', gap: '1.5rem' }}>
-                                <ShieldCheck size={32} /> APLICAR MODIFICACIONES
-                            </div>
-                        )}
+                {/* Botón de Acción Final */}
+                <div style={{ gridColumn: 'span 12', display: 'flex', justifyContent: 'center', marginTop: '3rem' }}>
+                    <button className="btn-primary" onClick={handleSave} disabled={saving} style={{ padding: '0 6rem', fontSize: '1.5rem', height: '80px', boxShadow: '15px 15px 0px 0px #000', borderRadius: '24px', display: 'flex', alignItems: 'center', gap: '1.5rem' }}>
+                        {saving ? <RefreshCw className="animate-spin" size={32} /> : <ShieldCheck size={32} />}
+                        {saving ? 'SINCRONIZANDO PROTOCOLO...' : 'APLICAR MODIFICACIONES'}
                     </button>
                 </div>
             </div>
+
+            {/* Confirm Danger Modal */}
+            <AnimatePresence>
+                {confirmAction && (
+                    <div className="modal-overlay">
+                        <motion.div initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.9, opacity: 0 }}
+                            className="modal-container" style={{ maxWidth: 500, textAlign: 'center', padding: '4rem', border: '5px solid var(--color-danger)', borderRadius: 32, background: 'var(--surface-overlay)', boxShadow: '15px 15px 0px 0px rgba(0,0,0,0.5)' }}>
+                            <div style={{ background: 'rgba(239, 68, 68, 0.1)', width: 100, height: 100, borderRadius: '50%', margin: '0 auto 2rem', display: 'flex', alignItems: 'center', justifyContent: 'center', border: '3px solid var(--color-danger)' }}>
+                                <XCircle size={48} color="var(--color-danger)" />
+                            </div>
+                            <h2 style={{ fontWeight: 900, marginBottom: '1rem', fontSize: '2rem' }}>⚠️ PELIGRO CRÍTICO</h2>
+                            <p style={{ opacity: 0.7, fontWeight: 700, marginBottom: '2.5rem', fontSize: '1rem' }}>
+                                Vas a restaurar el archivo <span style={{ color: 'var(--color-danger)' }}>{confirmAction.filename}</span>. 
+                                La base de datos actual será BORRADA y reemplazada. ¿CONFIRMAR DESTRUCCIÓN Y SINCRO?
+                            </p>
+                            <div style={{ display: 'flex', gap: '1.5rem' }}>
+                                <button className="btn-secondary" style={{ flex: 1, border: 'none' }} onClick={() => setConfirmAction(null)}>ABORTAR</button>
+                                <button className="btn-primary" style={{ flex: 1, background: 'var(--color-danger)', boxShadow: '8px 8px 0px 0px #000' }} onClick={handleRestore}>PROCEDER</button>
+                            </div>
+                        </motion.div>
+                    </div>
+                )}
+            </AnimatePresence>
         </div>
     );
 }

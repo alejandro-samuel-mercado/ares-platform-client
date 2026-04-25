@@ -20,6 +20,12 @@ interface Vendor {
   whatsapp?: string;
   logo_url?: string;
   plan: string;
+  plan_features?: {
+    pedidos_automaticos: boolean;
+    enlace_publico: boolean;
+    marketplace_proveedor: boolean;
+    limite_servicios: number | null;
+  };
   texto_limite?: string;
   plan_id: string;
   role: string;
@@ -55,6 +61,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     if (savedToken && savedVendor) {
       setToken(savedToken);
       setVendor(JSON.parse(savedVendor));
+      // Forzar actualización suave para asegurar permisos al día
+      api.get('/perfil').then(data => {
+        setVendor(data);
+        localStorage.setItem('ares_vendor', JSON.stringify(data));
+      }).catch(() => {});
     }
     setIsLoading(false);
   }, []);
@@ -94,15 +105,21 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const refreshVendor = useCallback(async () => {
     try {
+      console.log('[AUTH] Refrescando vendor desde /perfil...');
       const data = await api.get('/perfil');
+      console.log('[AUTH] Vendor refrescado con éxito:', {
+        qr_bob: (data as any).qr_bob,
+        qr_usd: (data as any).qr_usd,
+        tigo_money: (data as any).tigo_money
+      });
       setVendor(data);
       localStorage.setItem('ares_vendor', JSON.stringify(data));
-    } catch {
-      // Si falla, ignorar silenciosamente
+    } catch (err) {
+      console.error('[AUTH] Error refrescando vendor:', err);
     }
   }, []);
 
-  const isAdmin = vendor?.role === 'SUPERADMIN' || vendor?.es_colaborador === true;
+  const isAdmin = vendor?.role === 'SUPERADMIN';
   const isColaborador = vendor?.role !== 'SUPERADMIN' && vendor?.es_colaborador === true;
 
   return (

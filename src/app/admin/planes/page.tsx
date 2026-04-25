@@ -56,7 +56,7 @@ export default function PlanesPage() {
   };
 
   const planStyles: Record<string, { color: string, icon: React.ReactNode }> = { 
-    'Gratis': { color: 'var(--color-muted)', icon: <Globe size={20} /> }, 
+    'Bronce': { color: '#CD7F32', icon: <Globe size={20} /> }, 
     'Vendedor': { color: 'var(--color-blue)', icon: <ShoppingCart size={20} /> }, 
     'Pro': { color: 'var(--color-accent)', icon: <Zap size={20} /> }, 
     'Proveedor': { color: 'var(--color-primary)', icon: <ShieldCheck size={20} /> } 
@@ -151,24 +151,24 @@ export default function PlanesPage() {
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem', borderTop: '2px dashed rgba(0,0,0,0.1)', paddingTop: '1.5rem' }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', fontWeight: 700, fontSize: '0.9rem' }}>
                     <div style={{ color: 'var(--color-primary)' }}><CheckCircle2 size={16} /></div>
-                    {plan.limite_servicios !== null ? `${plan.limite_servicios} Servicios` : 'Servicios Ilimitados'}
+                    {plan.limite_servicios !== null ? `${plan.limite_servicios} Servicios en Catálogo` : 'Servicios Ilimitados'}
                   </div>
                   {plan.pedidos_automaticos && (
                     <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', fontWeight: 700, fontSize: '0.9rem' }}>
                       <div style={{ color: 'var(--color-primary)' }}><Zap size={16} /></div>
-                      Pedidos Automáticos
+                      Pedidos de Credenciales
                     </div>
                   )}
                   {plan.enlace_publico && (
                     <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', fontWeight: 700, fontSize: '0.9rem' }}>
                       <div style={{ color: 'var(--color-primary)' }}><Globe size={16} /></div>
-                      Enlace Público de Venta
+                      Catálogo Público (E-commerce)
                     </div>
                   )}
                   {plan.marketplace_proveedor && (
                     <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', fontWeight: 700, fontSize: '0.9rem' }}>
                       <div style={{ color: 'var(--color-primary)' }}><ShoppingCart size={16} /></div>
-                      Acceso a Marketplace
+                      Acceso a Marketplace (Modo Proveedor)
                     </div>
                   )}
                 </div>
@@ -219,22 +219,22 @@ export default function PlanesPage() {
                 </div>
 
                 <div>
-                  <label className="input-label">Límite de Servicios (0 = Ilimitado)</label>
+                  <label className="input-label">Límite de Servicios Activos (0 = Ilimitado)</label>
                   <input className="input" type="number" value={editingPlan.limite_servicios ?? ''} onChange={e => setEditingPlan({ ...editingPlan, limite_servicios: e.target.value ? parseInt(e.target.value) : null })} placeholder="Sin límite" />
                 </div>
 
                 <div className="card" style={{ padding: '1.5rem', background: 'var(--surface-raised)', borderWidth: '2px', display: 'flex', flexDirection: 'column', gap: '1rem' }}>
                   <label style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', cursor: 'pointer', fontWeight: 800 }}>
                     <input type="checkbox" checked={editingPlan.pedidos_automaticos || false} onChange={e => setEditingPlan({ ...editingPlan, pedidos_automaticos: e.target.checked })} />
-                    HABILITAR PEDIDOS AUTOMÁTICOS
+                    PEDIDOS AUTOMÁTICOS DE CREDENCIALES
                   </label>
                   <label style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', cursor: 'pointer', fontWeight: 800 }}>
                     <input type="checkbox" checked={editingPlan.enlace_publico || false} onChange={e => setEditingPlan({ ...editingPlan, enlace_publico: e.target.checked })} />
-                    PUBLICAR ENLACE DE VENTA
+                    CATÁLOGO PÚBLICO (E-COMMERCE)
                   </label>
                   <label style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', cursor: 'pointer', fontWeight: 800 }}>
                     <input type="checkbox" checked={editingPlan.marketplace_proveedor || false} onChange={e => setEditingPlan({ ...editingPlan, marketplace_proveedor: e.target.checked })} />
-                    ACCESO AL MARKETPLACE MAESTRO
+                    ACCESO A MARKETPLACE (MODO PROVEEDOR)
                   </label>
                 </div>
 

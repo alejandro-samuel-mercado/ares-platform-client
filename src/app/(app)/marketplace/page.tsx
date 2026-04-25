@@ -111,17 +111,31 @@ export default function MarketplacePage() {
           <h1 style={{ fontSize: '1.8rem', fontWeight: 900 }}>MERCADO <span className="text-gradient-primary">GLOBAL</span></h1>
         </div>
         
-        <motion.button 
-          whileTap={{ scale: 0.95 }}
-          onClick={() => setShowModal(true)}
-          style={{ 
-            background: 'var(--color-primary)', color: 'white', border: 'none', padding: '0.75rem 1.25rem', 
-            borderRadius: '16px', fontWeight: 900, display: 'flex', alignItems: 'center', gap: '0.5rem',
-            boxShadow: '0 4px 15px rgba(235, 12, 12, 0.3)'
-          }}
-        >
-          <Plus size={20} /> <span className="desktop-only">PROPONER SERVICIO</span>
-        </motion.button>
+        {vendor?.plan_features?.marketplace_proveedor ? (
+          <motion.button 
+            whileTap={{ scale: 0.95 }}
+            onClick={() => setShowModal(true)}
+            style={{ 
+              background: 'var(--color-primary)', color: 'white', border: 'none', padding: '0.75rem 1.25rem', 
+              borderRadius: '16px', fontWeight: 900, display: 'flex', alignItems: 'center', gap: '0.5rem',
+              boxShadow: '0 4px 15px rgba(235, 12, 12, 0.3)'
+            }}
+          >
+            <Plus size={20} /> <span className="desktop-only">PROPONER SERVICIO</span>
+          </motion.button>
+        ) : (
+          <motion.button 
+            whileTap={{ scale: 0.95 }}
+            onClick={() => alert('Esta función requiere el Plan PROVEEDOR. Actualiza en el módulo de Plan.')}
+            style={{ 
+              background: 'var(--surface-base)', color: 'var(--text-muted)', border: '2px solid rgba(255,255,255,0.1)', padding: '0.75rem 1.25rem', 
+              borderRadius: '16px', fontWeight: 900, display: 'flex', alignItems: 'center', gap: '0.5rem',
+              opacity: 0.6
+            }}
+          >
+            <Rocket size={18} /> <span className="desktop-only">MODO PROVEEDOR</span>
+          </motion.button>
+        )}
       </div>
 
       {/* Search */}
@@ -163,6 +177,13 @@ export default function MarketplacePage() {
               <div>
                 <h3 style={{ fontWeight: 900, fontSize: '1.1rem' }}>{svc.nombre}</h3>
                 <p style={{ fontSize: '0.8rem', fontWeight: 700, opacity: 0.6, marginTop: '0.25rem', height: '2.4rem', overflow: 'hidden' }}>{svc.descripcion_base}</p>
+                <div style={{ 
+                    marginTop: '0.5rem', display: 'inline-block', fontSize: '0.65rem', fontWeight: 900, padding: '0.2rem 0.6rem', borderRadius: '8px', border: '1.5px solid #000',
+                    background: (svc as any).stock > 10 ? '#10B981' : (svc as any).stock > 0 ? '#F59E0B' : '#EF4444', 
+                    color: '#000' 
+                }}>
+                    STOCK DISPONIBLE: {(svc as any).stock || 0}
+                </div>
               </div>
 
               <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', padding: '0.75rem', background: 'var(--surface-base)', borderRadius: '12px', border: '1px solid rgba(0,0,0,0.1)' }}>

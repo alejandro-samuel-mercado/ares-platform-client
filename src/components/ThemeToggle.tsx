@@ -6,7 +6,7 @@ export default function ThemeToggle() {
     const { theme, setTheme } = useTheme();
 
     const themes = [
-        { id: 'default', color: 'linear-gradient(135deg, #F5C518, #B45309)', label: 'Dark Orange' },
+        { id: 'orange', color: 'linear-gradient(135deg, #F5C518, #B45309)', label: 'Dark Orange' },
         { id: 'violet', color: '#310c96', label: 'Morado' },
         { id: 'red', color: '#EF4444', label: 'Neon' },
     ];

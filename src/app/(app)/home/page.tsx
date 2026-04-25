@@ -10,13 +10,16 @@ import {
     ShoppingBag, Trophy, Search, User,
     ArrowRight, Sparkles, Zap, ShieldCheck, Loader2,
     MessageSquare, Package, Image as ImageIcon, CreditCard, Calculator, Download,
-    Clapperboard, History, RefreshCw
+    Clapperboard, History, RefreshCw, Megaphone, Store, Key
 } from 'lucide-react';
 import Link from 'next/link';
 import api from '@/lib/api';
 import { useRouter } from 'next/navigation';
+import { useAuth } from '@/lib/auth';
 
 export default function VendorHome() {
+    const { vendor } = useAuth();
+    const isProvider = vendor?.plan === 'Proveedor' || vendor?.role === 'SUPERADMIN';
     const [userName, setUserName] = useState('REVENDEDOR');
     const [noticia, setNoticia] = useState('Cargando avisos del sistema...');
     const [soporteWp, setSoporteWp] = useState('');
@@ -74,18 +77,29 @@ export default function VendorHome() {
     };
 
     const cards = [
-        { title: 'CATÁLOGO', desc: 'Precios y servicios', icon: ShoppingBag, color: 'var(--color-primary)', href: '/catalogo' },
-        { title: 'IMÁGENES', desc: 'Banco promocional', icon: ImageIcon, color: 'var(--color-accent)', href: '/imagenes' },
-        { title: 'ESTRENOS', desc: 'Novedades streaming', icon: Clapperboard, color: '#E50914', href: '/estrenos' },
+        { title: 'MENSAJES', desc: 'Soporte rápido', icon: MessageSquare, color: '#F59E0B', href: '/mensajes' },
+        { title: 'FLYERS', desc: 'Banco de imágenes', icon: ImageIcon, color: '#8d09e5ff', href: '/flyers' },
         { title: 'PARTIDOS', desc: 'Cartelera de hoy', icon: Trophy, color: '#E50914', href: '/partidos' },
-        { title: 'MENSAJES', desc: 'Venta rápida', icon: MessageSquare, color: '#F59E0B', href: '/mensajes' },
-        { title: 'PEDIDOS', desc: 'Solicitudes Pro', icon: Package, color: 'var(--color-primary)', href: '/pedidos' },
+        { title: 'ESTRENOS', desc: 'Novedades streaming', icon: Clapperboard, color: '#E50914', href: '/estrenos' },
+        { title: 'PROMOS', desc: 'Ofertas y avisos', icon: Megaphone, color: '#F59E0B', href: '/promociones' },
+        { title: 'CATÁLOGO', desc: 'Precios actualizados', icon: ShoppingBag, color: 'var(--color-primary)', href: '/catalogo' },
+        { title: 'SERVICIOS', desc: 'Cuentas y licencias', icon: Key, color: 'var(--color-accent)', href: '/imagenes' },
+
+        // Módulos de Proveedor
+        { title: 'MARKETPLACE', desc: 'Gestión de ventas', icon: Store, color: 'var(--color-primary)', href: '/marketplace/gestion', providerOnly: true },
+        { title: 'CUENTAS', desc: 'Stock de credenciales', icon: Key, color: '#8B5CF6', href: '/marketplace/credenciales', providerOnly: true },
+
         { title: 'HISTORIAL', desc: 'Mis activaciones', icon: History, color: '#8B5CF6', href: '/historial' },
-        { title: 'MI PLAN', desc: 'Suscripción y pagos', icon: CreditCard, color: '#E50914', href: '/plan' },
+        { title: 'MI PLAN', desc: 'Suscripción activa', icon: CreditCard, color: '#E50914', href: '/plan' },
         { title: 'CALCULADORA', desc: 'Margen de ganancia', icon: Calculator, color: '#8B5CF6', href: '/calculadora' },
         { title: 'PERFIL', desc: 'Ajustes de cuenta', icon: User, color: '#F59E0B', href: '/perfil' },
     ].filter(card => {
+        // Ocultar si es solo para proveedores y el usuario no lo es
+        if ((card as any).providerOnly && !isProvider) return false;
+
+        // Ocultar PARTIDOS si ya hay un widget Bento arriba (para no repetir)
         if (card.title === 'PARTIDOS' && nextMatches.length > 0) return false;
+
         return true;
     });
 
@@ -177,7 +191,7 @@ export default function VendorHome() {
                     initial={{ opacity: 0, y: 10 }}
                     animate={{ opacity: 1, y: 0 }}
                     className="card-static"
-                    style={{ padding: '1.5rem', background: 'linear-gradient(135deg, white 0%, var(--surface-raised) 100%)' }}
+                    style={{ padding: '1.5rem', background: 'linear-gradient(135deg, var(--surface-raised) 0%, var(--ambient-1) 100%)' }}
                 >
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.25rem' }}>
                         <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>

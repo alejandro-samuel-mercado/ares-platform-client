@@ -19,7 +19,7 @@ import {
 import api from '@/lib/api';
 import { useAuth } from '@/lib/auth';
 
-interface ServicioBase { id: string; nombre: string; logo_url: string; categoria: string; estado_actual: string; precio_admin: number; }
+interface ServicioBase { id: string; nombre: string; logo_url: string; categoria: string; estado_actual: string; precio_admin: number; proveedor_id: string; }
 interface MiServicio { id: string; servicio_id: string; precio_venta: number; servicio: ServicioBase; }
 interface Credencial { id: string; usuario: string; password: string; perfil: string | null; servicio: { id: string; nombre: string; logo_url: string; categoria: string }; }
 interface Pedido { id: string; servicio_id: string; cantidad: number; comprobante_url: string | null; status: string; respuesta_admin: string | null; creado_en: string; servicio?: { nombre: string; logo_url: string; }; }
@@ -40,10 +40,15 @@ export default function MisServiciosPage() {
     const fileInputRef = useRef<HTMLInputElement>(null);
     const [submitting, setSubmitting] = useState(false);
     const [revealedPasswords, setRevealedPasswords] = useState<Set<string>>(new Set());
-    const [activeTabs, setActiveTabs] = useState<Record<string, 'credenciales' | 'pedidos'>>({});
     const [editingPrice, setEditingPrice] = useState<Record<string, string>>({});
     const [savingPrice, setSavingPrice] = useState<string | null>(null);
     const [tasaCambio, setTasaCambio] = useState(6.96);
+    const [providerInfo, setProviderInfo] = useState<any>(null);
+    const [ajustesPlat, setAjustesPlat] = useState<any>(null);
+    const [showQRSubmodal, setShowQRSubmodal] = useState(false);
+    const [showDetailsModal, setShowDetailsModal] = useState<string | null>(null);
+    const [detailsTab, setDetailsTab] = useState<'credenciales' | 'pedidos'>('credenciales');
+    const canOrder = vendor?.plan_features?.pedidos_automaticos || ['Vendedor', 'Pro', 'Proveedor'].includes(vendor?.plan || '') || vendor?.role === 'SUPERADMIN';
 
     const load = async () => {
         setLoading(true);
@@ -55,9 +60,11 @@ export default function MisServiciosPage() {
                 api.get('/ajustes-publicos')
             ]);
             console.log("FETCHED MIS SERVICIOS: ", svc);
-            setMisServicios(svc);
+            const activeServices = svc.filter((s: any) => s.activo);
+            setMisServicios(activeServices);
             setCredenciales(cred);
             setPedidos(ped);
+            if (ajustes) setAjustesPlat(ajustes);
             if (ajustes?.tasa_cambio_bob) setTasaCambio(ajustes.tasa_cambio_bob);
         } catch (err) { console.error(err); }
         finally { setLoading(false); }
@@ -77,6 +84,16 @@ export default function MisServiciosPage() {
         setRevealedPasswords(next);
     };
 
+    const getStatusBadge = (status: string) => {
+        const config: Record<string, string> = {
+            'PENDIENTE': 'chip-gold',
+            'EN_PROCESO': 'chip-blue',
+            'COMPLETADO': 'chip-active',
+            'CANCELADO': 'chip-danger'
+        };
+        return <span className={`chip ${config[status] || ''}`} style={{ fontWeight: 900, fontSize: '0.7rem' }}>{status}</span>;
+    };
+
     const handleOrder = async () => {
         if (!selectedService) return;
         setSubmitting(true);
@@ -89,7 +106,7 @@ export default function MisServiciosPage() {
             if (orderNotes) formData.append('notas', orderNotes);
 
             await api.request('/pedidos', { method: 'POST', body: formData });
-            
+
             showToast('Pedido enviado ✅');
             setShowOrderModal(false);
             setOrderQuantity(1);
@@ -154,10 +171,14 @@ export default function MisServiciosPage() {
             <div style={{ marginTop: '1rem', display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
                 <div>
                     <h1 style={{ fontSize: '2.2rem', lineHeight: 1, color: 'var(--text-primary)', display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-                        MIS <span className="text-gradient-primary">SERVICIOS</span>
+                        MIS <span className="text-gradient-primary">SERVICIOS ACTIVOS</span>
                         <button onClick={load} className="btn-secondary" style={{ padding: '0.5rem', borderRadius: '50%' }}><RefreshCw size={20} /></button>
                     </h1>
-                    <p style={{ fontWeight: 800, fontSize: '0.8rem', color: 'var(--text-muted)', marginTop: '0.5rem' }}>Pide credenciales y gestiona tus cuentas</p>
+                    <p style={{ fontWeight: 800, fontSize: '0.8rem', color: 'var(--text-muted)', marginTop: '0.5rem' }}>
+                        {canOrder
+                            ? 'Pide credenciales y gestiona tus cuentas'
+                            : 'Gestión de servicios en tu catálogo'}
+                    </p>
                 </div>
             </div>
 
@@ -168,169 +189,466 @@ export default function MisServiciosPage() {
                     <p style={{ fontWeight: 700, color: 'var(--text-muted)', marginTop: '0.5rem' }}>Activa servicios desde el <a href="/catalogo" style={{ color: 'var(--color-primary)' }}>Catálogo</a></p>
                 </div>
             ) : (
-                <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-6">
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-2 xl:grid-cols-3 gap-8">
                     {misServicios.map((ms) => {
                         const svcCreds = getServiceCredentials(ms.servicio_id);
                         const svcPedidos = getServicePedidos(ms.servicio_id);
-                        const pendingCount = svcPedidos.filter(p => p.status === 'PENDIENTE').length;
+                        const activeCount = svcPedidos.filter(p => p.status === 'COMPLETADO' && p.respuesta_admin).length > 0 
+                            ? svcPedidos.filter(p => p.status === 'COMPLETADO' && p.respuesta_admin).length 
+                            : svcCreds.length;
 
                         return (
-                            <motion.div key={ms.id} className="card flex flex-col justify-between h-full" initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}
-                                style={{ padding: '1.5rem', background: 'var(--surface-raised)' }}>
-                                {/* Service Header */}
-                                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.25rem' }}>
-                                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-                                        <div style={{ width: '50px', height: '50px', borderRadius: '14px', background: 'var(--surface-base)', border: '2px solid #000', overflow: 'hidden', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                                            {ms.servicio.logo_url ? <img src={ms.servicio.logo_url} style={{ width: '100%', height: '100%', objectFit: 'cover' }} /> : <Zap size={20} />}
-                                        </div>
-                                        <div>
-                                            <div style={{ fontWeight: 900, fontSize: '1.1rem' }}>{ms.servicio.nombre.toUpperCase()}</div>
+                            <motion.div 
+                                key={ms.id} 
+                                initial={{ opacity: 0, y: 20 }} 
+                                animate={{ opacity: 1, y: 0 }}
+                                whileHover={{ y: -5, boxShadow: 'var(--shadow-soft)', borderColor: 'var(--color-primary)' }}
+                                style={{ 
+                                    padding: '2rem', 
+                                    background: 'var(--surface-card)', 
+                                    backdropFilter: 'blur(15px)',
+                                    borderRadius: '32px',
+                                    border: '2px solid rgba(var(--color-primary-rgb, 187, 72, 18), 0.1)',
+                                    display: 'flex', flexDirection: 'column', gap: '1.75rem',
+                                    transition: 'all 0.3s ease',
+                                    position: 'relative',
+                                    overflow: 'hidden'
+                                }}
+                            >
+                                {/* Background Decorative Glow */}
+                                <div style={{ 
+                                    position: 'absolute', top: '-50%', right: '-50%', width: '150px', height: '150px', 
+                                    background: 'radial-gradient(circle, var(--ambient-1) 0%, transparent 70%)',
+                                    pointerEvents: 'none',
+                                    opacity: 0.2
+                                }} />
 
-                                            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginTop: '0.5rem', background: 'rgba(0,0,0,0.2)', padding: '0.3rem 0.5rem', borderRadius: '8px' }}>
-                                                <span style={{ fontSize: '0.65rem', fontWeight: 800 }}>PRECIO CLIENTE:</span>
-                                                <input
-                                                    type="number"
-                                                    value={editingPrice[ms.id] !== undefined ? editingPrice[ms.id] : ms.precio_venta}
-                                                    onChange={(e) => setEditingPrice({ ...editingPrice, [ms.id]: e.target.value })}
-                                                    style={{ width: '60px', background: 'transparent', border: 'none', color: 'var(--color-primary)', fontWeight: 900, fontSize: '0.8rem', outline: 'none' }}
-                                                    placeholder="0.00"
-                                                />
-                                                <span style={{ fontSize: '0.65rem', fontWeight: 800 }}>Bs</span>
-                                                <span style={{ fontSize: '0.6rem', fontWeight: 700, opacity: 0.5 }}>| ${(ms.precio_venta / tasaCambio).toFixed(2)}</span>
-                                                {(editingPrice[ms.id] !== undefined && editingPrice[ms.id] !== ms.precio_venta.toString()) && (
-                                                    <button onClick={() => handleUpdatePrice(ms.id)} disabled={savingPrice === ms.id} style={{ background: 'var(--color-primary)', color: '#fff', border: 'none', borderRadius: '4px', padding: '0.2rem 0.4rem', fontSize: '0.6rem', fontWeight: 900, cursor: 'pointer' }}>
-                                                        {savingPrice === ms.id ? '...' : 'SAVE'}
-                                                    </button>
-                                                )}
+                                {/* Service Header Section */}
+                                <div style={{ display: 'flex', alignItems: 'flex-start', gap: '1.25rem' }}>
+                                    <div style={{ 
+                                        width: '65px', height: '65px', borderRadius: '18px', 
+                                        background: 'var(--surface-base)', 
+                                        border: '1px solid var(--color-primary)', 
+                                        overflow: 'hidden', display: 'flex', alignItems: 'center', justifyContent: 'center',
+                                        boxShadow: 'var(--shadow-soft)'
+                                    }}>
+                                        {ms.servicio.logo_url ? <img src={ms.servicio.logo_url} style={{ width: '100%', height: '100%', objectFit: 'cover' }} /> : <Zap size={24} style={{ color: 'var(--color-primary)' }} />}
+                                    </div>
+                                    <div style={{ flex: 1 }}>
+                                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                                            <h3 style={{ 
+                                                fontWeight: 950, fontSize: '1.25rem', letterSpacing: '-0.02em', margin: 0,
+                                                color: 'var(--text-primary)'
+                                            }}>
+                                                {ms.servicio.nombre.toUpperCase()}
+                                            </h3>
+                                            <div style={{ 
+                                                padding: '0.25rem 0.6rem', borderRadius: '8px', background: 'var(--surface-base)',
+                                                fontSize: '0.6rem', fontWeight: 900, color: 'var(--text-muted)', letterSpacing: '0.05em',
+                                                border: '1px solid rgba(0,0,0,0.1)'
+                                            }}>
+                                                {ms.servicio.categoria.toUpperCase()}
                                             </div>
                                         </div>
                                     </div>
-                                    <button
-                                        className="btn-primary"
-                                        onClick={() => {
-                                            setSelectedService(ms.servicio.id);
-                                            setShowOrderModal(true);
-                                        }}
-                                        style={{ padding: '0.6rem 1.2rem', fontSize: '0.75rem', display: 'flex', alignItems: 'center', gap: '0.4rem' }}
-                                    >
-                                        <Send size={14} /> PEDIR
-                                    </button>
                                 </div>
 
-                                {/* Tabs */}
-                                <div style={{ display: 'flex', gap: '0.5rem', marginBottom: '1rem' }}>
-                                    {(['credenciales', 'pedidos'] as const).map(tab => (
-                                        <button key={tab} onClick={() => setActiveTabs(prev => ({ ...prev, [ms.servicio.id]: tab }))}
-                                            style={{
-                                                flex: 1, padding: '0.5rem', borderRadius: '10px', fontWeight: 900, fontSize: '0.7rem', cursor: 'pointer',
-                                                background: (activeTabs[ms.servicio.id] || 'credenciales') === tab ? 'var(--color-primary)' : 'var(--surface-base)',
-                                                color: (activeTabs[ms.servicio.id] || 'credenciales') === tab ? '#fff' : 'var(--text-muted)',
-                                                border: '2px solid #000',
-                                                textTransform: 'uppercase'
-                                            }}>
-                                            {tab === 'credenciales' ? `🔑 Cuentas (${svcCreds.length + svcPedidos.filter(p => p.status === 'COMPLETADO' && p.respuesta_admin).length})` : `📋 Pedidos (${svcPedidos.length})`}
+                                {/* Price Management Body */}
+                                <div style={{ 
+                                    background: 'var(--surface-base)', padding: '1.25rem', borderRadius: '24px',
+                                    border: '1px solid rgba(0,0,0,0.05)', display: 'flex', flexDirection: 'column', gap: '0.75rem'
+                                }}>
+                                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                        <span style={{ fontSize: '0.65rem', fontWeight: 900, color: 'var(--text-muted)', letterSpacing: '0.05em' }}>PRECIO DE VENTA</span>
+                                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.25rem' }}>
+                                            <input
+                                                type="number"
+                                                value={editingPrice[ms.id] !== undefined ? editingPrice[ms.id] : ms.precio_venta}
+                                                onChange={(e) => setEditingPrice({ ...editingPrice, [ms.id]: e.target.value })}
+                                                style={{ 
+                                                    width: '80px', background: 'none', border: 'none', textAlign: 'right',
+                                                    color: 'var(--color-primary)', fontWeight: 950, fontSize: '1.1rem', outline: 'none'
+                                                }}
+                                                placeholder="0.00"
+                                            />
+                                            <span style={{ fontSize: '0.75rem', fontWeight: 900, color: 'var(--color-primary)' }}>Bs</span>
+                                            {(editingPrice[ms.id] !== undefined && editingPrice[ms.id] !== ms.precio_venta.toString()) && (
+                                                <button onClick={() => handleUpdatePrice(ms.id)} disabled={savingPrice === ms.id} style={{ marginLeft: '0.5rem', background: 'var(--color-primary)', color: '#fff', border: 'none', borderRadius: '8px', padding: '0.3rem 0.6rem', fontSize: '0.65rem', fontWeight: 900, cursor: 'pointer', boxShadow: 'var(--shadow-glow)' }}>
+                                                    {savingPrice === ms.id ? <Loader2 className="animate-spin" size={12} /> : 'GUARDAR'}
+                                                </button>
+                                            )}
+                                        </div>
+                                    </div>
+                                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', opacity: 0.6 }}>
+                                        <span style={{ fontSize: '0.6rem', fontWeight: 800, color: 'var(--text-muted)' }}>EQUIVALENCIA ESTIMADA</span>
+                                        <span style={{ fontSize: '0.7rem', fontWeight: 900, color: 'var(--text-primary)' }}>$ {(ms.precio_venta / tasaCambio).toFixed(2)} USD</span>
+                                    </div>
+                                </div>
+
+                                {/* Main Actions Footer */}
+                                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+                                    <div style={{ display: 'flex', gap: '0.75rem' }}>
+                                        <button
+                                            onClick={() => { setShowDetailsModal(ms.servicio.id); setDetailsTab('credenciales'); }}
+                                            className="btn-secondary"
+                                            style={{ 
+                                                flex: 1, padding: '1rem', borderRadius: '18px',
+                                                fontSize: '0.7rem', fontWeight: 950,
+                                                display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.6rem'
+                                            }}
+                                        >
+                                            <Key size={16} /> CUENTAS ({activeCount})
                                         </button>
-                                    ))}
+                                        <button
+                                            onClick={() => { setShowDetailsModal(ms.servicio.id); setDetailsTab('pedidos'); }}
+                                            className="btn-secondary"
+                                            style={{ 
+                                                flex: 1, padding: '1rem', borderRadius: '18px',
+                                                fontSize: '0.7rem', fontWeight: 950,
+                                                display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.6rem'
+                                            }}
+                                        >
+                                            <Package size={16} /> PEDIDOS ({svcPedidos.length})
+                                        </button>
+                                    </div>
+
+                                    {canOrder && (
+                                        <button
+                                            onClick={() => { setSelectedService(ms.servicio.id); setShowOrderModal(true); }}
+                                            className="btn-primary"
+                                            style={{ 
+                                                width: '100%', padding: '1.1rem', borderRadius: '20px', 
+                                                fontSize: '0.86rem', fontWeight: 950,
+                                                display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.75rem'
+                                            }}
+                                        >
+                                            <Send size={18} /> GENERAR NUEVO PEDIDO
+                                        </button>
+                                    )}
                                 </div>
-
-                                {/* Content */}
-                                {(activeTabs[ms.servicio.id] || 'credenciales') === 'credenciales' ? (
-                                    svcCreds.length === 0 && svcPedidos.filter(p => p.status === 'COMPLETADO' && p.respuesta_admin).length === 0 ? (
-                                        <div style={{ textAlign: 'center', padding: '2rem 1rem', opacity: 0.5 }}>
-                                            <Key size={30} style={{ margin: '0 auto 0.5rem' }} />
-                                            <p style={{ fontWeight: 800, fontSize: '0.8rem' }}>Aún no tienes cuentas asignadas</p>
-                                        </div>
-                                    ) : (
-                                        <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
-                                            {/* Entregas Inmediatas (Respuestas Admin) */}
-                                            {svcPedidos.filter(p => p.status === 'COMPLETADO' && p.respuesta_admin).map((p, idx) => (
-                                                <div key={`resp-${p.id}`} style={{
-                                                    background: 'var(--surface-raised)', padding: '1rem', borderRadius: '14px',
-                                                    border: '2px dashed var(--color-primary)', display: 'flex', flexDirection: 'column', gap: '0.5rem'
-                                                }}>
-                                                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                                                        <span style={{ fontWeight: 900, fontSize: '0.75rem', color: 'var(--color-primary)', display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
-                                                            <Zap size={14} /> ENTREGA INMEDIATA
-                                                        </span>
-                                                        <button onClick={() => handleCopy(p.respuesta_admin!)} style={{ background: 'none', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '0.3rem', color: 'var(--color-primary)', fontWeight: 800, fontSize: '0.65rem' }}>
-                                                            <Copy size={12} /> COPIAR
-                                                        </button>
-                                                    </div>
-                                                    <div style={{ fontFamily: 'monospace', fontSize: '0.85rem', fontWeight: 700, whiteSpace: 'pre-wrap', lineHeight: 1.4, color: 'var(--text-primary)' }}>
-                                                        {p.respuesta_admin}
-                                                    </div>
-                                                    <div style={{ fontSize: '0.6rem', color: 'var(--text-muted)', fontWeight: 700, marginTop: '0.25rem' }}>
-                                                        Del pedido del {new Date(p.creado_en).toLocaleDateString()}
-                                                    </div>
-                                                </div>
-                                            ))}
-
-                                            {/* Credenciales Asignadas Manualmente */}
-                                            {svcCreds.map((cred, idx) => (
-                                                <div key={cred.id} style={{
-                                                    background: 'var(--surface-base)', padding: '1rem', borderRadius: '14px',
-                                                    border: '2px solid rgba(0,0,0,0.15)', display: 'flex', flexDirection: 'column', gap: '0.5rem'
-                                                }}>
-                                                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                                                        <span style={{ fontWeight: 900, fontSize: '0.75rem', color: 'var(--color-primary)' }}>CUENTA ASIGNADA {cred.perfil ? ` — ${cred.perfil}` : ''}</span>
-                                                    </div>
-                                                    <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
-                                                        <div style={{ flex: 1, fontFamily: 'monospace', fontSize: '0.85rem', fontWeight: 700, wordBreak: 'break-all' }}>{cred.usuario}</div>
-                                                        <button onClick={() => handleCopy(cred.usuario)} style={{ background: 'none', border: 'none', cursor: 'pointer', padding: '0.3rem' }}><Copy size={16} color="var(--color-primary)" /></button>
-                                                    </div>
-                                                    <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
-                                                        <div style={{ flex: 1, fontFamily: 'monospace', fontSize: '0.85rem', fontWeight: 700 }}>
-                                                            {revealedPasswords.has(cred.id) ? cred.password : '••••••••'}
-                                                        </div>
-                                                        <button onClick={() => togglePassword(cred.id)} style={{ background: 'none', border: 'none', cursor: 'pointer', padding: '0.3rem' }}>
-                                                            {revealedPasswords.has(cred.id) ? <EyeOff size={16} /> : <Eye size={16} />}
-                                                        </button>
-                                                        <button onClick={() => handleCopy(cred.password)} style={{ background: 'none', border: 'none', cursor: 'pointer', padding: '0.3rem' }}><Copy size={16} color="var(--color-primary)" /></button>
-                                                    </div>
-                                                </div>
-                                            ))}
-                                        </div>
-                                    )
-                                ) : (
-                                    svcPedidos.length === 0 ? (
-                                        <div style={{ textAlign: 'center', padding: '2rem 1rem', opacity: 0.5 }}>
-                                            <Clock size={30} style={{ margin: '0 auto 0.5rem' }} />
-                                            <p style={{ fontWeight: 800, fontSize: '0.8rem' }}>Sin pedidos para este servicio</p>
-                                        </div>
-                                    ) : (
-                                        <div style={{ display: 'flex', flexDirection: 'column', gap: '0.6rem' }}>
-                                            {svcPedidos.map(p => (
-                                                <div key={p.id} style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
-                                                    <div style={{
-                                                        background: 'var(--surface-base)', padding: '0.8rem 1rem', borderRadius: '12px',
-                                                        border: `2px solid ${statusColor[p.status] || '#666'}55`,
-                                                        display: 'flex', justifyContent: 'space-between', alignItems: 'center'
-                                                    }}>
-                                                        <div>
-                                                            <div style={{ fontWeight: 900, fontSize: '0.8rem', display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
-                                                                <Hash size={14} /> {p.cantidad}x cuentas
-                                                            </div>
-                                                            <div style={{ fontSize: '0.65rem', color: 'var(--text-muted)', fontWeight: 700 }}>{new Date(p.creado_en).toLocaleDateString()}</div>
-                                                        </div>
-                                                        <div style={{
-                                                            padding: '0.3rem 0.7rem', borderRadius: '8px', fontSize: '0.65rem', fontWeight: 900,
-                                                            background: `${statusColor[p.status]}22`, color: statusColor[p.status], border: `1.5px solid ${statusColor[p.status]}55`
-                                                        }}>
-                                                            {p.status}
-                                                        </div>
-                                                    </div>
-                                                </div>
-                                            ))}
-                                        </div>
-                                    )
-                                )}
                             </motion.div>
                         );
                     })}
                 </div>
             )}
 
-            {/* New Order Modal */}
+            {/* Premium Service Details Modal */}
+            <AnimatePresence>
+                {showDetailsModal && (() => {
+                    const svc = misServicios.find(ms => ms.servicio.id === showDetailsModal)?.servicio;
+                    if (!svc) return null;
+                    const svcCreds = getServiceCredentials(svc.id);
+                    const svcPedidos = getServicePedidos(svc.id);
+                    const entregaMaestra = svcPedidos.filter(p => p.status === 'COMPLETADO' && p.respuesta_admin);
+
+                    return (
+                        <div className="modal-overlay"
+                            style={{
+                                zIndex: 1000,
+                                background: 'var(--surface-overlay)',
+                                backdropFilter: 'blur(12px)',
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'center'
+                            }}
+                            onClick={() => setShowDetailsModal(null)}
+                        >
+                            <motion.div
+                                className="modal-container"
+                                onClick={e => e.stopPropagation()}
+                                initial={{ scale: 0.9, opacity: 0, y: 20 }}
+                                animate={{ scale: 1, opacity: 1, y: 0 }}
+                                exit={{ scale: 0.9, opacity: 0, y: 20 }}
+                                style={{
+                                    maxWidth: '650px', width: '95%', maxHeight: '85vh',
+                                    display: 'flex', flexDirection: 'column',
+                                    background: 'var(--surface-raised)',
+                                    backdropFilter: 'blur(30px) saturate(200%)',
+                                    borderRadius: '32px',
+                                    border: 'var(--border-thick)',
+                                    boxShadow: 'var(--shadow-heavy)',
+                                    overflow: 'hidden',
+                                    position: 'relative'
+                                }}
+                            >
+                                {/* Decorative Glow */}
+                                <div style={{
+                                    position: 'absolute', top: '-100px', left: '50%', transform: 'translateX(-50%)',
+                                    width: '300px', height: '200px', background: 'var(--color-primary)',
+                                    filter: 'blur(100px)', opacity: 0.15, pointerEvents: 'none'
+                                }} />
+
+                                {/* Modal Header */}
+                                <div style={{
+                                    padding: '2rem 2rem 1.5rem',
+                                    borderBottom: '1px solid rgba(var(--color-primary-rgb, 0,0,0), 0.1)',
+                                    display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+                                    position: 'relative', zIndex: 2
+                                }}>
+                                    <div style={{ display: 'flex', alignItems: 'center', gap: '1.25rem' }}>
+                                        <div style={{
+                                            width: '60px', height: '60px', borderRadius: '18px',
+                                            background: 'var(--surface-base)',
+                                            border: '1px solid var(--color-primary)',
+                                            padding: '2px', overflow: 'hidden', boxShadow: 'var(--shadow-soft)'
+                                        }}>
+                                            <img src={svc.logo_url} style={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: '16px' }} />
+                                        </div>
+                                        <div>
+                                            <h2 style={{
+                                                fontSize: '1.5rem', fontWeight: 950, letterSpacing: '-0.02em',
+                                                color: 'var(--text-primary)', margin: 0
+                                            }}>
+                                                {svc.nombre.toUpperCase()}
+                                            </h2>
+                                            <div style={{ fontSize: '0.65rem', fontWeight: 900, color: 'var(--text-muted)', letterSpacing: '0.1em', marginTop: '0.2rem' }}>
+                                                {svc.categoria.toUpperCase()}
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <button
+                                        onClick={() => setShowDetailsModal(null)}
+                                        style={{
+                                            width: '40px', height: '40px', borderRadius: '50%',
+                                            background: 'var(--surface-base)', border: '1px solid var(--color-primary)',
+                                            display: 'flex', alignItems: 'center', justifyContent: 'center',
+                                            cursor: 'pointer', transition: 'all 0.2s', color: 'var(--text-primary)'
+                                        }}
+                                        className="hover-bg-primary"
+                                    >
+                                        <X size={20} />
+                                    </button>
+                                </div>
+
+                                {/* Premium Tabs */}
+                                <div style={{ padding: '1rem 2rem', background: 'var(--surface-base)', display: 'flex', gap: '1.5rem', borderBottom: '1px solid rgba(var(--color-primary-rgb, 0,0,0), 0.1)' }}>
+                                    {[
+                                        { id: 'credenciales', label: 'CUENTAS ACTIVAS', icon: Key, count: entregaMaestra.length > 0 ? entregaMaestra.length : svcCreds.length },
+                                        { id: 'pedidos', label: 'HISTORIAL', icon: Clock, count: svcPedidos.length }
+                                    ].map(tab => (
+                                        <button
+                                            key={tab.id}
+                                            onClick={() => setDetailsTab(tab.id as any)}
+                                            style={{
+                                                background: 'none', border: 'none', cursor: 'pointer',
+                                                padding: '0.75rem 0', display: 'flex', alignItems: 'center', gap: '0.6rem',
+                                                color: detailsTab === tab.id ? 'var(--color-primary)' : 'var(--text-muted)',
+                                                fontWeight: 900, fontSize: '0.75rem', position: 'relative',
+                                                transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+                                                filter: detailsTab === tab.id ? 'drop-shadow(0 0 8px var(--shadow-glow))' : 'none'
+                                            }}
+                                        >
+                                            <tab.icon size={16} />
+                                            {tab.label}
+                                            <span style={{
+                                                marginLeft: '0.2rem', padding: '0.1rem 0.4rem', borderRadius: '6px',
+                                                background: detailsTab === tab.id ? 'var(--color-primary)' : 'var(--surface-raised)',
+                                                color: detailsTab === tab.id ? '#fff' : 'var(--text-muted)',
+                                                fontSize: '0.6rem'
+                                            }}>{tab.count}</span>
+                                            {detailsTab === tab.id && (
+                                                <motion.div layoutId="modal-tab-underline" style={{
+                                                    position: 'absolute', bottom: -1, left: 0, right: 0, height: '2px',
+                                                    background: 'var(--color-primary)', boxShadow: 'var(--shadow-glow)'
+                                                }} />
+                                            )}
+                                        </button>
+                                    ))}
+                                </div>
+
+                                {/* Content Area */}
+                                <div
+                                    style={{ flex: 1, overflowY: 'auto', padding: '2rem' }}
+                                    className="custom-scroll"
+                                >
+                                    {detailsTab === 'credenciales' ? (
+                                        <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
+                                            {entregaMaestra.length > 0 ? (
+                                                <div style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
+                                                    {entregaMaestra.map(p => (
+                                                        <div key={p.id} style={{
+                                                            background: 'var(--surface-card)',
+                                                            borderRadius: '24px', padding: '1.5rem',
+                                                            border: '1px solid var(--color-primary)',
+                                                            boxShadow: 'var(--shadow-soft)'
+                                                        }}>
+                                                            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '1rem', alignItems: 'center' }}>
+                                                                <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem' }}>
+                                                                    <div style={{ width: '8px', height: '8px', borderRadius: '50%', background: 'var(--color-primary)', boxShadow: 'var(--shadow-glow)' }} />
+                                                                    <span style={{ fontSize: '0.7rem', fontWeight: 950, color: 'var(--color-primary)', letterSpacing: '0.05em' }}>PEDIDO RELLENADO #{p.id.slice(-6).toUpperCase()}</span>
+                                                                </div>
+                                                                <span style={{ fontSize: '0.6rem', fontWeight: 800, color: 'var(--text-muted)' }}>{new Date(p.creado_en).toLocaleDateString()}</span>
+                                                            </div>
+                                                            <div style={{ 
+                                                                position: 'relative', background: 'var(--surface-base)', borderRadius: '16px', 
+                                                                padding: '1.25rem', border: '1px solid rgba(var(--color-primary-rgb, 0,0,0), 0.1)'
+                                                            }}>
+                                                                <pre style={{ 
+                                                                    margin: 0, whiteSpace: 'pre-wrap', fontFamily: 'monospace', 
+                                                                    fontWeight: 800, fontSize: '0.9rem', color: 'var(--text-primary)',
+                                                                    lineHeight: 1.6
+                                                                }}>
+                                                                    {p.respuesta_admin}
+                                                                </pre>
+                                                                <button 
+                                                                    onClick={() => handleCopy(p.respuesta_admin!)} 
+                                                                    className="btn-secondary"
+                                                                    style={{ 
+                                                                        position: 'absolute', top: '10px', right: '10px',
+                                                                        padding: '0.5rem', borderRadius: '8px'
+                                                                    }}
+                                                                >
+                                                                    <Copy size={16} />
+                                                                </button>
+                                                            </div>
+                                                        </div>
+                                                    ))}
+                                                </div>
+                                            ) : svcCreds.length > 0 ? (
+                                                <div style={{ display: 'grid', gridTemplateColumns: '1fr', gap: '1rem' }}>
+                                                    {svcCreds.map((cred, i) => (
+                                                        <motion.div 
+                                                            key={cred.id}
+                                                            initial={{ opacity: 0, x: -10 }}
+                                                            animate={{ opacity: 1, x: 0 }}
+                                                            transition={{ delay: i * 0.05 }}
+                                                            style={{
+                                                                background: 'var(--surface-base)', borderRadius: '20px', padding: '1.25rem',
+                                                                border: '1px solid var(--color-primary)', display: 'flex', flexDirection: 'column', gap: '1rem'
+                                                            }}
+                                                        >
+                                                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                                                <span style={{ fontSize: '0.65rem', fontWeight: 900, color: 'var(--color-primary)' }}>{cred.perfil ? `PERFIL: ${cred.perfil.toUpperCase()}` : 'ACCESO EXCLUSIVO'}</span>
+                                                                <div style={{ display: 'flex', gap: '0.4rem' }}>
+                                                                    <button onClick={() => togglePassword(cred.id)} className="btn-secondary" style={{ padding: '0.4rem', borderRadius: '8px' }}>
+                                                                        {revealedPasswords.has(cred.id) ? <EyeOff size={14} /> : <Eye size={14} />}
+                                                                    </button>
+                                                                </div>
+                                                            </div>
+
+                                                            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.75rem' }}>
+                                                                <div className="relative group cursor-pointer" onClick={() => handleCopy(cred.usuario)}>
+                                                                    <div style={{ fontSize: '0.55rem', fontWeight: 900, color: 'var(--text-muted)', marginBottom: '0.25rem' }}>USUARIO / CORREO</div>
+                                                                    <div style={{ 
+                                                                        background: 'var(--surface-raised)', padding: '0.75rem', borderRadius: '12px', 
+                                                                        fontSize: '0.8rem', fontWeight: 800, border: '1px solid rgba(var(--color-primary-rgb, 0,0,0), 0.1)',
+                                                                        display: 'flex', justifyContent: 'space-between', color: 'var(--text-primary)'
+                                                                    }}>
+                                                                        <span style={{ overflow: 'hidden', textOverflow: 'ellipsis' }}>{cred.usuario}</span>
+                                                                        <Copy size={12} style={{ opacity: 0.5 }} />
+                                                                    </div>
+                                                                </div>
+                                                                <div className="relative group cursor-pointer" onClick={() => handleCopy(cred.password)}>
+                                                                    <div style={{ fontSize: '0.55rem', fontWeight: 900, color: 'var(--text-muted)', marginBottom: '0.25rem' }}>CONTRASEÑA</div>
+                                                                    <div style={{ 
+                                                                        background: 'var(--surface-raised)', padding: '0.75rem', borderRadius: '12px', 
+                                                                        fontSize: '0.8rem', fontWeight: 800, border: '1px solid rgba(var(--color-primary-rgb, 0,0,0), 0.1)',
+                                                                        display: 'flex', justifyContent: 'space-between', color: 'var(--text-primary)'
+                                                                    }}>
+                                                                        <span>{revealedPasswords.has(cred.id) ? cred.password : '••••••••'}</span>
+                                                                        <Copy size={12} style={{ opacity: 0.5 }} />
+                                                                    </div>
+                                                                </div>
+                                                            </div>
+                                                        </motion.div>
+                                                    ))}
+                                                </div>
+                                            ) : (
+                                                <div style={{ textAlign: 'center', padding: '4rem 2rem', color: 'var(--text-muted)', opacity: 0.5 }}>
+                                                    <AlertCircle size={48} style={{ margin: '0 auto 1.5rem' }} />
+                                                    <p style={{ fontWeight: 950, fontSize: '0.9rem' }}>SIN CUENTAS ASIGNADAS</p>
+                                                    <p style={{ fontSize: '0.75rem', fontWeight: 700, marginTop: '0.5rem' }}>Realiza un pedido para obtener tus accesos.</p>
+                                                </div>
+                                            )}
+                                        </div>
+                                    ) : (
+                                        <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+                                            {svcPedidos.length === 0 ? (
+                                                <div style={{ textAlign: 'center', padding: '4rem 2rem', color: 'var(--text-muted)', opacity: 0.5 }}>
+                                                    <Package size={48} style={{ margin: '0 auto 1.5rem' }} />
+                                                    <p style={{ fontWeight: 950, fontSize: '0.9rem' }}>HISTORIAL VACÍO</p>
+                                                </div>
+                                            ) : (
+                                                svcPedidos.map((p, i) => (
+                                                    <motion.div
+                                                        key={p.id}
+                                                        initial={{ opacity: 0, y: 10 }}
+                                                        animate={{ opacity: 1, y: 0 }}
+                                                        transition={{ delay: i * 0.05 }}
+                                                        style={{
+                                                            background: 'var(--surface-base)', borderRadius: '20px', padding: '1.25rem',
+                                                            border: '1px solid rgba(var(--color-primary-rgb, 0,0,0), 0.1)', display: 'flex', justifyContent: 'space-between', alignItems: 'center'
+                                                        }}
+                                                    >
+                                                        <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+                                                            <div style={{
+                                                                width: '45px', height: '45px', borderRadius: '12px', background: 'var(--surface-raised)',
+                                                                display: 'flex', alignItems: 'center', justifyContent: 'center', border: '1px solid var(--color-primary)'
+                                                            }}>
+                                                                <Hash size={18} style={{ color: 'var(--color-primary)' }} />
+                                                            </div>
+                                                            <div>
+                                                                <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                                                                    <span style={{ fontSize: '0.85rem', fontWeight: 900, color: 'var(--text-primary)' }}>{p.cantidad} UNDS</span>
+                                                                    <span style={{ fontSize: '0.65rem', fontWeight: 800, color: 'var(--text-muted)' }}>ORD #{p.id.slice(-6).toUpperCase()}</span>
+                                                                </div>
+                                                                <div style={{ fontSize: '0.6rem', fontWeight: 700, color: 'var(--text-muted)', marginTop: '0.2rem' }}>{new Date(p.creado_en).toLocaleString()}</div>
+                                                            </div>
+                                                        </div>
+                                                        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: '0.4rem' }}>
+                                                            {getStatusBadge(p.status)}
+                                                            {p.comprobante_url && (
+                                                                <a href={p.comprobante_url} target="_blank" style={{ fontSize: '0.6rem', fontWeight: 900, color: 'var(--color-primary)', display: 'flex', alignItems: 'center', gap: '0.2rem', textDecoration: 'none' }}>
+                                                                    <Eye size={12} /> VER RECIBO
+                                                                </a>
+                                                            )}
+                                                        </div>
+                                                    </motion.div>
+                                                ))
+                                            )}
+                                        </div>
+                                    )}
+                                </div>
+
+                                {/* Modal Footer */}
+                                <div style={{
+                                    padding: '1.5rem 2rem',
+                                    borderTop: '1px solid rgba(var(--color-primary-rgb, 0,0,0), 0.1)',
+                                    display: 'flex', gap: '1rem', background: 'var(--surface-base)'
+                                }}>
+                                    <button
+                                        onClick={() => setShowDetailsModal(null)}
+                                        className="btn-secondary"
+                                        style={{
+                                            flex: 1, height: '55px', borderRadius: '18px',
+                                            fontWeight: 950, fontSize: '0.9rem'
+                                        }}
+                                    >
+                                        CERRAR
+                                    </button>
+                                    <button
+                                        onClick={() => {
+                                            const svcId = showDetailsModal;
+                                            setShowDetailsModal(null);
+                                            setSelectedService(svcId);
+                                            setShowOrderModal(true);
+                                        }}
+                                        className="btn-primary"
+                                        style={{
+                                            flex: 2, height: '55px', borderRadius: '18px',
+                                            fontWeight: 950, fontSize: '0.9rem'
+                                        }}
+                                    >
+                                        SOLICITAR MÁS CUENTAS
+                                    </button>
+                                </div>
+                            </motion.div>
+                        </div>
+                    );
+                })()}
+            </AnimatePresence>
+
+             {/* New Order Modal */}
             <AnimatePresence>
                 {showOrderModal && (
                     <div className="modal-overlay" onClick={() => setShowOrderModal(false)}>
@@ -341,7 +659,7 @@ export default function MisServiciosPage() {
                             exit={{ scale: 0.8, opacity: 0 }}
                             style={{
                                 background: 'var(--surface-raised)', border: '4px solid #000', borderRadius: '28px',
-                                padding: '2rem', maxWidth: '420px', width: '100%'
+                                padding: '2rem', maxWidth: '420px', width: '100%', maxHeight: '90vh', overflowY: 'auto'
                             }}
                         >
                             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
@@ -349,108 +667,157 @@ export default function MisServiciosPage() {
                                 <button onClick={() => setShowOrderModal(false)} style={{ background: 'none', border: 'none', cursor: 'pointer' }}><X size={24} /></button>
                             </div>
 
-                            {/* Service Name & Stock Warning */}
-                            {selectedService && (() => {
+                            {!selectedService ? (
+                                <div style={{ marginBottom: '1.25rem' }}>
+                                    <label style={{ fontWeight: 900, fontSize: '0.7rem', color: 'var(--text-muted)', marginBottom: '0.4rem', display: 'block' }}>SELECCIONA EL SERVICIO</label>
+                                    <select className="input" value={selectedService || ''} onChange={(e) => setSelectedService(e.target.value)} style={{ fontSize: '0.9rem', fontWeight: 800 }}>
+                                        <option value="">-- Elige un servicio --</option>
+                                        {misServicios.map(ms => <option key={ms.servicio_id} value={ms.servicio_id}>{ms.servicio.nombre.toUpperCase()}</option>)}
+                                    </select>
+                                </div>
+                            ) : (() => {
                                 const svcData = misServicios.find(ms => ms.servicio_id === selectedService)?.servicio;
                                 const stock = (svcData as any)?._count?.credenciales || 0;
                                 return (
                                     <div style={{ padding: '0.75rem 1rem', background: 'rgba(0,0,0,0.05)', borderRadius: '12px', marginBottom: '1rem', fontWeight: 900, fontSize: '0.9rem' }}>
                                         {svcData?.nombre.toUpperCase()}
                                         {stock === 0 && (
-                                            <div style={{ background: '#EF444422', color: '#EF4444', border: '2px solid #EF4444', padding: '0.4rem', borderRadius: '8px', fontSize: '0.7rem', marginTop: '0.5rem', display: 'flex', alignItems: 'center', gap: '0.3rem' }}>
-                                                <AlertTriangle size={14} /> AGOTADO TEMPORALMENTE: Máximo 2 reservas
+                                            <div style={{ background: '#EF444422', color: '#EF4444', border: '2px solid #EF4444', padding: '0.5rem', borderRadius: '8px', fontSize: '0.75rem', marginTop: '0.5rem', display: 'flex', alignItems: 'center', gap: '0.5rem', fontWeight: 900 }}>
+                                                <AlertTriangle size={18} /> AGOTADO: SIN STOCK
                                             </div>
                                         )}
                                     </div>
                                 );
                             })()}
 
-                            {/* Quantity */}
-                            <label style={{ fontWeight: 900, fontSize: '0.7rem', color: 'var(--text-muted)', marginBottom: '0.4rem', display: 'block' }}>CANTIDAD DE CUENTAS</label>
+                            <label style={{ fontWeight: 900, fontSize: '0.7rem', color: 'var(--text-muted)', marginBottom: '0.4rem', display: 'block' }}>CANTIDAD</label>
                             <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', marginBottom: '1.25rem' }}>
                                 <button onClick={() => setOrderQuantity(Math.max(1, orderQuantity - 1))} className="btn-secondary" style={{ width: '45px', height: '45px', padding: 0, borderRadius: '14px' }}>-</button>
                                 <span style={{ fontWeight: 900, fontSize: '2rem', minWidth: '40px', textAlign: 'center' }}>{orderQuantity}</span>
-                                <button onClick={() => {
-                                    const stock = (misServicios.find(ms => ms.servicio_id === selectedService)?.servicio as any)?._count?.credenciales || 0;
-                                    const maxQty = stock === 0 ? 2 : 999;
-                                    setOrderQuantity(Math.min(maxQty, orderQuantity + 1));
-                                }} className="btn-secondary" style={{ width: '45px', height: '45px', padding: 0, borderRadius: '14px' }}>+</button>
+                                <button onClick={() => setOrderQuantity(orderQuantity + 1)} className="btn-secondary" style={{ width: '45px', height: '45px', padding: 0, borderRadius: '14px' }}>+</button>
                             </div>
 
-                            {/* Price Preview */}
-                            {selectedService && (
-                                <div style={{ background: 'rgba(var(--color-primary-rgb, 0,0,0),0.1)', padding: '0.75rem 1rem', borderRadius: '12px', marginBottom: '1.25rem', display: 'flex', justifyContent: 'space-between', fontWeight: 900, border: '2px solid var(--color-primary)' }}>
-                                    <span style={{ fontSize: '0.8rem' }}>MONTO TOTAL</span>
-                                    <span style={{ fontSize: '1.1rem', color: 'var(--color-primary)' }}>Bs {(orderQuantity * (misServicios.find(ms => ms.servicio_id === selectedService)?.servicio.precio_admin || 0)).toFixed(2)}</span>
-                                    <span style={{ fontSize: '0.8rem', opacity: 0.5, marginLeft: '0.5rem' }}>| ${((orderQuantity * (misServicios.find(ms => ms.servicio_id === selectedService)?.servicio.precio_admin || 0)) / tasaCambio).toFixed(2)} USD</span>
-                                </div>
-                            )}
+                            {selectedService && (() => {
+                                const svc = misServicios.find(ms => ms.servicio_id === selectedService)?.servicio;
+                                const total = orderQuantity * (svc?.precio_admin || 0);
+                                return (
+                                    <>
+                                        <div style={{ background: 'rgba(var(--color-primary-rgb, 0,0,0),0.1)', padding: '0.75rem 1rem', borderRadius: '12px', marginBottom: '0.5rem', display: 'flex', justifyContent: 'space-between', fontWeight: 900, border: '2px solid var(--color-primary)' }}>
+                                            <span>MONTO TOTAL</span>
+                                            <span style={{ color: 'var(--color-primary)' }}>Bs {total.toFixed(2)}</span>
+                                        </div>
 
-                            <label style={{ fontWeight: 900, fontSize: '0.7rem', color: 'var(--text-muted)', marginBottom: '0.4rem', display: 'block' }}>COMPROBANTE DE PAGO (Tu recibo)</label>
-                            
+                                        <button
+                                            onClick={async () => {
+                                                const svcData = misServicios.find(ms => ms.servicio_id === selectedService)?.servicio;
+                                                const provId = svcData?.proveedor_id || (svcData as any)?.proveedorId;
+                                                const currentAjustes = ajustesPlat || await api.get('/ajustes-publicos').catch(() => null);
+
+                                                if (provId && provId !== 'null' && provId !== 'undefined' && String(provId).length > 5) {
+                                                    try {
+                                                        const res = await api.get(`/marketplace/proveedor/${provId}/pagos`);
+                                                        setProviderInfo({
+                                                            alias: res.alias || res.nombre || 'PROVEEDOR MARKETPLACE',
+                                                            qr_bob: res.qr_bob || res.qr_pago_bob || '',
+                                                            qr_usd: res.qr_usd || res.qr_pago_usd || '',
+                                                            tigo_money: res.tigo_money || res.tigo_money_numero || '',
+                                                            isAdmin: false
+                                                        });
+                                                        setShowQRSubmodal(true);
+                                                    } catch (err) { showToast('Error al obtener datos'); }
+                                                } else {
+                                                    setProviderInfo({
+                                                        alias: currentAjustes?.nombre_plataforma || 'ADMINISTRADOR',
+                                                        qr_bob: currentAjustes?.qr_cobro_bob || currentAjustes?.qr_cobro_url || '',
+                                                        qr_usd: currentAjustes?.qr_cobro_usd || '',
+                                                        tigo_money: currentAjustes?.tigo_money_numero || '',
+                                                        isAdmin: true
+                                                    });
+                                                    setShowQRSubmodal(true);
+                                                }
+                                            }}
+                                            className="btn-secondary"
+                                            style={{ width: '100%', marginBottom: '1.25rem', height: '40px', fontSize: '0.75rem', gap: '0.5rem', border: '2px solid #000' }}
+                                        >
+                                            <ShoppingBag size={16} /> VER QR DE PAGO
+                                        </button>
+                                    </>
+                                );
+                            })()}
+
+                            <label style={{ fontWeight: 900, fontSize: '0.7rem', color: 'var(--text-muted)', marginBottom: '0.4rem', display: 'block' }}>COMPROBANTE</label>
                             <div style={{ display: 'flex', gap: '1rem', marginBottom: '1rem' }}>
-                                {/* Option 1: File Upload */}
                                 <div style={{ flex: 1 }}>
-                                    <input 
-                                        type="file" 
-                                        accept="image/*" 
-                                        className="hidden" 
-                                        ref={fileInputRef}
-                                        onChange={(e) => {
-                                            if (e.target.files && e.target.files[0]) setOrderComprobanteFile(e.target.files[0]);
-                                        }}
-                                        style={{ display: 'none' }}
-                                    />
-                                    <div 
-                                        onClick={() => fileInputRef.current?.click()}
-                                        style={{
-                                            border: '2px dashed var(--color-primary)', borderRadius: '12px', padding: '1rem',
-                                            display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '0.5rem',
-                                            cursor: 'pointer', background: 'var(--surface-raised)', transition: 'all 0.2s', height: '100%', justifyContent: 'center'
-                                        }}
-                                        className="hover-bright"
-                                    >
-                                        {orderComprobanteFile ? (
-                                            <>
-                                                <CheckCircle2 color="var(--color-success)" size={24} />
-                                                <span style={{ fontSize: '0.7rem', fontWeight: 900, textAlign: 'center', wordBreak: 'break-all' }}>{orderComprobanteFile.name}</span>
-                                            </>
-                                        ) : (
-                                            <>
-                                                <UploadCloud size={24} color="var(--text-muted)" />
-                                                <span style={{ fontSize: '0.7rem', fontWeight: 900, color: 'var(--text-muted)', textAlign: 'center' }}>Subir Imagen Local</span>
-                                            </>
-                                        )}
+                                    <input type="file" accept="image/*" className="hidden" ref={fileInputRef} onChange={e => { if (e.target.files?.[0]) setOrderComprobanteFile(e.target.files[0]); }} style={{ display: 'none' }} />
+                                    <div onClick={() => fileInputRef.current?.click()} style={{ border: '2px dashed var(--color-primary)', borderRadius: '12px', padding: '1rem', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '0.5rem', cursor: 'pointer', background: 'var(--surface-raised)', height: '100%', justifyContent: 'center' }} className="hover-bright">
+                                        {orderComprobanteFile ? <><CheckCircle2 color="var(--color-success)" size={24} /><span style={{ fontSize: '0.7rem', fontWeight: 900 }}>{orderComprobanteFile.name}</span></> : <><UploadCloud size={24} color="var(--text-muted)" /><span style={{ fontSize: '0.7rem', fontWeight: 900, color: 'var(--text-muted)' }}>Subir Imagen</span></>}
                                     </div>
                                 </div>
-                                
-                                {/* Option 2: URL Input */}
-                                <div style={{ flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
-                                    <span style={{ fontSize: '0.7rem', fontWeight: 800, color: 'var(--text-muted)', marginBottom: '0.5rem', textAlign: 'center' }}>O PEGA UN ENLACE (URL)</span>
-                                    <input
-                                        className="input"
-                                        type="text"
-                                        placeholder="https://i.ibb.co/..."
-                                        value={orderComprobante}
-                                        onChange={e => setOrderComprobante(e.target.value)}
-                                        style={{ fontSize: '0.85rem' }}
-                                    />
+                            </div>
+                            
+                            <textarea className="input" placeholder="Notas..." value={orderNotes} onChange={e => setOrderNotes(e.target.value)} style={{ fontSize: '0.85rem', minHeight: '80px', marginBottom: '1.5rem' }} />
+
+                            <button className="btn-primary" onClick={handleOrder} disabled={submitting} style={{ width: '100%', height: '55px', fontSize: '1rem', fontWeight: 950, borderRadius: '16px' }}>
+                                {submitting ? <Loader2 className="animate-spin" /> : 'ENVIAR PEDIDO'}
+                            </button>
+                        </motion.div>
+                    </div>
+                )}
+            </AnimatePresence>
+
+            {/* QR Payment Sub-Modal */}
+            <AnimatePresence>
+                {showQRSubmodal && providerInfo && (
+                    <div className="modal-overlay" onClick={() => setShowQRSubmodal(false)} style={{ zIndex: 10000, background: 'var(--surface-overlay)', backdropFilter: 'blur(10px)' }}>
+                        <motion.div className="modal-container"
+                            onClick={e => e.stopPropagation()}
+                            initial={{ scale: 0.9, opacity: 0 }}
+                            animate={{ scale: 1, opacity: 1 }}
+                            exit={{ scale: 0.9, opacity: 0 }}
+                            style={{ 
+                                padding: '2rem', maxWidth: '400px', width: '95%', textAlign: 'center',
+                                background: 'var(--surface-raised)', borderRadius: '32px', border: 'var(--border-thick)',
+                                boxShadow: 'var(--shadow-heavy)'
+                            }}
+                        >
+                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
+                                <div style={{ textAlign: 'left' }}>
+                                    <h3 style={{ fontWeight: 950, fontSize: '1.1rem', color: 'var(--text-primary)', margin: 0 }}>DATOS DE PAGO</h3>
+                                    <p style={{ fontSize: '0.65rem', fontWeight: 900, color: 'var(--color-primary)', letterSpacing: '0.05em' }}>{providerInfo.alias.toUpperCase()}</p>
                                 </div>
+                                <button onClick={() => setShowQRSubmodal(false)} className="btn-secondary" style={{ padding: '0.5rem', borderRadius: '50%' }}><X size={20} /></button>
                             </div>
 
-                            {/* Notes */}
-                            <label style={{ fontWeight: 900, fontSize: '0.7rem', color: 'var(--text-muted)', marginBottom: '0.4rem', display: 'block' }}>NOTAS (opcional)</label>
-                            <textarea
-                                className="input"
-                                placeholder="Instrucciones especiales..."
-                                value={orderNotes}
-                                onChange={e => setOrderNotes(e.target.value)}
-                                style={{ fontSize: '0.85rem', minHeight: '80px', resize: 'vertical', marginBottom: '1.5rem' }}
-                            />
+                            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(130px, 1fr))', gap: '1rem', marginTop: '1.5rem' }}>
+                                {(providerInfo.qr_bob || providerInfo.qr_pago_bob) ? (
+                                    <div style={{ background: '#fff', padding: '0.6rem', borderRadius: '20px', border: '2px solid var(--color-primary)', boxShadow: 'var(--shadow-soft)' }}>
+                                        <p style={{ color: '#000', fontSize: '0.6rem', fontWeight: 950, marginBottom: '0.4rem' }}>BOLIVIA (BOB)</p>
+                                        <img src={providerInfo.qr_bob || providerInfo.qr_pago_bob} alt="QR BOB" style={{ width: '100%', borderRadius: '12px' }} />
+                                    </div>
+                                ) : null}
+                                {(providerInfo.qr_usd || providerInfo.qr_pago_usd) ? (
+                                    <div style={{ background: '#fff', padding: '0.6rem', borderRadius: '20px', border: '2px solid var(--color-primary)', boxShadow: 'var(--shadow-soft)' }}>
+                                        <p style={{ color: '#000', fontSize: '0.6rem', fontWeight: 950, marginBottom: '0.4rem' }}>DÓLARES (USD)</p>
+                                        <img src={providerInfo.qr_usd || providerInfo.qr_pago_usd} alt="QR USD" style={{ width: '100%', borderRadius: '12px' }} />
+                                    </div>
+                                ) : null}
+                                {(providerInfo.tigo_money || providerInfo.tigo_money_numero) ? (
+                                    <div style={{ background: 'var(--surface-base)', padding: '1.25rem', borderRadius: '20px', border: '2px dashed var(--color-primary)', display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
+                                        <p style={{ fontSize: '0.6rem', fontWeight: 900, color: 'var(--text-muted)', marginBottom: '0.25rem' }}>TIGO MONEY</p>
+                                        <p style={{ fontSize: '1.1rem', fontWeight: 950, color: 'var(--text-primary)' }}>{providerInfo.tigo_money || providerInfo.tigo_money_numero}</p>
+                                    </div>
+                                ) : null}
 
-                            <button className="btn-primary" onClick={handleOrder} disabled={submitting}
-                                style={{ width: '100%', height: '55px', fontSize: '1rem', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem' }}>
-                                {submitting ? <Loader2 className="animate-spin" size={20} /> : <><Send size={18} /> ENVIAR PEDIDO</>}
+                                {!providerInfo.qr_bob && !providerInfo.qr_usd && !providerInfo.tigo_money && (
+                                    <div style={{ gridColumn: '1/-1', padding: '2rem', background: 'rgba(0,0,0,0.05)', borderRadius: '20px', border: '2px dashed var(--color-danger)' }}>
+                                        <AlertTriangle color="var(--color-danger)" style={{ margin: '0 auto 0.5rem auto' }} />
+                                        <p style={{ fontSize: '0.8rem', fontWeight: 800, color: 'var(--color-danger)' }}>NO SE ENCONTRARON MÉTODOS DE PAGO CONFIGURADOS</p>
+                                    </div>
+                                )}
+                            </div>
+
+                            <button onClick={() => setShowQRSubmodal(false)} className="btn-primary" style={{ width: '100%', marginTop: '2rem', height: '55px', borderRadius: '18px', fontWeight: 950 }}>
+                                <CheckCircle2 size={18} /> ENTENDIDO, YA ESCANEÉ
                             </button>
                         </motion.div>
                     </div>

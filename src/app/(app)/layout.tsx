@@ -7,7 +7,7 @@
 import React, { Suspense } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { Home, ShoppingBag, Trophy, Package, User, MessageSquare, CreditCard, Calculator, Image as ImageIcon, Clapperboard, History, Key, Megaphone, Store } from 'lucide-react';
+import { Home, ShoppingBag, Trophy, Package, User, MessageSquare, CreditCard, Calculator, Image as ImageIcon, Clapperboard, History, Key, Megaphone, Store, Layers, ShieldCheck } from 'lucide-react';
 import { useAuth } from '@/lib/auth';
 import './app.css';
 
@@ -18,21 +18,18 @@ function Navigation() {
 
     const sidebarItems = [
         { href: '/home', icon: Home, label: 'Inicio' },
-        ...(isProvider ? [
-            { href: '/marketplace/gestion', icon: Store, label: 'Mi Marketplace' },
-            { href: '/marketplace/credenciales', icon: Key, label: 'Mis Cuentas' }
-        ] : []),
-        { href: '/mensajes', icon: MessageSquare, label: 'Mensajes' },
 
+        { href: '/mensajes', icon: MessageSquare, label: 'Mensajes' },
         { href: '/flyers', icon: ImageIcon, label: 'Flyers' },
         { href: '/partidos', icon: Trophy, label: 'Partidos' },
         { href: '/estrenos', icon: Clapperboard, label: 'Estrenos' },
         { href: '/promociones', icon: Megaphone, label: 'Promos' },
-
-
         { href: '/catalogo', icon: ShoppingBag, label: 'Catálogo' },
-        { href: '/imagenes', icon: Key, label: 'Servicios' },
-
+        { href: '/imagenes', icon: Layers, label: 'Servicios' },
+        ...(isProvider ? [
+            { href: '/marketplace/gestion', icon: Store, label: 'Marketplace' },
+            { href: '/marketplace/credenciales', icon: ShieldCheck, label: 'Cuentas' }
+        ] : []),
         { href: '/historial', icon: History, label: 'Historial' },
         { href: '/plan', icon: CreditCard, label: 'Mi Plan' },
         { href: '/calculadora', icon: Calculator, label: 'Calculadora' },
@@ -41,7 +38,7 @@ function Navigation() {
 
     const bottomItems = [
         { href: '/home', icon: Home, label: 'Inicio' },
-        { href: '/imagenes', icon: Key, label: 'Servicios' },
+        { href: '/imagenes', icon: Layers, label: 'Servicios' },
         { href: '/flyers', icon: ImageIcon, label: 'Flyers' },
         { href: '/catalogo', icon: ShoppingBag, label: 'Catálogo' },
         { href: '/perfil', icon: User, label: 'Perfil' },

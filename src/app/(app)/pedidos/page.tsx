@@ -8,6 +8,8 @@ import api from '@/lib/api';
 import { Package, Plus, Clock, CheckCircle2, AlertCircle, Loader2, Send, MessageSquare, X, Smartphone, Zap, RefreshCw, UploadCloud, File as FileIcon, QrCode } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 
+import { useAuth } from '@/lib/auth';
+
 interface Pedido {
   id: string;
   servicio_id: string;
@@ -19,11 +21,12 @@ interface Pedido {
 }
 
 export default function PedidosVendorPage() {
+  const { vendor } = useAuth();
   const [pedidos, setPedidos] = useState<Pedido[]>([]);
   const [loading, setLoading] = useState(true);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [saving, setSaving] = useState(false);
-  const [isPro, setIsPro] = useState(true); 
+  const [isPro, setIsPro] = useState<boolean | null>(null); 
   const [showToast, setShowToast] = useState(false);
   const [toastMsg, setToastMsg] = useState('');
   const [tasaCambio, setTasaCambio] = useState(6.96);
@@ -48,7 +51,11 @@ export default function PedidosVendorPage() {
   const [showQRModal, setShowQRModal] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  useEffect(() => { fetchData(); }, []);
+  useEffect(() => { 
+    if (vendor) {
+      fetchData(); 
+    }
+  }, [vendor]);
 
   const triggerToast = (msg: string) => {
     setToastMsg(msg);
@@ -58,6 +65,22 @@ export default function PedidosVendorPage() {
 
   const fetchData = async () => {
     try {
+      // Proactive check based on vendor plan
+      const hasPermission = vendor?.plan_features?.pedidos_automaticos;
+      const planName = vendor?.plan?.toLowerCase() || '';
+      
+      const shouldBlock = (vendor && vendor.plan_features) 
+        ? !hasPermission 
+        : false; // Fallback to allow if features not yet loaded (it will check again)
+
+      if (shouldBlock && vendor?.role !== 'SUPERADMIN') {
+        setIsPro(false);
+        setLoading(false);
+        return;
+      }
+
+      setIsPro(true);
+
       const [pedidosData, misServiciosData, ajustes] = await Promise.all([
         api.get('/pedidos'),
         api.get('/mis_servicios'),
@@ -118,8 +141,16 @@ export default function PedidosVendorPage() {
     }
   };
 
-  if (!isPro && !loading) {
-    return (/* ... omitido por brevedad en el log, pero presente en el archivo final ... */
+  if (isPro === null || (loading && pedidos.length === 0)) {
+    return (
+      <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '80vh' }}>
+        <Loader2 className="animate-spin" size={48} color="var(--color-primary)" />
+      </div>
+    );
+  }
+
+  if (isPro === false) {
+    return (
       <div style={{ padding: '3rem 2rem', display: 'flex', flexDirection: 'column', alignItems: 'center', textAlign: 'center' }}>
         <div style={{ 
           width: '100px', height: '100px', background: 'var(--surface-raised)', 
@@ -312,9 +343,18 @@ export default function PedidosVendorPage() {
                           if (svc.proveedor_id) {
                             try {
                               const data = await api.get(`/marketplace/proveedor/${svc.proveedor_id}/pagos`);
-                              setNewPedido({ ...newPedido, providerPagos: data });
-                              if (data.qr_bob) setShowQRModal(data.qr_bob);
-                              else if (data.qr_usd) setShowQRModal(data.qr_usd);
+                              const ajustes = await api.get('/ajustes-publicos');
+                              const hasPayments = data.qr_bob || data.qr_usd || data.tigo_money;
+
+                              setNewPedido({ ...newPedido, providerPagos: {
+                                nombre: data.alias || data.nombre || 'PROVEEDOR',
+                                qr_bob: data.qr_bob || (!hasPayments ? (ajustes.qr_cobro_bob || ajustes.qr_cobro_url) : ''),
+                                qr_usd: data.qr_usd || (!hasPayments ? ajustes.qr_cobro_usd : ''),
+                                tigo_money: data.tigo_money || (!hasPayments ? ajustes.tigo_money_numero : '')
+                              }});
+                              
+                              const finalQR = data.qr_bob || data.qr_usd || (!hasPayments ? (ajustes.qr_cobro_bob || ajustes.qr_cobro_url) : '');
+                              if (finalQR) setShowQRModal(finalQR);
                             } catch (e) {
                               triggerToast('ERROR CARGANDO DATOS DE PAGO');
                             }
@@ -323,11 +363,12 @@ export default function PedidosVendorPage() {
                               const ajustes = await api.get('/ajustes-publicos');
                               setNewPedido({ ...newPedido, providerPagos: {
                                 nombre: 'SISTEMA ARES',
-                                qr_bob: ajustes.qr_cobro_bob,
+                                qr_bob: ajustes.qr_cobro_bob || ajustes.qr_cobro_url,
                                 qr_usd: ajustes.qr_cobro_usd,
-                                tigo_money: ajustes.tigo_money_numero
+                                tigo_money: ajustes.tigo_money_numero || ajustes.tigo_money
                               }});
-                              if (ajustes.qr_cobro_bob) setShowQRModal(ajustes.qr_cobro_bob);
+                              if (ajustes.qr_cobro_bob || ajustes.qr_cobro_url) setShowQRModal(ajustes.qr_cobro_bob || ajustes.qr_cobro_url);
+                              else if (ajustes.qr_cobro_usd) setShowQRModal(ajustes.qr_cobro_usd);
                             } catch (e) {
                               triggerToast('ERROR CARGANDO DATOS DEL ADMIN');
                             }

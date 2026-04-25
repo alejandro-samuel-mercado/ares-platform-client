@@ -3,8 +3,8 @@
  */
 'use client';
 
-import React, { useState, useEffect } from 'react';
-import { Save, LogOut, User, Bell, BellOff, Loader2, ChevronRight, Star, ShieldCheck, Smartphone, CheckCircle2, QrCode, Globe, RefreshCw } from 'lucide-react';
+import React, { useState, useEffect, useRef } from 'react';
+import { Save, LogOut, User, Bell, BellOff, Loader2, ChevronRight, Star, ShieldCheck, Smartphone, CheckCircle2, QrCode, Globe, RefreshCw, UploadCloud, Image as ImageIcon } from 'lucide-react';
 import api from '@/lib/api';
 import { useAuth } from '@/lib/auth';
 import { useRouter } from 'next/navigation';
@@ -24,8 +24,24 @@ export default function PerfilPage() {
         tigo_money: (vendor as any)?.tigo_money || ''
     });
 
+    const [saving, setSaving] = useState(false);
+    const [selectedFiles, setSelectedFiles] = useState<{
+        logo?: File,
+        qr_bob?: File,
+        qr_usd?: File
+    }>({});
+
+    const logoInputRef = useRef<HTMLInputElement>(null);
+    const qrBobInputRef = useRef<HTMLInputElement>(null);
+    const qrUsdInputRef = useRef<HTMLInputElement>(null);
+
     useEffect(() => {
         if (vendor) {
+            console.log('[PERFIL] Sincronizando Form con Vendor Context:', {
+                qr_bob: (vendor as any).qr_bob,
+                qr_usd: (vendor as any).qr_usd,
+                tigo_money: (vendor as any).tigo_money
+            });
             setForm({
                 whatsapp: vendor.whatsapp || '',
                 alias: vendor.alias || '',
@@ -38,7 +54,6 @@ export default function PerfilPage() {
             });
         }
     }, [vendor]);
-    const [saving, setSaving] = useState(false);
     const [showToast, setShowToast] = useState(false);
     const [notificationsEnabled, setNotificationsEnabled] = useState(false);
 
@@ -92,13 +107,61 @@ export default function PerfilPage() {
     };
 
     const handleSave = async () => {
+        console.log('[PERFIL] Iniciando guardado. Form actual:', form);
+        console.log('[PERFIL] Archivos seleccionados:', Object.keys(selectedFiles));
+        
         setSaving(true);
         try {
-            await api.put('/perfil', form);
+            const formData = new FormData();
+            // Campos de texto
+            formData.append('whatsapp', form.whatsapp);
+            formData.append('alias', form.alias);
+            formData.append('nombre', form.nombre);
+            formData.append('whatsapp_api_enabled', form.whatsapp_api_enabled.toString());
+            formData.append('whatsapp_api_token', form.whatsapp_api_token);
+            formData.append('tigo_money', form.tigo_money);
+            
+            // URLs manuales (si no hay archivo nuevo)
+            if (!selectedFiles.logo) formData.append('logo_url', vendor?.logo_url || '');
+            if (!selectedFiles.qr_bob) formData.append('qr_bob_url', form.qr_bob);
+            if (!selectedFiles.qr_usd) formData.append('qr_usd_url', form.qr_usd);
+
+            // Archivos locales (Multer los intercepta por nombre)
+            if (selectedFiles.logo) formData.append('logo', selectedFiles.logo);
+            if (selectedFiles.qr_bob) formData.append('qr_bob', selectedFiles.qr_bob);
+            if (selectedFiles.qr_usd) formData.append('qr_usd', selectedFiles.qr_usd);
+
+            console.log('[PERFIL] Enviando FormData...');
+            const response = await api.request('/perfil', {
+                method: 'PUT',
+                body: formData
+            });
+            console.log('[PERFIL] Respuesta API PUT:', response);
+
+            // Actualización directa para evitar parpadeos/reseteos por race conditions
+            if (response.vendor) {
+                setForm({
+                    whatsapp: response.vendor.whatsapp || '',
+                    alias: response.vendor.alias || '',
+                    nombre: response.vendor.nombre || '',
+                    whatsapp_api_enabled: response.vendor.whatsapp_api_enabled || false,
+                    whatsapp_api_token: response.vendor.whatsapp_api_token || '',
+                    qr_bob: response.vendor.qr_bob || '',
+                    qr_usd: response.vendor.qr_usd || '',
+                    tigo_money: response.vendor.tigo_money || ''
+                });
+            }
+
             triggerToast('Perfil actualizado correctamente ✅');
-            if (refreshVendor) await refreshVendor();
+            setSelectedFiles({});
+            
+            if (refreshVendor) {
+                console.log('[PERFIL] Refrescando vendor context...');
+                await refreshVendor();
+                console.log('[PERFIL] Vendor context refrescado.');
+            }
         } catch (err) {
-            console.error(err);
+            console.error('[PERFIL] Error en guardado:', err);
             alert('Error al actualizar el perfil');
         } finally {
             setSaving(false);
@@ -188,13 +251,40 @@ export default function PerfilPage() {
                     boxShadow: '10px 10px 0px 0px var(--color-primary)',
                     position: 'relative'
                 }}>
-                    {vendor?.logo_url ? (
+                    {selectedFiles.logo ? (
+                        <img src={URL.createObjectURL(selectedFiles.logo)} style={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: '36px' }} alt="Avatar Preview" />
+                    ) : vendor?.logo_url ? (
                         <img src={vendor.logo_url} style={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: '36px' }} alt="Avatar" />
                     ) : (
                         <div style={{ background: 'var(--color-primary)', width: '100%', height: '100%', borderRadius: '36px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                             <User size={60} color="#000" />
                         </div>
                     )}
+                    
+                    {/* Botón flotante para subir foto */}
+                    <button 
+                        onClick={() => logoInputRef.current?.click()}
+                        style={{
+                            position: 'absolute', bottom: '-10px', right: '-10px',
+                            width: '45px', height: '45px', borderRadius: '15px',
+                            background: 'var(--color-primary)', border: '3px solid #000',
+                            display: 'flex', alignItems: 'center', justifyContent: 'center',
+                            cursor: 'pointer', boxShadow: '4px 4px 0px 0px #000'
+                        }}
+                        className="hover-bright"
+                    >
+                        <ImageIcon size={20} color="#000" />
+                    </button>
+                    <input 
+                        type="file" 
+                        ref={logoInputRef} 
+                        style={{ display: 'none' }} 
+                        accept="image/*"
+                        onChange={(e) => {
+                            const file = e.target.files?.[0];
+                            if (file) setSelectedFiles({ ...selectedFiles, logo: file });
+                        }}
+                    />
                 </div>
 
                 <div style={{ marginTop: '0.5rem' }}>
@@ -296,15 +386,6 @@ export default function PerfilPage() {
                             <input className="input" value={form.whatsapp} onChange={e => setForm({ ...form, whatsapp: e.target.value })} placeholder="591XXXXXXXX" />
                         </div>
                     </div>
-
-                    <button
-                        className="btn-primary"
-                        style={{ width: '100%', marginTop: '2.5rem', padding: '1.25rem', fontSize: '1rem' }}
-                        onClick={handleSave}
-                        disabled={saving}
-                    >
-                        {saving ? <Loader2 size={24} className="animate-spin" /> : <><Save size={20} /> ACTUALIZAR MI PERFIL</>}
-                    </button>
                 </div>
 
                 {/* Preferences & Notification Channels */}
@@ -398,23 +479,64 @@ export default function PerfilPage() {
                       </p>
                       
                       <div style={{ display: 'flex', flexDirection: 'column', gap: '1.75rem' }}>
-                          <div>
-                              <label className="input-label">Enlace de Imagen QR (Bs)</label>
-                              <input 
-                                className="input" 
-                                placeholder="https://i.ibb.co/..." 
-                                value={form.qr_bob} 
-                                onChange={e => setForm({ ...form, qr_bob: e.target.value })} 
-                              />
-                          </div>
-                          <div>
-                              <label className="input-label">Enlace de Imagen QR ($ USD)</label>
-                              <input 
-                                className="input" 
-                                placeholder="https://i.ibb.co/..." 
-                                value={form.qr_usd} 
-                                onChange={e => setForm({ ...form, qr_usd: e.target.value })} 
-                              />
+                          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
+                              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+                                  <label className="input-label">QR Bolivianos (Bs)</label>
+                                  <div 
+                                    onClick={() => qrBobInputRef.current?.click()}
+                                    style={{
+                                        border: '2.5px dashed var(--color-primary)', borderRadius: '18px', padding: '1rem',
+                                        height: '140px', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
+                                        cursor: 'pointer', background: 'var(--surface-raised)', transition: '0.2s', position: 'relative'
+                                    }}
+                                    className="hover-bright"
+                                  >
+                                  {selectedFiles.qr_bob ? (
+                                         <>
+                                            <CheckCircle2 color="var(--color-success)" size={32} />
+                                            <span style={{ fontSize: '0.7rem', fontWeight: 900, marginTop: '0.5rem', textAlign: 'center' }}>{selectedFiles.qr_bob.name}</span>
+                                         </>
+                                      ) : form.qr_bob ? (
+                                         <img src={form.qr_bob} style={{ width: '100%', height: '100%', objectFit: 'contain', borderRadius: '12px' }} alt="QR BOB" />
+                                      ) : (
+                                         <>
+                                            <UploadCloud size={32} color="var(--color-primary)" />
+                                            <span style={{ fontSize: '0.7rem', fontWeight: 900, marginTop: '0.5rem' }}>Subir QR BS</span>
+                                         </>
+                                      )}
+                                  </div>
+                                  <input type="file" ref={qrBobInputRef} style={{ display: 'none' }} accept="image/*" onChange={(e) => { const file = e.target.files?.[0]; if (file) setSelectedFiles({ ...selectedFiles, qr_bob: file }); }} />
+                                  {/* URL fallback removed to enforce local upload */}
+                              </div>
+
+                              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+                                  <label className="input-label">QR Dólares ($)</label>
+                                  <div 
+                                    onClick={() => qrUsdInputRef.current?.click()}
+                                    style={{
+                                        border: '2.5px dashed var(--color-primary)', borderRadius: '18px', padding: '1rem',
+                                        height: '140px', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
+                                        cursor: 'pointer', background: 'var(--surface-raised)', transition: '0.2s', position: 'relative'
+                                    }}
+                                    className="hover-bright"
+                                  >
+                                      {selectedFiles.qr_usd ? (
+                                         <>
+                                            <CheckCircle2 color="var(--color-success)" size={32} />
+                                            <span style={{ fontSize: '0.7rem', fontWeight: 900, marginTop: '0.5rem', textAlign: 'center' }}>{selectedFiles.qr_usd.name}</span>
+                                         </>
+                                      ) : form.qr_usd ? (
+                                         <img src={form.qr_usd} style={{ width: '100%', height: '100%', objectFit: 'contain', borderRadius: '12px' }} alt="QR USD" />
+                                      ) : (
+                                         <>
+                                            <UploadCloud size={32} color="var(--color-primary)" />
+                                            <span style={{ fontSize: '0.7rem', fontWeight: 900, marginTop: '0.5rem' }}>Subir QR USD</span>
+                                         </>
+                                      )}
+                                  </div>
+                                  <input type="file" ref={qrUsdInputRef} style={{ display: 'none' }} accept="image/*" onChange={(e) => { const file = e.target.files?.[0]; if (file) setSelectedFiles({ ...selectedFiles, qr_usd: file }); }} />
+                                  {/* URL fallback removed to enforce local upload */}
+                              </div>
                           </div>
                           <div>
                               <label className="input-label">Número Tigo Money</label>
@@ -425,9 +547,29 @@ export default function PerfilPage() {
                                 onChange={e => setForm({ ...form, tigo_money: e.target.value })} 
                               />
                           </div>
+
+                          <button
+                            className="btn-primary"
+                            style={{ width: '100%', marginTop: '1rem', padding: '1rem', fontSize: '0.9rem' }}
+                            onClick={handleSave}
+                            disabled={saving}
+                          >
+                            {saving ? <Loader2 size={24} className="animate-spin" /> : <><Save size={18} /> GUARDAR CAMBIOS</>}
+                          </button>
                       </div>
                   </div>
                 )}
+
+                <div style={{ marginTop: '1rem' }}>
+                    <button
+                        className="btn-primary"
+                        style={{ width: '100%', padding: '1.25rem', fontSize: '1rem', boxShadow: 'var(--shadow-heavy)' }}
+                        onClick={handleSave}
+                        disabled={saving}
+                    >
+                        {saving ? <Loader2 size={24} className="animate-spin" /> : <><Save size={20} /> ACTUALIZAR TODO MI PERFIL</>}
+                    </button>
+                </div>
 
                 {/* Logout Section */}
                 <button

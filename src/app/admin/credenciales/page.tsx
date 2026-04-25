@@ -34,6 +34,9 @@ export default function CredencialesAdminPage() {
   const [assignModal, setAssignModal] = useState<{ open: boolean; credencialId: string | null }>({ open: false, credencialId: null });
   const [assignVendorId, setAssignVendorId] = useState('');
 
+  // Delete State
+  const [toDelete, setToDelete] = useState<Credencial | null>(null);
+
   const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'https://ares-api.unixxtech.online/api';
   const token = typeof window !== 'undefined' ? localStorage.getItem('ares_token') : null;
   const headers = { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` };
@@ -67,37 +70,38 @@ export default function CredencialesAdminPage() {
     try {
       if (editingId) {
         await fetch(`${API_BASE}/admin/credenciales/${editingId}`, { method: 'PUT', headers, body: JSON.stringify(form) });
-        showToast('Credencial actualizada ✅');
+        showToast('CREDENCIAL ACTUALIZADA ✅');
       } else {
         await fetch(`${API_BASE}/admin/credenciales`, { method: 'POST', headers, body: JSON.stringify(form) });
-        showToast('Credencial creada ✅');
+        showToast('CREDENCIAL CREADA ✅');
       }
       setShowModal(false);
       resetForm();
       load();
-    } catch { showToast('Error'); }
+    } catch { showToast('ERROR AL GUARDAR ❌'); }
     finally { setSaving(false); }
   };
 
-  const handleDelete = async (id: string) => {
-    if (!confirm('¿Eliminar esta credencial?')) return;
-    await fetch(`${API_BASE}/admin/credenciales/${id}`, { method: 'DELETE', headers });
-    showToast('Credencial eliminada');
-    load();
+  const handleDelete = async () => {
+    if (!toDelete) return;
+    try {
+      await fetch(`${API_BASE}/admin/credenciales/${toDelete.id}`, { method: 'DELETE', headers });
+      showToast('CREDENCIAL ELIMINADA 🗑️');
+      setToDelete(null);
+      load();
+    } catch { showToast('ERROR AL ELIMINAR ❌'); }
   };
 
   const handleLiberar = async (id: string) => {
     await fetch(`${API_BASE}/admin/credenciales/${id}/liberar`, { method: 'POST', headers });
-    showToast('Credencial liberada ✅');
+    showToast('CREDENCIAL LIBERADA ✅');
     load();
   };
 
   const handleCopy = (c: Credencial) => {
-    let text = `📦 SERVICIO: ${c.servicio.nombre}\n👤 USUARIO: ${c.usuario}\n🔑 CONTRASEÑA: ${c.password}`;
-    if (c.perfil) text += `\n🎬 PERFIL: ${c.perfil}`;
-    if (c.notas) text += `\n📝 NOTAS: ${c.notas}`;
+    const text = `📦 *SERVICIO:* ${c.servicio.nombre}\n👤 *USUARIO:* ${c.usuario}\n🔑 *CLAVE:* ${c.password}${c.perfil ? `\n🎬 *PERFIL:* ${c.perfil}` : ''}${c.notas ? `\n📝 *NOTAS:* ${c.notas}` : ''}`;
     navigator.clipboard.writeText(text);
-    showToast('Credenciales copiadas para enviar 📋');
+    showToast('CREDENCIALES COPIADAS 📋');
   };
 
   const handleAssign = async () => {
@@ -109,12 +113,12 @@ export default function CredencialesAdminPage() {
         headers,
         body: JSON.stringify({ vendor_id: assignVendorId })
       });
-      showToast('Credencial asignada al vendedor 🔗');
+      showToast('CREDENCIAL ASIGNADA 🔗');
       setAssignModal({ open: false, credencialId: null });
       setAssignVendorId('');
       load();
     } catch {
-      showToast('Error asignando vendedor');
+      showToast('ERROR ASIGNANDO VENDEDOR');
     } finally {
       setSaving(false);
     }
@@ -139,161 +143,172 @@ export default function CredencialesAdminPage() {
   const asignadasCount = credenciales.filter(c => !c.disponible).length;
 
   return (
-    <div style={{ padding: '2rem', maxWidth: '1400px', margin: '0 auto' }}>
-      <AnimatePresence>{toast && (
-        <motion.div initial={{ y: -50, opacity: 0 }} animate={{ y: 20, opacity: 1 }} exit={{ y: -50, opacity: 0 }}
-          style={{ position: 'fixed', top: 0, left: '50%', transform: 'translateX(-50%)', zIndex: 3000, background: '#000', color: 'white', padding: '1rem 2rem', borderRadius: '16px', border: '2px solid var(--color-primary)', fontWeight: 800 }}>
-          {toast}
-        </motion.div>
-      )}</AnimatePresence>
+    <div style={{ padding: '2rem', maxWidth: '1400px', margin: '0 auto', paddingBottom: '6rem' }}>
+      <AnimatePresence>
+        {toast && (
+          <motion.div initial={{ y: -50, opacity: 0 }} animate={{ y: 20, opacity: 1 }} exit={{ y: -50, opacity: 0 }}
+            style={{ position: 'fixed', top: 0, left: '50%', transform: 'translateX(-50%)', zIndex: 10000, background: 'var(--surface-raised)', color: 'var(--text-primary)', padding: '1rem 2.5rem', borderRadius: '24px', border: '3px solid var(--color-primary)', boxShadow: '8px 8px 0px 0px rgba(0,0,0,0.5)', fontWeight: 900, display: 'flex', alignItems: 'center', gap: '1rem' }}>
+            <CheckCircle2 color="var(--color-primary)" /> {toast}
+          </motion.div>
+        )}
+      </AnimatePresence>
 
-      {/* Header */}
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2rem', flexWrap: 'wrap', gap: '1rem' }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '3.5rem' }}>
         <div>
-          <h1 style={{ fontSize: '2rem', fontWeight: 900, display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-            <Key size={28} color="var(--color-primary)" /> GESTIÓN DE <span style={{ color: 'var(--color-primary)' }}>CREDENCIALES</span>
+          <h1 style={{ fontSize: '2.8rem', fontWeight: 900, display: 'flex', alignItems: 'center', gap: '1rem' }}>
+            GESTIÓN DE <span className="text-gradient-primary">CREDENCIALES</span>
+            <button onClick={load} className="btn-secondary" style={{ padding: '0.75rem', borderRadius: '50%' }}>
+              <RefreshCw size={24} className={loading ? 'animate-spin' : ''} />
+            </button>
           </h1>
-          <div style={{ display: 'flex', gap: '1rem', marginTop: '0.5rem', fontSize: '0.8rem', fontWeight: 800 }}>
-            <span style={{ color: '#10B981' }}>🟢 {disponiblesCount} disponibles</span>
-            <span style={{ color: '#EF4444' }}>🔴 {asignadasCount} asignadas</span>
-            <span>📦 {credenciales.length} total</span>
+          <p style={{ fontWeight: 800, opacity: 0.5, color: 'var(--text-muted)' }}>BANCO DE CUENTAS Y ACCESOS DEL SISTEMA</p>
+          <div style={{ display: 'flex', gap: '1rem', marginTop: '1rem' }}>
+            <div className="chip chip-active">{disponiblesCount} LIBRES</div>
+            <div className="chip chip-danger">{asignadasCount} ASIGNADAS</div>
           </div>
         </div>
-        <button className="btn-primary" onClick={() => { resetForm(); setShowModal(true); }}
-          style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', padding: '0.7rem 1.5rem' }}>
-          <Plus size={18} /> AGREGAR CREDENCIAL
+        <button className="btn-primary" onClick={() => { resetForm(); setShowModal(true); }} style={{ padding: '1.25rem 2.5rem' }}>
+          <Plus size={22} /> NUEVA CREDENCIAL
         </button>
       </div>
 
-      {/* Filters */}
-      <div style={{ display: 'flex', gap: '0.75rem', marginBottom: '2rem', flexWrap: 'wrap' }}>
-        <select value={filterServicio} onChange={e => setFilterServicio(e.target.value)} className="input" style={{ maxWidth: '250px', fontSize: '0.85rem' }}>
-          <option value="TODOS">Todos los servicios</option>
-          {servicios.map(s => <option key={s.id} value={s.id}>{s.nombre}</option>)}
+      <div style={{ display: 'flex', gap: '1rem', marginBottom: '3rem', flexWrap: 'wrap', alignItems: 'center' }}>
+        <div style={{ position: 'relative', flex: 1, minWidth: '300px' }}>
+          <Search size={18} style={{ position: 'absolute', left: '1.2rem', top: '50%', transform: 'translateY(-50%)', opacity: 0.4 }} />
+          <select value={filterServicio} onChange={e => setFilterServicio(e.target.value)} className="input" style={{ paddingLeft: '3rem', height: '54px', fontWeight: 800 }}>
+            <option value="TODOS">TODOS LOS SERVICIOS</option>
+            {servicios.map(s => <option key={s.id} value={s.id}>{s.nombre.toUpperCase()}</option>)}
+          </select>
+        </div>
+        <select value={filterDisponible} onChange={e => setFilterDisponible(e.target.value)} className="input" style={{ width: '220px', height: '54px', fontWeight: 800 }}>
+          <option value="TODOS">TODOS LOS ESTADOS</option>
+          <option value="DISPONIBLE">DISPONIBLES</option>
+          <option value="ASIGNADA">ASIGNADAS</option>
         </select>
-        <select value={filterDisponible} onChange={e => setFilterDisponible(e.target.value)} className="input" style={{ maxWidth: '200px', fontSize: '0.85rem' }}>
-          <option value="TODOS">Todos los estados</option>
-          <option value="DISPONIBLE">Disponibles</option>
-          <option value="ASIGNADA">Asignadas</option>
-        </select>
-        <button className="btn-secondary" onClick={load} style={{ padding: '0.5rem 1rem', display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
-          <RefreshCw size={16} /> Refrescar
+        <button className="btn-secondary" onClick={load} style={{ height: '54px', padding: '0 1.5rem', borderRadius: '18px', display: 'flex', alignItems: 'center', gap: '0.7rem' }}>
+          <RefreshCw size={18} className={loading ? 'animate-spin' : ''} /> REFRESCAR
         </button>
       </div>
 
-      {/* Table */}
       {loading ? (
-        <div style={{ textAlign: 'center', padding: '5rem' }}><Loader2 className="animate-spin" size={40} color="var(--color-primary)" /></div>
+        <div style={{ textAlign: 'center', padding: '10rem' }}><Loader2 className="animate-spin" size={48} color="var(--color-primary)" /></div>
       ) : (
-        <div style={{ overflowX: 'auto' }}>
-          <table style={{ width: '100%', borderCollapse: 'separate', borderSpacing: '0 0.5rem' }}>
+        <div className="table-container">
+          <table className="table">
             <thead>
-              <tr style={{ fontSize: '0.7rem', fontWeight: 900, textTransform: 'uppercase', opacity: 0.5, textAlign: 'left' }}>
-                <th style={{ padding: '0.5rem 1rem' }}>Servicio</th>
-                <th style={{ padding: '0.5rem 1rem' }}>Usuario</th>
-                <th style={{ padding: '0.5rem 1rem' }}>Contraseña</th>
-                <th style={{ padding: '0.5rem 1rem' }}>Perfil</th>
-                <th style={{ padding: '0.5rem 1rem' }}>Estado</th>
-                <th style={{ padding: '0.5rem 1rem' }}>Asignada a</th>
-                <th style={{ padding: '0.5rem 1rem' }}>Acciones</th>
+              <tr>
+                <th>Servicio / Categoría</th>
+                <th>Usuario / Email</th>
+                <th>Password</th>
+                <th>Perfil / Notas</th>
+                <th>Estado</th>
+                <th>Asignada A</th>
+                <th style={{ textAlign: 'center' }}>Gestión</th>
               </tr>
             </thead>
             <tbody>
-              {filtered.map(c => (
-                <tr key={c.id} style={{ background: 'var(--surface-raised)', borderRadius: '12px' }}>
-                  <td style={{ padding: '0.75rem 1rem', fontWeight: 800, fontSize: '0.85rem' }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                      {c.servicio.logo_url && <img src={c.servicio.logo_url} style={{ width: 28, height: 28, borderRadius: '8px', objectFit: 'cover' }} />}
-                      {c.servicio.nombre}
-                    </div>
-                  </td>
-                  <td style={{ padding: '0.75rem 1rem', fontFamily: 'monospace', fontSize: '0.85rem', fontWeight: 700 }}>{c.usuario}</td>
-                  <td style={{ padding: '0.75rem 1rem' }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
-                      <span style={{ fontFamily: 'monospace', fontSize: '0.85rem', fontWeight: 700 }}>
-                        {revealedPasswords.has(c.id) ? c.password : '••••••••'}
-                      </span>
-                      <button onClick={() => togglePassword(c.id)} style={{ background: 'none', border: 'none', cursor: 'pointer' }}>
-                        {revealedPasswords.has(c.id) ? <EyeOff size={14} /> : <Eye size={14} />}
-                      </button>
-                    </div>
-                  </td>
-                  <td style={{ padding: '0.75rem 1rem', fontSize: '0.8rem', fontWeight: 700 }}>{c.perfil || '—'}</td>
-                  <td style={{ padding: '0.75rem 1rem' }}>
-                    <span style={{
-                      padding: '0.25rem 0.6rem', borderRadius: '6px', fontSize: '0.7rem', fontWeight: 900,
-                      background: c.disponible ? '#10B98122' : '#EF444422',
-                      color: c.disponible ? '#10B981' : '#EF4444',
-                      border: `1.5px solid ${c.disponible ? '#10B98155' : '#EF444455'}`
-                    }}>
-                      {c.disponible ? 'DISPONIBLE' : 'ASIGNADA'}
-                    </span>
-                  </td>
-                  <td style={{ padding: '0.75rem 1rem', fontSize: '0.8rem', fontWeight: 700 }}>
-                    {c.vendor ? `@${c.vendor.alias}` : '—'}
-                  </td>
-                  <td style={{ padding: '0.75rem 1rem' }}>
-                    <div style={{ display: 'flex', gap: '0.6rem' }}>
-                      <button onClick={() => handleCopy(c)} title="Copiar formato para WhatsApp/Pedidos" style={{ background: 'none', border: 'none', cursor: 'pointer', padding: '0.2rem' }}><Copy size={16} color="var(--text-primary)" /></button>
-                      {c.disponible && (
-                        <button onClick={() => setAssignModal({ open: true, credencialId: c.id })} title="Asignar manualmente a un vendedor" style={{ background: 'none', border: 'none', cursor: 'pointer', padding: '0.2rem' }}><LinkIcon size={16} color="#3B82F6" /></button>
-                      )}
-                      <button onClick={() => openEdit(c)} title="Editar" style={{ background: 'none', border: 'none', cursor: 'pointer', padding: '0.2rem' }}><Edit3 size={16} color="var(--color-primary)" /></button>
-                      {!c.disponible && (
-                        <button onClick={() => handleLiberar(c.id)} title="Liberar" style={{ background: 'none', border: 'none', cursor: 'pointer', padding: '0.2rem' }}><Unlock size={16} color="#F59E0B" /></button>
-                      )}
-                      <button onClick={() => handleDelete(c.id)} title="Eliminar" style={{ background: 'none', border: 'none', cursor: 'pointer', padding: '0.2rem' }}><Trash2 size={16} color="#EF4444" /></button>
-                    </div>
-                  </td>
-                </tr>
-              ))}
+              <AnimatePresence mode="popLayout">
+                {filtered.map((c, i) => (
+                  <motion.tr key={c.id} initial={{ opacity: 0, x: -10 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: i * 0.02 }}>
+                    <td>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+                        <div style={{ width: '40px', height: '40px', borderRadius: '10px', background: 'white', border: '2px solid #000', display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden' }}>
+                           {c.servicio.logo_url ? <img src={c.servicio.logo_url} style={{ width: '100%', height: '100%', objectFit: 'contain' }} /> : <Key size={18} />}
+                        </div>
+                        <div style={{ fontWeight: 900 }}>{c.servicio.nombre.toUpperCase()}</div>
+                      </div>
+                    </td>
+                    <td style={{ fontFamily: 'monospace', fontWeight: 800 }}>{c.usuario}</td>
+                    <td>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem' }}>
+                        <span style={{ fontFamily: 'monospace', fontWeight: 800 }}>
+                          {revealedPasswords.has(c.id) ? c.password : '••••••••'}
+                        </span>
+                        <button onClick={() => togglePassword(c.id)} style={{ background: 'none', border: 'none', cursor: 'pointer', opacity: 0.4 }}>
+                          {revealedPasswords.has(c.id) ? <EyeOff size={16} /> : <Eye size={16} />}
+                        </button>
+                      </div>
+                    </td>
+                    <td>
+                      {c.perfil && <div style={{ fontSize: '0.75rem', fontWeight: 900, color: 'var(--color-primary)' }}>P: {c.perfil}</div>}
+                      <div style={{ fontSize: '0.7rem', opacity: 0.5 }}>{c.notas || '-'}</div>
+                    </td>
+                    <td>
+                      <div className={`chip ${c.disponible ? 'chip-active' : 'chip-danger'}`}>
+                        {c.disponible ? 'LIBRE' : 'ASIGN'}
+                      </div>
+                    </td>
+                    <td>
+                      {c.vendor ? (
+                        <div style={{ fontWeight: 900, fontSize: '0.85rem' }}>
+                           <span style={{ color: 'var(--color-primary)' }}>@{c.vendor.alias.toUpperCase()}</span>
+                        </div>
+                      ) : <span style={{ opacity: 0.3 }}>—</span>}
+                    </td>
+                    <td>
+                      <div style={{ display: 'flex', gap: '0.75rem', justifyContent: 'center' }}>
+                        <button onClick={() => handleCopy(c)} className="btn-secondary" style={{ padding: '0.4rem', border: 'none', background: 'transparent', boxShadow: 'none' }} title="Copiar"><Copy size={18} /></button>
+                        {c.disponible && (
+                          <button onClick={() => setAssignModal({ open: true, credencialId: c.id })} className="btn-secondary" style={{ padding: '0.4rem', border: 'none', background: 'transparent', boxShadow: 'none', color: '#3B82F6' }} title="Asignar"><LinkIcon size={18} /></button>
+                        )}
+                        <button onClick={() => openEdit(c)} className="btn-secondary" style={{ padding: '0.4rem', border: 'none', background: 'transparent', boxShadow: 'none' }} title="Editar"><Edit3 size={18} color="var(--color-primary)" /></button>
+                        {!c.disponible && (
+                          <button onClick={() => handleLiberar(c.id)} className="btn-secondary" style={{ padding: '0.4rem', border: 'none', background: 'transparent', boxShadow: 'none', color: '#F59E0B' }} title="Liberar"><Unlock size={18} /></button>
+                        )}
+                        <button onClick={() => setToDelete(c)} className="btn-secondary" style={{ padding: '0.4rem', border: 'none', background: 'transparent', boxShadow: 'none', color: 'var(--color-danger)' }} title="Eliminar"><Trash2 size={18} /></button>
+                      </div>
+                    </td>
+                  </motion.tr>
+                ))}
+              </AnimatePresence>
             </tbody>
           </table>
-          {filtered.length === 0 && <p style={{ textAlign: 'center', padding: '3rem', fontWeight: 800, opacity: 0.5 }}>No hay credenciales con estos filtros</p>}
+          {filtered.length === 0 && <div style={{ padding: '5rem', textAlign: 'center', fontWeight: 900, opacity: 0.4 }}>NO HAY RESULTADOS EN ESTA MATRIZ</div>}
         </div>
       )}
 
       {/* Modal Crear/Editar */}
       <AnimatePresence>
         {showModal && (
-          <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, background: 'rgba(0,0,0,0.6)', zIndex: 5000, display: 'flex', alignItems: 'center', justifyContent: 'center' }}
-            onClick={() => setShowModal(false)}>
-            <motion.div onClick={e => e.stopPropagation()} initial={{ scale: 0.8, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.8, opacity: 0 }}
-              style={{ background: 'var(--surface-raised, white)', borderRadius: '24px', border: '3px solid #000', padding: '2rem', maxWidth: '480px', width: '95%', boxShadow: '12px 12px 0px 0px rgba(0,0,0,0.3)' }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
-                <h2 style={{ fontWeight: 900, fontSize: '1.2rem' }}>{editingId ? 'EDITAR' : 'NUEVA'} CREDENCIAL</h2>
-                <button onClick={() => setShowModal(false)} style={{ background: 'none', border: 'none', cursor: 'pointer' }}><X size={24} /></button>
+          <div className="modal-overlay">
+            <motion.div onClick={e => e.stopPropagation()} initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.9, opacity: 0 }}
+              className="modal-container" style={{ maxWidth: '550px', padding: '3.5rem', border: '5px solid #000', borderRadius: '32px', background: 'var(--surface-overlay)' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2.5rem' }}>
+                <h2 style={{ fontWeight: 900, fontSize: '2rem' }}>{editingId ? 'EDITAR' : 'NUEVA'} <span className="text-gradient-primary">CREDENCIAL</span></h2>
+                <button onClick={() => setShowModal(false)} style={{ background: 'none', border: 'none', cursor: 'pointer' }}><X size={32} /></button>
               </div>
 
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
                 <div>
-                  <label style={{ fontSize: '0.7rem', fontWeight: 900, opacity: 0.5, display: 'block', marginBottom: '0.3rem' }}>SERVICIO</label>
-                  <select className="input" value={form.servicio_id} onChange={e => setForm({ ...form, servicio_id: e.target.value })} disabled={!!editingId}>
-                    <option value="">Seleccionar...</option>
-                    {servicios.map(s => <option key={s.id} value={s.id}>{s.nombre}</option>)}
+                  <label className="input-label">SERVICIO MAESTRO</label>
+                  <select className="input" value={form.servicio_id} onChange={e => setForm({ ...form, servicio_id: e.target.value })} disabled={!!editingId} style={{ height: '60px', fontWeight: 800 }}>
+                    <option value="">SELECCIONA CATEGORÍA...</option>
+                    {servicios.map(s => <option key={s.id} value={s.id}>{s.nombre.toUpperCase()}</option>)}
                   </select>
                 </div>
-                <div>
-                  <label style={{ fontSize: '0.7rem', fontWeight: 900, opacity: 0.5, display: 'block', marginBottom: '0.3rem' }}>USUARIO / EMAIL</label>
-                  <input className="input" value={form.usuario} onChange={e => setForm({ ...form, usuario: e.target.value })} placeholder="usuario@email.com" />
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
+                    <div>
+                        <label className="input-label">USUARIO / EMAIL</label>
+                        <input className="input" value={form.usuario} onChange={e => setForm({ ...form, usuario: e.target.value })} placeholder="vortex@ares.com" style={{ height: '60px' }} />
+                    </div>
+                    <div>
+                        <label className="input-label">CONTRASEÑA (CLAVE)</label>
+                        <input className="input" value={form.password} onChange={e => setForm({ ...form, password: e.target.value })} placeholder="MasterKey123" style={{ height: '60px' }} />
+                    </div>
                 </div>
                 <div>
-                  <label style={{ fontSize: '0.7rem', fontWeight: 900, opacity: 0.5, display: 'block', marginBottom: '0.3rem' }}>CONTRASEÑA</label>
-                  <input className="input" value={form.password} onChange={e => setForm({ ...form, password: e.target.value })} placeholder="Contraseña de la cuenta" />
+                  <label className="input-label">PERFIL ASIGNADO (PANTALLA)</label>
+                  <input className="input" value={form.perfil} onChange={e => setForm({ ...form, perfil: e.target.value })} placeholder="Ej: Perfil 4 / PIN: 1234" style={{ height: '60px' }} />
                 </div>
                 <div>
-                  <label style={{ fontSize: '0.7rem', fontWeight: 900, opacity: 0.5, display: 'block', marginBottom: '0.3rem' }}>PERFIL (opcional)</label>
-                  <input className="input" value={form.perfil} onChange={e => setForm({ ...form, perfil: e.target.value })} placeholder="Perfil 1, Pantalla 2..." />
-                </div>
-                <div>
-                  <label style={{ fontSize: '0.7rem', fontWeight: 900, opacity: 0.5, display: 'block', marginBottom: '0.3rem' }}>NOTAS INTERNAS (opcional)</label>
-                  <input className="input" value={form.notas} onChange={e => setForm({ ...form, notas: e.target.value })} placeholder="Notas internas..." />
+                  <label className="input-label">NOTAS INTERNAS (SOPORTE)</label>
+                  <textarea className="input" value={form.notas} onChange={e => setForm({ ...form, notas: e.target.value })} placeholder="Instrucciones especiales para el vendedor..." rows={3} style={{ padding: '1.2rem' }} />
                 </div>
               </div>
 
               <button className="btn-primary" onClick={handleSave} disabled={saving || !form.servicio_id || !form.usuario || !form.password}
-                style={{ width: '100%', marginTop: '1.5rem', height: '50px', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem' }}>
-                {saving ? <Loader2 className="animate-spin" size={18} /> : <><CheckCircle2 size={18} /> {editingId ? 'ACTUALIZAR' : 'CREAR CREDENCIAL'}</>}
+                style={{ width: '100%', marginTop: '2.5rem', height: '70px', fontSize: '1.2rem', boxShadow: '12px 12px 0px 0px #000' }}>
+                {saving ? <Loader2 className="animate-spin" size={24} /> : (editingId ? 'ACTUALIZAR NÚCLEO' : 'SUBIR CREDENCIAL AL SISTEMA')}
               </button>
             </motion.div>
           </div>
@@ -303,34 +318,73 @@ export default function CredencialesAdminPage() {
       {/* Modal Asignar Vendedor */}
       <AnimatePresence>
         {assignModal.open && (
-           <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, background: 'rgba(0,0,0,0.6)', zIndex: 6000, display: 'flex', alignItems: 'center', justifyContent: 'center' }}
-           onClick={() => setAssignModal({ open: false, credencialId: null })}>
-           <motion.div onClick={e => e.stopPropagation()} initial={{ scale: 0.8, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.8, opacity: 0 }}
-             style={{ background: 'var(--surface-raised, white)', borderRadius: '24px', border: '3px solid #000', padding: '2rem', maxWidth: '450px', width: '95%', boxShadow: '12px 12px 0px 0px rgba(0,0,0,0.3)' }}>
-             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
-               <h2 style={{ fontWeight: 900, fontSize: '1.2rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}><LinkIcon color="#3B82F6" /> ASIGNAR VENDEDOR</h2>
-               <button onClick={() => setAssignModal({ open: false, credencialId: null })} style={{ background: 'none', border: 'none', cursor: 'pointer' }}><X size={24} /></button>
+           <div className="modal-overlay">
+           <motion.div onClick={e => e.stopPropagation()} initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.9, opacity: 0 }}
+             className="modal-container" style={{ maxWidth: '500px', padding: '3.5rem', border: '5px solid var(--color-primary)', borderRadius: '32px', background: 'var(--surface-overlay)', textAlign: 'center' }}>
+             <div style={{ background: 'rgba(var(--color-primary-rgb), 0.1)', width: 100, height: 100, borderRadius: '50%', margin: '0 auto 2rem', display: 'flex', alignItems: 'center', justifyContent: 'center', border: '3px solid var(--color-primary)' }}>
+                <LinkIcon size={48} color="var(--color-primary)" />
              </div>
-
-             <div style={{ marginBottom: '1.5rem' }}>
-               <label style={{ fontSize: '0.7rem', fontWeight: 900, opacity: 0.5, display: 'block', marginBottom: '0.5rem' }}>BUSCAR O SELECCIONAR VENDEDOR</label>
-               <select className="input" value={assignVendorId} onChange={e => setAssignVendorId(e.target.value)}>
-                 <option value="">Selecciona un vendedor...</option>
+             <h2 style={{ fontWeight: 900, fontSize: '1.8rem', marginBottom: '1rem' }}>ASIGNAR A VENDEDOR</h2>
+             
+             <div style={{ marginBottom: '2.5rem' }}>
+               <select className="input" value={assignVendorId} onChange={e => setAssignVendorId(e.target.value)} style={{ height: '60px', fontWeight: 900, textAlign: 'center' }}>
+                 <option value="">BUSCAR VENDEDOR...</option>
                  {vendors.map(v => (
-                   <option key={v.id} value={v.id}>{v.nombre} (@{v.alias})</option>
+                   <option key={v.id} value={v.id}>{v.nombre.toUpperCase()} (@{v.alias.toUpperCase()})</option>
                  ))}
                </select>
-               <p style={{ fontSize: '0.7rem', opacity: 0.6, marginTop: '0.5rem', fontWeight: 700 }}>Esto marcará la credencial como "Asignada" y quedará ligada al vendedor para auditoría.</p>
+               <p style={{ fontSize: '0.75rem', opacity: 0.6, marginTop: '1rem', fontWeight: 800 }}>ESTA ACCIÓN VINCULARÁ LA CREDENCIAL PARA AUDITORÍA</p>
              </div>
 
-             <button className="btn-primary" onClick={handleAssign} disabled={saving || !assignVendorId}
-               style={{ width: '100%', height: '50px', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem', background: '#3B82F6' }}>
-               {saving ? <Loader2 className="animate-spin" size={18} /> : <><CheckCircle2 size={18} /> CONFIRMAR ASIGNACIÓN</>}
-             </button>
+             <div style={{ display: 'flex', gap: '1rem' }}>
+                <button className="btn-secondary" style={{ flex: 1, border: 'none' }} onClick={() => setAssignModal({ open: false, credencialId: null })}>ABORTAR</button>
+                <button className="btn-primary" onClick={handleAssign} disabled={saving || !assignVendorId}
+                    style={{ flex: 2, height: '60px', background: 'var(--color-primary)', boxShadow: '8px 8px 0px 0px #000' }}>
+                    {saving ? <Loader2 className="animate-spin" /> : 'VINCULAR AHORA'}
+                </button>
+             </div>
            </motion.div>
          </div>
         )}
       </AnimatePresence>
+
+      {/* Confirm Delete Modal */}
+      <AnimatePresence>
+        {toDelete && (
+            <div className="modal-overlay">
+                <motion.div initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.9, opacity: 0 }}
+                    className="modal-container" style={{ maxWidth: 450, textAlign: 'center', padding: '4rem', border: '5px solid var(--color-danger)', borderRadius: 32, background: 'var(--surface-overlay)', boxShadow: '15px 15px 0px 0px rgba(0,0,0,0.5)' }}>
+                    <div style={{ background: 'rgba(239, 68, 68, 0.1)', width: 100, height: 100, borderRadius: '50%', margin: '0 auto 2rem', display: 'flex', alignItems: 'center', justifyContent: 'center', border: '3px solid var(--color-danger)' }}>
+                        <Trash2 size={48} color="var(--color-danger)" />
+                    </div>
+                    <h2 style={{ fontWeight: 900, marginBottom: '1rem', fontSize: '2rem' }}>¿ELIMINAR CUENTA?</h2>
+                    <p style={{ opacity: 0.8, fontWeight: 700, marginBottom: '2.5rem', fontSize: '1rem' }}>
+                        Vas a purgar la cuenta <span style={{ color: 'var(--color-danger)' }}>{toDelete.usuario}</span>. Esta acción es irreversible.
+                    </p>
+                    <div style={{ display: 'flex', gap: '1.5rem' }}>
+                        <button className="btn-secondary" style={{ flex: 1, border: 'none' }} onClick={() => setToDelete(null)}>CANCELAR</button>
+                        <button className="btn-primary" style={{ flex: 1, background: 'var(--color-danger)', boxShadow: '8px 8px 0px 0px #000' }} onClick={handleDelete}>BORRAR</button>
+                    </div>
+                </motion.div>
+            </div>
+        )}
+      </AnimatePresence>
+      <style>{`
+        .btn-icon {
+            background: rgba(0,0,0,0.05);
+            border: 2px solid #000;
+            padding: 10px;
+            border-radius: 12px;
+            cursor: pointer;
+            transition: transform 0.1s;
+        }
+        .btn-icon:hover { transform: translateY(-2px); }
+        .text-gradient-primary {
+            background: linear-gradient(135deg, var(--color-primary), #FFD700);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+      `}</style>
     </div>
   );
 }
