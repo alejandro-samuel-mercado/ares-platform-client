@@ -51,13 +51,13 @@ export default function PartidosVendorPage() {
     const downloadFixture = async (id: string, equipoLocal: string, equipoVisita: string) => {
         try {
             setDownloadingImg(prev => new Set(prev).add(id));
-            const node = document.getElementById(`fixture-${id}`);
+            const node = document.getElementById(`fixture-export-${id}`);
             if (!node) return;
             const canvas = await html2canvas(node, {
                 useCORS: true,
                 allowTaint: true,
                 backgroundColor: '#000',
-                scale: 2, // better quality
+                scale: 1, // 1080x1080 is high res enough
                 imageTimeout: 15000,
             });
             const dataUrl = canvas.toDataURL('image/jpeg', 0.95);
@@ -294,6 +294,72 @@ export default function PartidosVendorPage() {
                     ¡Vende más! Comparte esta cartelera en tus grupos de WhatsApp y redes sociales para atraer clientes amantes del deporte.
                 </p>
             </motion.div>
+
+            {/* PLATILLAS DE EXPORTACIÓN (Ocultas en la UI normal) */}
+            <div style={{ position: 'fixed', left: '-9999px', top: 0, zIndex: -10 }}>
+                {partidos.map(p => (
+                    <div key={`export-${p.id}`} id={`fixture-export-${p.id}`} style={{
+                        width: '1080px', height: '1080px',
+                        background: 'radial-gradient(circle at center, #111 0%, #000 100%)',
+                        display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
+                        color: 'white', fontFamily: 'sans-serif', position: 'relative', overflow: 'hidden'
+                    }}>
+                        {/* Background Decorators */}
+                        <div style={{ position: 'absolute', top: '-10%', left: '-10%', width: '600px', height: '600px', background: 'var(--color-primary)', filter: 'blur(150px)', opacity: 0.4 }} />
+                        <div style={{ position: 'absolute', bottom: '-10%', right: '-10%', width: '600px', height: '600px', background: 'var(--color-accent)', filter: 'blur(150px)', opacity: 0.4 }} />
+
+                        <div style={{ fontSize: '2.5rem', fontWeight: 900, textTransform: 'uppercase', letterSpacing: '12px', color: 'var(--color-primary)', marginBottom: '1.5rem', zIndex: 2 }}>
+                            {p.liga}
+                        </div>
+
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '3rem', width: '100%', padding: '0 6rem', justifyContent: 'center', marginBottom: '4rem', zIndex: 2 }}>
+                            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '1.5rem', width: '300px' }}>
+                                <div style={{ width: '280px', height: '280px', background: 'white', borderRadius: '50px', padding: '1.5rem', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 20px 50px rgba(0,0,0,0.8)', border: '6px solid rgba(255,255,255,0.1)' }}>
+                                    {p.logo_local && p.logo_local.startsWith('http') ? (
+                                        <img src={p.logo_local} crossOrigin="anonymous" style={{ width: '100%', height: '100%', objectFit: 'contain' }} />
+                                    ) : (
+                                        <Trophy size={120} style={{ opacity: 0.1 }} color="black" />
+                                    )}
+                                </div>
+                                <span style={{ fontSize: '2.5rem', fontWeight: 900, textAlign: 'center', textTransform: 'uppercase', textShadow: '2px 2px 0 #000' }}>{p.equipo_local}</span>
+                            </div>
+
+                            <div style={{ fontSize: '5rem', fontWeight: 900, color: 'white', textShadow: '0 0 40px rgba(255,255,255,0.5)' }}>VS</div>
+
+                            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '1.5rem', width: '300px' }}>
+                                <div style={{ width: '280px', height: '280px', background: 'white', borderRadius: '50px', padding: '1.5rem', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 20px 50px rgba(0,0,0,0.8)', border: '6px solid rgba(255,255,255,0.1)' }}>
+                                    {p.logo_visita && p.logo_visita.startsWith('http') ? (
+                                        <img src={p.logo_visita} crossOrigin="anonymous" style={{ width: '100%', height: '100%', objectFit: 'contain' }} />
+                                    ) : (
+                                        <Trophy size={120} style={{ opacity: 0.1 }} color="black" />
+                                    )}
+                                </div>
+                                <span style={{ fontSize: '2.5rem', fontWeight: 900, textAlign: 'center', textTransform: 'uppercase', textShadow: '2px 2px 0 #000' }}>{p.equipo_visita}</span>
+                            </div>
+                        </div>
+
+                        <div style={{ display: 'flex', gap: '2.5rem', marginTop: '2rem', zIndex: 2 }}>
+                            <div style={{ background: 'rgba(255,255,255,0.05)', padding: '1.5rem 4rem', borderRadius: '100px', display: 'flex', flexDirection: 'column', alignItems: 'center', backdropFilter: 'blur(20px)', border: '2px solid rgba(255,255,255,0.1)' }}>
+                                <span style={{ fontSize: '1rem', opacity: 0.6, fontWeight: 700, letterSpacing: '4px', marginBottom: '0.5rem' }}>FECHA</span>
+                                <span style={{ fontSize: '2rem', fontWeight: 900 }}>{p.fecha ? new Date(p.fecha).toLocaleDateString('es-ES', { day: '2-digit', month: 'long' }) : 'HOY'}</span>
+                            </div>
+                            <div style={{ background: 'var(--color-primary)', color: 'black', padding: '1.5rem 4rem', borderRadius: '100px', display: 'flex', flexDirection: 'column', alignItems: 'center', boxShadow: '0 15px 40px rgba(79, 70, 229, 0.4)' }}>
+                                <span style={{ fontSize: '1rem', opacity: 0.8, fontWeight: 900, letterSpacing: '4px', marginBottom: '0.5rem' }}>HORA</span>
+                                <span style={{ fontSize: '3rem', fontWeight: 900, lineHeight: 1 }}>{p.hora}</span>
+                            </div>
+                            <div style={{ background: 'rgba(255,255,255,0.05)', padding: '1.5rem 4rem', borderRadius: '100px', display: 'flex', flexDirection: 'column', alignItems: 'center', backdropFilter: 'blur(20px)', border: '2px solid rgba(255,255,255,0.1)' }}>
+                                <span style={{ fontSize: '1rem', opacity: 0.6, fontWeight: 700, letterSpacing: '4px', marginBottom: '0.5rem' }}>SEÑAL</span>
+                                <span style={{ fontSize: '2rem', fontWeight: 900 }}>{p.canal}</span>
+                            </div>
+                        </div>
+
+                        <div style={{ position: 'absolute', bottom: '2rem', fontSize: '1.2rem', fontWeight: 900, opacity: 0.3, letterSpacing: '8px' }}>
+                            ARES PLATFORM
+                        </div>
+                    </div>
+                ))}
+            </div>
+
         </div>
     );
 }
