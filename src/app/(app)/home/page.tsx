@@ -124,7 +124,7 @@ export default function VendorHome() {
                 whileTap={{ scale: 0.98 }}
                 className="card"
                 style={{
-                    background: 'var(--color-accent)',
+                    background: 'var(--color-primary)',
                     border: '2px solid #000',
                     boxShadow: '8px 8px 0px 0px #000',
                     color: '#000',

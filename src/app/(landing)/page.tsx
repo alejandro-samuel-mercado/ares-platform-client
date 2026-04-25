@@ -79,20 +79,20 @@ export default function LandingPage() {
                     
                     <div className="olympus-nav-actions">
                         <div className="nav-links" style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
-                            <button 
-                                onClick={() => setActiveTab('inicio')} 
+                            <Link 
+                                href="/landing" 
                                 className="nav-link-ghost"
-                                style={{ background: 'transparent', border: 'none', color: activeTab === 'inicio' ? 'var(--color-primary)' : 'white', cursor: 'pointer', fontWeight: 900 }}
+                                style={{ color: 'var(--color-primary)', fontWeight: 900 }}
                             >
                                 INICIO
-                            </button>
-                            <button 
-                                onClick={() => setActiveTab('docs')} 
+                            </Link>
+                            <Link 
+                                href="/docs" 
                                 className="nav-link-ghost"
-                                style={{ background: 'transparent', border: 'none', color: activeTab === 'docs' ? 'var(--color-primary)' : 'white', cursor: 'pointer', fontWeight: 900 }}
+                                style={{ color: 'white', fontWeight: 900 }}
                             >
                                 DOCUMENTACIÓN
-                            </button>
+                            </Link>
                             <Link href="/login" className="nav-link-ghost">ACCESO</Link>
                             <Link href="/register" className="nav-btn-action">EMPEZAR AHORA</Link>
                         </div>

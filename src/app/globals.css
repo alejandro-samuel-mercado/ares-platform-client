@@ -13,17 +13,42 @@
 }
 
 :root {
-    /* ====================================================
-    TEMA 1: LIGHT (Ares White / Lavender Reference)
-    ==================================================== */
+
+    --surface-base: #0B0B0B;
+    --surface-card: rgba(30, 30, 30, 0.6);
+    --surface-raised: #1A1A1A;
+    --surface-overlay: rgba(20, 20, 20, 0.9);
+    --text-inverse: #ffffff;
+    --text-primary: #FFFFFF;
+    --text-muted: #A1A1AA;
+
+    --color-primary: #bb4812;
+    /* Gold */
+    --color-secondary: #e7dcdc;
+    --color-accent: #ceceec;
+    --color-danger: #f75617;
+    --border-thick: 2px solid #bb4812;
+    --shadow-heavy: 10px 10px 0px 0px rgba(245, 105, 24, 0.89);
+    --shadow-glow: 0 0 30px rgba(175, 65, 22, 0.74);
+
+    --ambient-1: rgba(201, 132, 53, 0.438);
+    --ambient-2: rgba(201, 94, 33, 0.555);
+
+    --sidebar-bg: #1A1A1A;
+}
+
+/* ====================================================
+  TEMA 2: DARK (Ares Black Gold)
+  ==================================================== */
+:root[data-theme='violet'] {
     --surface-base: #f8f4f4f8;
     --surface-card: rgba(255, 255, 255, 0.7);
     --surface-raised: #FFFFFF;
     --surface-overlay: rgba(255, 255, 255, 0.9);
 
-    --text-primary: #a8a5a5;
-    --text-muted: #52525B;
-    --text-inverse: #cfcdcdde;
+    --text-primary: #4a4a4a;
+    --text-muted: #71717a;
+    --text-inverse: #18181b;
 
     --color-primary: #310c96;
     /* Indigo */
@@ -53,33 +78,8 @@
 
     --font-primary: 'Poppins', sans-serif;
     --font-display: 'Baloo 2', cursive;
-}
 
-/* ====================================================
-  TEMA 2: DARK (Ares Black Gold)
-  ==================================================== */
-:root[data-theme='violet'] {
-    --surface-base: #0B0B0B;
-    --surface-card: rgba(30, 30, 30, 0.6);
-    --surface-raised: #1A1A1A;
-    --surface-overlay: rgba(20, 20, 20, 0.9);
-    --text-inverse: #ffffff;
-    --text-primary: #FFFFFF;
-    --text-muted: #A1A1AA;
 
-    --color-primary: #bb4812;
-    /* Gold */
-    --color-secondary: #e7dcdc;
-    --color-accent: #ceceec;
-    --color-danger: #f75617;
-    --border-thick: 2px solid #bb4812;
-    --shadow-heavy: 10px 10px 0px 0px rgba(245, 105, 24, 0.89);
-    --shadow-glow: 0 0 30px rgba(175, 65, 22, 0.74);
-
-    --ambient-1: rgba(201, 132, 53, 0.438);
-    --ambient-2: rgba(201, 94, 33, 0.555);
-
-    --sidebar-bg: #1A1A1A;
 }
 
 /* ====================================================
