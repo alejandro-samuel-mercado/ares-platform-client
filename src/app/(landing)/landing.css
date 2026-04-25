@@ -386,7 +386,26 @@
 @media (max-width: 768px) {
     .olympus-nav { height: 70px; }
     .olympus-logo { font-size: 1.2rem; }
-    .nav-links { display: none; }
+    .nav-links {
+        display: flex;
+        position: fixed;
+        bottom: 0;
+        left: 0;
+        right: 0;
+        background: rgba(10, 10, 10, 0.95);
+        backdrop-filter: blur(20px);
+        padding: 1rem;
+        justify-content: space-around;
+        gap: 0.5rem;
+        border-top: 1px solid rgba(255,255,255,0.1);
+        z-index: 1000;
+        flex-wrap: wrap;
+    }
+    .nav-links a, .nav-links button {
+        font-size: 0.75rem !important;
+        padding: 0.5rem 0.8rem !important;
+    }
+    .landing-root { padding-bottom: 80px; }
     .olympus-hero { padding: 8rem 0 4rem 0; }
     .hero-title { font-size: 2.8rem; margin-bottom: 2rem; }
     .hero-subtitle { font-size: 1.1rem; margin-bottom: 3rem; }

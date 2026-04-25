@@ -21,7 +21,7 @@
     --surface-raised: #FFFFFF;
     --surface-overlay: rgba(255, 255, 255, 0.9);
 
-    --text-primary: #464444;
+    --text-primary: #a8a5a5;
     --text-muted: #52525B;
     --text-inverse: #cfcdcdde;
 
@@ -454,9 +454,11 @@ input:checked+.slider:before {
 .modal-container::-webkit-scrollbar {
     width: 8px;
 }
+
 .modal-container::-webkit-scrollbar-track {
     background: transparent;
 }
+
 .modal-container::-webkit-scrollbar-thumb {
     background-color: var(--color-primary);
     border-radius: 20px;
@@ -519,10 +521,14 @@ input:checked+.slider:before {
 
 /* Tablet: Stack login/register split layouts */
 @media (max-width: 1024px) {
-    .card, .card-static {
+
+    .card,
+    .card-static {
         box-shadow: 6px 6px 0px 0px #000;
     }
-    .table th, .table td {
+
+    .table th,
+    .table td {
         padding: 1rem;
     }
 }
@@ -534,11 +540,13 @@ input:checked+.slider:before {
     }
 
     /* Reduce heavy box-shadows that cause horizontal overflow */
-    .card, .card-static {
+    .card,
+    .card-static {
         box-shadow: 4px 4px 0px 0px #000;
         border-radius: var(--radius-md);
         padding: 1.25rem;
     }
+
     .card:hover {
         transform: none;
         box-shadow: 4px 4px 0px 0px #000;
@@ -557,6 +565,7 @@ input:checked+.slider:before {
         font-size: 0.95rem;
         box-shadow: 4px 4px 0px 0px #000;
     }
+
     .btn-secondary {
         padding: 0.6rem 1.2rem;
         box-shadow: 3px 3px 0px 0px #000;
@@ -574,6 +583,7 @@ input:checked+.slider:before {
         padding: 0.75rem;
         font-size: 0.7rem;
     }
+
     .table td {
         padding: 0.75rem;
         font-size: 0.8rem;
@@ -585,6 +595,7 @@ input:checked+.slider:before {
         align-items: flex-start;
         padding-top: 2rem;
     }
+
     .modal-container {
         max-width: 100%;
         margin: 0;

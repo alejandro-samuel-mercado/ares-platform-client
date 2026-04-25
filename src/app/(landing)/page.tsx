@@ -25,6 +25,12 @@ export default function LandingPage() {
     
     const [activeTab, setActiveTab] = useState<'inicio'|'docs'>('inicio');
 
+    useEffect(() => {
+        if (typeof window !== 'undefined' && window.location.search.includes('tab=docs')) {
+            setActiveTab('docs');
+        }
+    }, []);
+
     // Generar partículas aleatorias una sola vez
     const [particles, setParticles] = useState<any[]>([]);
     useEffect(() => {
