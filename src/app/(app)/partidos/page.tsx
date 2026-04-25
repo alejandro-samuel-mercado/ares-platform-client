@@ -304,9 +304,7 @@ export default function PartidosVendorPage() {
                         display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
                         color: 'white', fontFamily: 'sans-serif', position: 'relative', overflow: 'hidden'
                     }}>
-                        {/* Background Decorators */}
-                        <div style={{ position: 'absolute', top: '-10%', left: '-10%', width: '600px', height: '600px', background: 'var(--color-primary)', filter: 'blur(150px)', opacity: 0.4 }} />
-                        <div style={{ position: 'absolute', bottom: '-10%', right: '-10%', width: '600px', height: '600px', background: 'var(--color-accent)', filter: 'blur(150px)', opacity: 0.4 }} />
+                        {/* El fondo limpio evita que html2canvas pinte sombras o cuadros rotos */}
 
                         <div style={{ fontSize: '2.5rem', fontWeight: 900, textTransform: 'uppercase', letterSpacing: '12px', color: 'var(--color-primary)', marginBottom: '1.5rem', zIndex: 2 }}>
                             {p.liga}
