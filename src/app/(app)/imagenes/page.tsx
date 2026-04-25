@@ -238,23 +238,43 @@ export default function MisServiciosPage() {
                   ) : (
                     <div style={{ display: 'flex', flexDirection: 'column', gap: '0.6rem' }}>
                       {svcPedidos.map(p => (
-                        <div key={p.id} style={{
-                          background: 'var(--surface-base)', padding: '0.8rem 1rem', borderRadius: '12px',
-                          border: `2px solid ${statusColor[p.status] || '#666'}55`,
-                          display: 'flex', justifyContent: 'space-between', alignItems: 'center'
-                        }}>
-                          <div>
-                            <div style={{ fontWeight: 900, fontSize: '0.8rem', display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
-                              <Hash size={14} /> {p.cantidad}x cuentas
-                            </div>
-                            <div style={{ fontSize: '0.65rem', color: 'var(--text-muted)', fontWeight: 700 }}>{new Date(p.creado_en).toLocaleDateString()}</div>
-                          </div>
+                        <div key={p.id} style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
                           <div style={{
-                            padding: '0.3rem 0.7rem', borderRadius: '8px', fontSize: '0.65rem', fontWeight: 900,
-                            background: `${statusColor[p.status]}22`, color: statusColor[p.status], border: `1.5px solid ${statusColor[p.status]}55`
+                            background: 'var(--surface-base)', padding: '0.8rem 1rem', borderRadius: '12px',
+                            border: `2px solid ${statusColor[p.status] || '#666'}55`,
+                            display: 'flex', justifyContent: 'space-between', alignItems: 'center'
                           }}>
-                            {p.status}
+                            <div>
+                              <div style={{ fontWeight: 900, fontSize: '0.8rem', display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+                                <Hash size={14} /> {p.cantidad}x cuentas
+                              </div>
+                              <div style={{ fontSize: '0.65rem', color: 'var(--text-muted)', fontWeight: 700 }}>{new Date(p.creado_en).toLocaleDateString()}</div>
+                            </div>
+                            <div style={{
+                              padding: '0.3rem 0.7rem', borderRadius: '8px', fontSize: '0.65rem', fontWeight: 900,
+                              background: `${statusColor[p.status]}22`, color: statusColor[p.status], border: `1.5px solid ${statusColor[p.status]}55`
+                            }}>
+                              {p.status}
+                            </div>
                           </div>
+
+                          {p.respuesta_admin && (
+                            <div style={{
+                              padding: '1rem', borderRadius: '12px',
+                              background: 'var(--surface-raised)', border: '2px solid var(--color-primary)',
+                              fontSize: '0.8rem'
+                            }}>
+                              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.5rem' }}>
+                                <span style={{ fontWeight: 900, color: 'var(--color-primary)', fontSize: '0.65rem' }}>RESPUESTA DEL SISTEMA</span>
+                                <button onClick={() => handleCopy(p.respuesta_admin!)} style={{ background: 'none', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '0.3rem', color: 'var(--color-primary)', fontWeight: 800, fontSize: '0.65rem' }}>
+                                  <Copy size={12} /> COPIAR
+                                </button>
+                              </div>
+                              <div style={{ fontWeight: 700, color: 'var(--text-primary)', whiteSpace: 'pre-wrap', lineHeight: 1.4 }}>
+                                {p.respuesta_admin}
+                              </div>
+                            </div>
+                          )}
                         </div>
                       ))}
                     </div>

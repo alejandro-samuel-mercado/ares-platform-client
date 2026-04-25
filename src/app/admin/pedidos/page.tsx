@@ -255,12 +255,20 @@ export default function PedidosAdminPage() {
                                         </p>
                                         
                                         {p.comprobante_url && (
-                                            <div style={{ marginTop: '1rem' }}>
-                                                <div style={{ fontSize: '0.65rem', fontWeight: 900, opacity: 0.5, marginBottom: '0.5rem', letterSpacing: '0.1em' }}>COMPROBANTE ADJUNTO</div>
-                                                <a href={p.comprobante_url} target="_blank" rel="noreferrer" style={{ display: 'inline-block', border: '3px solid #000', borderRadius: '12px', overflow: 'hidden', boxShadow: '4px 4px 0px 0px rgba(0,0,0,0.2)' }}>
-                                                    <img src={p.comprobante_url} alt="Comprobante" style={{ width: '100px', height: '100px', objectFit: 'cover' }} />
-                                                </a>
+                                            <div style={{ marginTop: '1rem', padding: '1rem', background: 'var(--surface-base)', borderRadius: '16px', border: '2px solid var(--color-primary)' }}>
+                                                <div style={{ fontSize: '0.65rem', fontWeight: 900, color: 'var(--color-primary)', marginBottom: '0.75rem', letterSpacing: '0.1em' }}>COMPROBANTE ADJUNTO</div>
+                                                <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+                                                    <a href={p.comprobante_url} target="_blank" rel="noreferrer" style={{ width: '60px', height: '60px', borderRadius: '10px', overflow: 'hidden', border: '2px solid #000', flexShrink: 0 }}>
+                                                        <img src={p.comprobante_url} alt="Min" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                                                    </a>
+                                                    <a href={p.comprobante_url} target="_blank" rel="noreferrer" className="btn-secondary" style={{ padding: '0.5rem 1rem', fontSize: '0.7rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                                                        <Zap size={14} /> VER COMPROBANTE ORIGINAL
+                                                    </a>
+                                                </div>
                                             </div>
+                                        )}
+                                        {!p.comprobante_url && (
+                                            <div style={{ fontSize: '0.6rem', opacity: 0.2, marginTop: '0.5rem' }}>SIN COMPROBANTE REGISTRADO</div>
                                         )}
                                         {p.respuesta_admin && (
                                             <div style={{

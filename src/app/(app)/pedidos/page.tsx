@@ -42,14 +42,15 @@ export default function PedidosVendorPage() {
 
   const fetchData = async () => {
     try {
-      const [pedidosData, perfilData] = await Promise.all([
+      const [pedidosData, misServiciosData] = await Promise.all([
         api.get('/pedidos'),
-        api.get('/perfil')
+        api.get('/mis_servicios')
       ]);
       setPedidos(pedidosData);
-      if (perfilData?.mis_servicios) {
-        setMisServicios(perfilData.mis_servicios.map((ms: any) => ms.servicio));
-      }
+      setMisServicios(misServiciosData.map((ms: any) => ({
+        ...ms.servicio,
+        ms_id: ms.id 
+      })));
     } catch (error: any) {
       if (error.status === 403) setIsPro(false);
     } finally {
