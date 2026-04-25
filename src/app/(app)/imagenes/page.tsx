@@ -20,7 +20,7 @@ import api from '@/lib/api';
 import { useAuth } from '@/lib/auth';
 
 interface ServicioBase { id: string; nombre: string; logo_url: string; categoria: string; estado_actual: string; precio_admin: number; }
-interface MiServicio { id: string; servicio_id: string; servicio: ServicioBase; }
+interface MiServicio { id: string; servicio_id: string; precio_venta: number; servicio: ServicioBase; }
 interface Credencial { id: string; usuario: string; password: string; perfil: string | null; servicio: { id: string; nombre: string; logo_url: string; categoria: string }; }
 interface Pedido { id: string; servicio_id: string; cantidad: number; comprobante_url: string | null; status: string; respuesta_admin: string | null; creado_en: string; servicio?: { nombre: string; logo_url: string; }; }
 
@@ -39,6 +39,8 @@ export default function MisServiciosPage() {
     const [submitting, setSubmitting] = useState(false);
     const [revealedPasswords, setRevealedPasswords] = useState<Set<string>>(new Set());
     const [activeTabs, setActiveTabs] = useState<Record<string, 'credenciales' | 'pedidos'>>({});
+    const [editingPrice, setEditingPrice] = useState<Record<string, string>>({});
+    const [savingPrice, setSavingPrice] = useState<string | null>(null);
 
     const load = async () => {
         setLoading(true);
@@ -88,6 +90,18 @@ export default function MisServiciosPage() {
             load();
         } catch (err) { console.error(err); showToast('Error al crear pedido'); }
         finally { setSubmitting(false); }
+    };
+
+    const handleUpdatePrice = async (id: string) => {
+        const price = editingPrice[id];
+        if (!price || isNaN(parseFloat(price))) return;
+        setSavingPrice(id);
+        try {
+            await api.patch(`/mis_servicios/${id}`, { precio_venta: parseFloat(price) });
+            showToast('Precio actualizado ✅');
+            load();
+        } catch (err) { console.error(err); showToast('Error al actualizar precio'); }
+        finally { setSavingPrice(null); }
     };
 
     const getServiceCredentials = (svcId: string) => credenciales.filter(c => c.servicio.id === svcId);
@@ -165,6 +179,22 @@ export default function MisServiciosPage() {
                                             <div style={{ fontSize: '0.7rem', color: 'var(--text-muted)', fontWeight: 800, display: 'flex', gap: '0.75rem' }}>
                                                 <span>📦 {svcCreds.length} {svcCreds.length === 1 ? 'cuenta' : 'cuentas'}</span>
                                                 {pendingCount > 0 && <span style={{ color: '#F59E0B' }}>⏳ {pendingCount} pendientes</span>}
+                                            </div>
+                                            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginTop: '0.5rem', background: 'rgba(0,0,0,0.2)', padding: '0.3rem 0.5rem', borderRadius: '8px' }}>
+                                              <span style={{ fontSize: '0.65rem', fontWeight: 800 }}>PRECIO CLIENTE:</span>
+                                              <input
+                                                type="number"
+                                                value={editingPrice[ms.id] !== undefined ? editingPrice[ms.id] : ms.precio_venta}
+                                                onChange={(e) => setEditingPrice({ ...editingPrice, [ms.id]: e.target.value })}
+                                                style={{ width: '60px', background: 'transparent', border: 'none', color: 'var(--color-primary)', fontWeight: 900, fontSize: '0.8rem', outline: 'none' }}
+                                                placeholder="0.00"
+                                              />
+                                              <span style={{ fontSize: '0.65rem', fontWeight: 800 }}>Bs</span>
+                                              {(editingPrice[ms.id] !== undefined && editingPrice[ms.id] !== ms.precio_venta.toString()) && (
+                                                <button onClick={() => handleUpdatePrice(ms.id)} disabled={savingPrice === ms.id} style={{ background: 'var(--color-primary)', color: '#fff', border: 'none', borderRadius: '4px', padding: '0.2rem 0.4rem', fontSize: '0.6rem', fontWeight: 900, cursor: 'pointer' }}>
+                                                  {savingPrice === ms.id ? '...' : 'SAVE'}
+                                                </button>
+                                              )}
                                             </div>
                                         </div>
                                     </div>

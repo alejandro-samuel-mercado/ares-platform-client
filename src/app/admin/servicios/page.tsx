@@ -13,7 +13,7 @@ interface Servicio {
   nombre: string; 
   logo_url: string; 
   descripcion_base: string; 
-  precio_sugerido: number; 
+  precio_admin: number; 
   categoria: string; 
   es_iptv_propio: boolean; 
   estado_actual: string; 
@@ -120,7 +120,7 @@ export default function ServiciosPage() {
         </div>
         <button 
           className="btn-primary" 
-          onClick={() => { setEditing({ nombre: '', logo_url: '', descripcion_base: '', precio_sugerido: 0, categoria: 'STREAMING', es_iptv_propio: false, estado_actual: 'VERDE', activo: true }); setShowModal(true); }}
+          onClick={() => { setEditing({ nombre: '', logo_url: '', descripcion_base: '', precio_admin: 0, categoria: 'STREAMING', es_iptv_propio: false, estado_actual: 'VERDE', activo: true }); setShowModal(true); }}
         >
           <Plus size={22} /> AÑADIR PRODUCTO
         </button>
@@ -133,7 +133,7 @@ export default function ServiciosPage() {
               <th>Status</th>
               <th>Producto / Marca</th>
               <th>Categoría</th>
-              <th>PVP Sugerido</th>
+              <th>Precio por Cuenta</th>
               <th>Propiedad</th>
               <th>Acciones</th>
             </tr>
@@ -169,7 +169,7 @@ export default function ServiciosPage() {
                   <div className="chip chip-blue" style={{ fontSize: '0.7rem' }}>{s.categoria}</div>
                 </td>
                 <td>
-                  <div style={{ fontWeight: 900, color: 'var(--color-primary)', fontSize: '1.2rem' }}>{s.precio_sugerido} <span style={{ fontSize: '0.8rem', opacity: 0.6 }}>Bs</span></div>
+                  <div style={{ fontWeight: 900, color: 'var(--color-primary)', fontSize: '1.2rem' }}>{s.precio_admin} <span style={{ fontSize: '0.8rem', opacity: 0.6 }}>Bs</span></div>
                 </td>
                 <td>
                   {s.es_iptv_propio ? <div className="chip chip-gold" style={{ fontSize: '0.7rem' }}>SISTEMA PROPIO</div> : <span style={{ opacity: 0.3, fontWeight: 800, fontSize: '0.7rem' }}>EXTERNO</span>}
@@ -236,8 +236,8 @@ export default function ServiciosPage() {
 
                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1.5rem' }}>
                   <div>
-                    <label className="input-label">Precio Sugerido (PVP)</label>
-                    <input className="input" type="number" value={editing.precio_sugerido || 0} onChange={e => setEditing({ ...editing, precio_sugerido: parseFloat(e.target.value) })} />
+                    <label className="input-label">Precio por Cuenta (Bs)</label>
+                    <input className="input" type="number" value={editing.precio_admin || 0} onChange={e => setEditing({ ...editing, precio_admin: parseFloat(e.target.value) })} />
                   </div>
                   <div>
                     <label className="input-label">Estado de Estación</label>

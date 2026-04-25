@@ -78,8 +78,12 @@ export default function PedidosVendorPage() {
       setIsModalOpen(false);
       setNewPedido({ notas: '', servicio_id: '', cantidad: 1, comprobante: null });
       triggerToast('PEDIDO ENVIADO AL EQUIPO');
-    } catch (error) {
-      triggerToast('ERROR AL PROCESAR PEDIDO');
+    } catch (error: any) {
+      if (error.status === 403 && error.data?.reason === 'plan_limit_reached') {
+        triggerToast(error.data.message || 'TU PLAN NO INCLUYE PEDIDOS');
+      } else {
+        triggerToast('ERROR AL PROCESAR PEDIDO');
+      }
     } finally {
       setSaving(false);
     }
@@ -269,7 +273,7 @@ export default function PedidosVendorPage() {
                      <option value="">Selecciona un servicio...</option>
                      <option value="MATERIAL_CUSTOM">FLYER O DISEÑO PERSONALIZADO</option>
                      {misServicios.map(s => (
-                       <option key={s.id} value={s.id}>{s.nombre} - Pedir Credencial (${s.precio_admin || 0})</option>
+                       <option key={s.id} value={s.id}>{s.nombre} - Pedir Credencial (Bs {s.precio_admin || s.precio_sugerido || 0})</option>
                      ))}
                   </select>
                 </div>
@@ -339,7 +343,7 @@ export default function PedidosVendorPage() {
                   <div style={{ background: 'var(--surface-raised)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '1rem 1.5rem', borderRadius: '18px', border: '2px solid var(--color-primary)' }}>
                     <span style={{ fontSize: '0.8rem', fontWeight: 900 }}>MONTO TOTAL A ABONAR:</span>
                     <span style={{ fontSize: '1.5rem', fontWeight: 900, color: 'var(--color-primary)' }}>
-                      ${(misServicios.find(s => s.id === newPedido.servicio_id)?.precio_admin || 0) * newPedido.cantidad}
+                      Bs {(() => { const svc = misServicios.find(s => s.id === newPedido.servicio_id); return ((svc?.precio_admin || svc?.precio_sugerido || 0) * newPedido.cantidad); })()}
                     </span>
                   </div>
                 )}
