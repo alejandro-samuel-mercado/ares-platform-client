@@ -38,7 +38,7 @@ export default function MisServiciosPage() {
   const [orderComprobante, setOrderComprobante] = useState('');
   const [submitting, setSubmitting] = useState(false);
   const [revealedPasswords, setRevealedPasswords] = useState<Set<string>>(new Set());
-  const [activeTab, setActiveTab] = useState<'credenciales' | 'pedidos'>('credenciales');
+  const [activeTabs, setActiveTabs] = useState<Record<string, 'credenciales' | 'pedidos'>>({});
 
   const load = async () => {
     setLoading(true);
@@ -170,7 +170,7 @@ export default function MisServiciosPage() {
                   <button
                     className="btn-primary"
                     onClick={() => {
-                      setSelectedService(ms.servicio_id);
+                      setSelectedService(ms.servicio.id);
                       setShowOrderModal(true);
                     }}
                     style={{ padding: '0.6rem 1.2rem', fontSize: '0.75rem', display: 'flex', alignItems: 'center', gap: '0.4rem' }}
@@ -182,11 +182,11 @@ export default function MisServiciosPage() {
                 {/* Tabs */}
                 <div style={{ display: 'flex', gap: '0.5rem', marginBottom: '1rem' }}>
                   {(['credenciales', 'pedidos'] as const).map(tab => (
-                    <button key={tab} onClick={() => setActiveTab(tab)}
+                    <button key={tab} onClick={() => setActiveTabs(prev => ({ ...prev, [ms.id]: tab }))}
                       style={{
                         flex: 1, padding: '0.5rem', borderRadius: '10px', fontWeight: 900, fontSize: '0.7rem', cursor: 'pointer',
-                        background: activeTab === tab ? 'var(--color-primary)' : 'var(--surface-base)',
-                        color: activeTab === tab ? '#fff' : 'var(--text-muted)',
+                        background: (activeTabs[ms.id] || 'credenciales') === tab ? 'var(--color-primary)' : 'var(--surface-base)',
+                        color: (activeTabs[ms.id] || 'credenciales') === tab ? '#fff' : 'var(--text-muted)',
                         border: '2px solid #000',
                         textTransform: 'uppercase'
                       }}>
@@ -196,7 +196,7 @@ export default function MisServiciosPage() {
                 </div>
 
                 {/* Content */}
-                {activeTab === 'credenciales' ? (
+                {(activeTabs[ms.id] || 'credenciales') === 'credenciales' ? (
                   svcCreds.length === 0 ? (
                     <div style={{ textAlign: 'center', padding: '2rem 1rem', opacity: 0.5 }}>
                       <Key size={30} style={{ margin: '0 auto 0.5rem' }} />

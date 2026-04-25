@@ -21,6 +21,7 @@ interface Pedido {
     status: string;
     respuesta_admin: string | null;
     respondido_en: string | null;
+    comprobante_url: string | null;
     creado_en: string;
     vendor: {
         nombre: string;
@@ -252,6 +253,15 @@ export default function PedidosAdminPage() {
                                             <MessageCircle size={16} style={{ display: 'inline', marginRight: '0.75rem', color: 'var(--color-primary)' }} />
                                             <span style={{ fontStyle: 'italic', opacity: 0.9 }}>"{p.notas}"</span>
                                         </p>
+                                        
+                                        {p.comprobante_url && (
+                                            <div style={{ marginTop: '1rem' }}>
+                                                <div style={{ fontSize: '0.65rem', fontWeight: 900, opacity: 0.5, marginBottom: '0.5rem', letterSpacing: '0.1em' }}>COMPROBANTE ADJUNTO</div>
+                                                <a href={p.comprobante_url} target="_blank" rel="noreferrer" style={{ display: 'inline-block', border: '3px solid #000', borderRadius: '12px', overflow: 'hidden', boxShadow: '4px 4px 0px 0px rgba(0,0,0,0.2)' }}>
+                                                    <img src={p.comprobante_url} alt="Comprobante" style={{ width: '100px', height: '100px', objectFit: 'cover' }} />
+                                                </a>
+                                            </div>
+                                        )}
                                         {p.respuesta_admin && (
                                             <div style={{
                                                 marginTop: '1rem', padding: '1rem 1.5rem', borderRadius: '16px',

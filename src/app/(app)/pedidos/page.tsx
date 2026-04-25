@@ -3,9 +3,9 @@
  */
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import api from '@/lib/api';
-import { Package, Plus, Clock, CheckCircle2, AlertCircle, Loader2, Send, MessageSquare, X, Smartphone, Zap, RefreshCw } from 'lucide-react';
+import { Package, Plus, Clock, CheckCircle2, AlertCircle, Loader2, Send, MessageSquare, X, Smartphone, Zap, RefreshCw, UploadCloud, File as FileIcon } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 
 interface Pedido {
@@ -28,7 +28,9 @@ export default function PedidosVendorPage() {
   const [toastMsg, setToastMsg] = useState('');
 
   // Form state
-  const [newPedido, setNewPedido] = useState({ notas: '' });
+  const [newPedido, setNewPedido] = useState<{ notas: string; servicio_id: string; comprobante: File | null }>({ notas: '', servicio_id: '', comprobante: null });
+  const [misServicios, setMisServicios] = useState<any[]>([]);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => { fetchData(); }, []);
 
@@ -40,11 +42,16 @@ export default function PedidosVendorPage() {
 
   const fetchData = async () => {
     try {
-      const pedidosData = await api.get('/pedidos');
+      const [pedidosData, perfilData] = await Promise.all([
+        api.get('/pedidos'),
+        api.get('/perfil')
+      ]);
       setPedidos(pedidosData);
+      if (perfilData?.mis_servicios) {
+        setMisServicios(perfilData.mis_servicios.map((ms: any) => ms.servicio));
+      }
     } catch (error: any) {
       if (error.status === 403) setIsPro(false);
-      console.error('Error fetching orders:', error);
     } finally {
       setLoading(false);
     }
@@ -52,15 +59,22 @@ export default function PedidosVendorPage() {
 
   const handleCreate = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!newPedido.servicio_id) {
+       triggerToast('SELECCIONA UN SERVICIO');
+       return;
+    }
     setSaving(true);
     try {
-      await api.post('/pedidos', { 
-        notas: newPedido.notas,
-        servicio_id: 'MATERIAL_CUSTOM' 
-      });
+      const formData = new FormData();
+      formData.append('notas', newPedido.notas);
+      formData.append('servicio_id', newPedido.servicio_id);
+      if (newPedido.comprobante) formData.append('comprobante', newPedido.comprobante);
+
+      await api.request('/pedidos', { method: 'POST', body: formData });
+      
       await fetchData();
       setIsModalOpen(false);
-      setNewPedido({ notas: '' });
+      setNewPedido({ notas: '', servicio_id: '', comprobante: null });
       triggerToast('PEDIDO ENVIADO AL EQUIPO');
     } catch (error) {
       triggerToast('ERROR AL PROCESAR PEDIDO');
@@ -243,20 +257,70 @@ export default function PedidosVendorPage() {
 
               <form onSubmit={handleCreate} style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
                 <div>
-                  <label className="input-label">Detalles del Requerimiento</label>
+                  <label className="input-label">¿De qué catálogo solicitás?</label>
+                  <select 
+                    className="input" 
+                    value={newPedido.servicio_id}
+                    onChange={(e) => setNewPedido({ ...newPedido, servicio_id: e.target.value })}
+                    required
+                  >
+                     <option value="">Selecciona un servicio...</option>
+                     <option value="MATERIAL_CUSTOM">FLYER O DISEÑO PERSONALIZADO</option>
+                     {misServicios.map(s => (
+                       <option key={s.id} value={s.id}>{s.nombre} - Pedir Credencial</option>
+                     ))}
+                  </select>
+                </div>
+              
+                <div>
+                  <label className="input-label">Detalles del Requerimiento / Referencia</label>
                   <textarea 
-                    placeholder="Ej: Necesito un flyer de Netflix con mi logo..."
+                    placeholder="Ej: Adjunto pago por perfil de pantalla completa Netflix..."
                     className="input"
-                    style={{ minHeight: '140px', paddingTop: '1rem', resize: 'none' }}
+                    style={{ minHeight: '100px', paddingTop: '1rem', resize: 'none' }}
                     value={newPedido.notas}
-                    onChange={(e) => setNewPedido({ notas: e.target.value })}
+                    onChange={(e) => setNewPedido({ ...newPedido, notas: e.target.value })}
                     required
                   />
                 </div>
 
+                <div>
+                   <label className="input-label">Comprobante de Pago (Sólo si es una cuenta nueva)</label>
+                   <input 
+                     type="file" 
+                     accept="image/*" 
+                     className="hidden" 
+                     ref={fileInputRef}
+                     onChange={(e) => {
+                       if (e.target.files && e.target.files[0]) setNewPedido({ ...newPedido, comprobante: e.target.files[0] });
+                     }}
+                   />
+                   <div 
+                     onClick={() => fileInputRef.current?.click()}
+                     style={{
+                       border: '2px dashed var(--color-primary)', borderRadius: '18px', padding: '1.5rem',
+                       display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '0.5rem',
+                       cursor: 'pointer', background: 'var(--surface-raised)', transition: 'all 0.2s', opacity: 0.8
+                     }}
+                     className="hover-bright"
+                   >
+                     {newPedido.comprobante ? (
+                        <>
+                          <CheckCircle2 color="var(--color-success)" size={32} />
+                          <span style={{ fontSize: '0.8rem', fontWeight: 900 }}>{newPedido.comprobante.name}</span>
+                        </>
+                     ) : (
+                        <>
+                          <UploadCloud size={32} color="var(--color-primary)" />
+                          <span style={{ fontSize: '0.8rem', fontWeight: 900 }}>Subir Imagen de Pago</span>
+                        </>
+                     )}
+                   </div>
+                </div>
+
                 <div className="card-static" style={{ background: 'var(--surface-raised)', borderWidth: '1.5px', padding: '1rem' }}>
                   <p style={{ fontSize: '0.7rem', fontWeight: 800, color: 'var(--color-primary)', lineHeight: 1.4 }}>
-                    ESTE PEDIDO SERÁ PROCESADO POR NUESTRO EQUIPO CREATIVO EN MENOS DE 24H.
+                    SI PEDISTE UNA CREDENCIAL Y SUBISTE COMPROBANTE, ESTARÁ LISTA EN SEGUNDOS TRAS LA APROBACIÓN.
                   </p>
                 </div>
 
