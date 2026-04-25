@@ -29,6 +29,7 @@ export default function PartidosVendorPage() {
     const [showToast, setShowToast] = useState(false);
     const [userPlan, setUserPlan] = useState('');
     const [downloadingImg, setDownloadingImg] = useState<Set<string>>(new Set());
+    const [downloadingAll, setDownloadingAll] = useState(false);
 
     useEffect(() => { fetchPartidos(); }, []);
 
@@ -64,6 +65,19 @@ export default function PartidosVendorPage() {
             next.delete(id);
             setDownloadingImg(next);
         }
+    };
+
+    const downloadAllFixtures = async () => {
+        setDownloadingAll(true);
+        for (const p of partidos) {
+            if (!p.requiere_iptv || userPlan?.toUpperCase() === 'PRO') {
+                await downloadFixture(p.id, p.equipo_local, p.equipo_visita);
+                await new Promise(r => setTimeout(r, 400));
+            }
+        }
+        setDownloadingAll(false);
+        setShowToast(true);
+        setTimeout(() => setShowToast(false), 3000);
     };
 
     const copyCartelera = () => {
@@ -148,6 +162,13 @@ export default function PartidosVendorPage() {
                 <div style={{ display: 'flex', gap: '0.75rem' }}>
                     {partidos.length > 0 && (
                         <>
+                            {(!partidos.every(p => p.requiere_iptv) || userPlan?.toUpperCase() === 'PRO') && (
+                                <motion.button whileTap={{ scale: 0.9 }} onClick={downloadAllFixtures} disabled={downloadingAll} className="btn-secondary"
+                                    style={{ padding: '0 1rem', display: 'flex', alignItems: 'center', justifyContent: 'center', borderRadius: '14px', fontSize: '0.8rem', gap: '0.5rem', color: 'var(--text-primary)', border: '2px solid #000' }}>
+                                    {downloadingAll ? <Loader2 className="animate-spin" size={18} /> : <Download size={18} />}
+                                    <span className="hidden md:inline">DESCARGAR TODOS</span>
+                                </motion.button>
+                            )}
                             <motion.button whileTap={{ scale: 0.9 }} onClick={() => shareToWhatsApp()} className="btn-secondary"
                                 style={{ width: '48px', height: '48px', padding: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', borderRadius: '14px', background: '#25D366', color: 'white', border: 'none' }}>
                                 <MessageCircle size={20} />
@@ -244,13 +265,13 @@ export default function PartidosVendorPage() {
                                     onClick={() => downloadFixture(p.id, p.equipo_local, p.equipo_visita)}
                                     disabled={downloadingImg.has(p.id)}
                                     style={{
-                                        display: 'flex', width: '100%', padding: '0.75rem', background: 'rgba(255,255,255,0.05)',
-                                        border: 'none', borderTop: '2px solid #000', alignItems: 'center', justifyContent: 'center',
-                                        gap: '0.5rem', color: 'white', fontWeight: 900, fontSize: '0.75rem', cursor: 'pointer'
+                                        display: 'flex', width: '100%', padding: '0.75rem', background: 'var(--color-primary)',
+                                        border: 'none', borderTop: '2.5px solid #000', alignItems: 'center', justifyContent: 'center',
+                                        gap: '0.5rem', color: 'white', fontWeight: 900, fontSize: '0.8rem', cursor: 'pointer'
                                     }}
                                 >
-                                    {downloadingImg.has(p.id) ? <Loader2 className="animate-spin" size={16} /> : <Download size={16} />}
-                                    {downloadingImg.has(p.id) ? 'GENERANDO MOCKUP FICTURE...' : 'DESCARGAR ESTA FIXTURE'}
+                                    {downloadingImg.has(p.id) ? <Loader2 className="animate-spin" size={18} /> : <Download size={18} />}
+                                    {downloadingImg.has(p.id) ? 'GENERANDO MOCKUP...' : 'DESCARGAR FIXTURE'}
                                 </button>
                             )}
                         </motion.div>

@@ -77,11 +77,11 @@ export default function VendorHome() {
         { title: 'CATÁLOGO', desc: 'Precios y servicios', icon: ShoppingBag, color: 'var(--color-primary)', href: '/catalogo' },
         { title: 'IMÁGENES', desc: 'Banco promocional', icon: ImageIcon, color: 'var(--color-accent)', href: '/imagenes' },
         { title: 'ESTRENOS', desc: 'Novedades streaming', icon: Clapperboard, color: '#E50914', href: '/estrenos' },
-        { title: 'PARTIDOS', desc: 'Cartelera de hoy', icon: Trophy, color: 'var(--color-secondary)', href: '/partidos' },
+        { title: 'PARTIDOS', desc: 'Cartelera de hoy', icon: Trophy, color: '#E50914', href: '/partidos' },
         { title: 'MENSAJES', desc: 'Venta rápida', icon: MessageSquare, color: '#F59E0B', href: '/mensajes' },
         { title: 'PEDIDOS', desc: 'Solicitudes Pro', icon: Package, color: 'var(--color-primary)', href: '/pedidos' },
         { title: 'HISTORIAL', desc: 'Mis activaciones', icon: History, color: '#8B5CF6', href: '/historial' },
-        { title: 'MI PLAN', desc: 'Suscripción y pagos', icon: CreditCard, color: 'var(--color-accent)', href: '/plan' },
+        { title: 'MI PLAN', desc: 'Suscripción y pagos', icon: CreditCard, color: '#E50914', href: '/plan' },
         { title: 'CALCULADORA', desc: 'Margen de ganancia', icon: Calculator, color: 'var(--color-secondary)', href: '/calculadora' },
         { title: 'PERFIL', desc: 'Ajustes de cuenta', icon: User, color: '#F59E0B', href: '/perfil' },
     ].filter(card => {
@@ -105,8 +105,8 @@ export default function VendorHome() {
                 animate={{ opacity: 1, x: 0 }}
                 style={{ marginTop: '1rem', textAlign: 'center', position: 'relative' }}
             >
-                <button 
-                    onClick={loadDynamicData} 
+                <button
+                    onClick={loadDynamicData}
                     style={{ position: 'absolute', top: 0, right: '1rem', background: 'transparent', border: 'none', color: 'var(--color-primary)', cursor: 'pointer' }}
                     title="Actualizar Datos"
                 >
