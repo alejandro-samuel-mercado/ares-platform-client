@@ -11,7 +11,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { AuthProvider, useAuth } from '@/lib/auth';
 import api from '@/lib/api';
 import {
-    LayoutDashboard, Users, Trophy, DollarSign, Settings, LogOut, Search, Bell, X, Image as ImageIcon, Store, Rocket, Package, Clapperboard, Menu, ChevronDown, Key
+    LayoutDashboard, Users, Trophy, DollarSign, Settings, LogOut, Search, Bell, X, Image as ImageIcon, Store, Rocket, Package, Clapperboard, Menu, ChevronDown, Key, Layers
 } from 'lucide-react';
 import './admin.css';
 
@@ -30,6 +30,7 @@ export const ADMIN_MENU_ITEMS = [
     { href: '/admin/marketplace', icon: Store, label: 'Marketplace', keywords: ['marketplace', 'tienda', 'compras'], collab: false },
     { href: '/admin/pagos', icon: DollarSign, label: 'Pagos', keywords: ['pagos', 'finanzas', 'facturacion', 'dinero'], collab: false },
     { href: '/admin/mensajes', icon: Bell, label: 'Mensajes', keywords: ['mensajes', 'textos', 'whatsapp', 'plantillas'], collab: true },
+    { href: '/admin/administrar', icon: Layers, label: 'Administrar', keywords: ['administrar', 'maestros', 'plataformas', 'categorias', 'instancias'], collab: false },
     { href: '/admin/ajustes', icon: Settings, label: 'Ajustes', keywords: ['ajustes', 'configuracion', 'sistema', 'settings'], collab: false },
 ];
 
@@ -56,7 +57,10 @@ function AdminSidebar() {
     }, []);
 
     const renderLinks = (onClick?: () => void) => visibleItems.map((item) => {
-        const isActive = pathname === item.href;
+        const isActive = item.href === '/admin/dashboard' 
+            ? pathname === item.href 
+            : pathname.startsWith(item.href);
+            
         return (
             <Link
                 key={item.href}
@@ -65,9 +69,9 @@ function AdminSidebar() {
                 onClick={onClick}
             >
                 <div className="sidebar-icon-container">
-                    <item.icon size={22} />
+                    <item.icon size={22} color={isActive ? "white" : "currentColor"} />
                 </div>
-                <span style={{ fontSize: '0.65rem', textAlign: 'center', fontWeight: 900, textTransform: 'uppercase', letterSpacing: '0.02rem', opacity: isActive ? 1 : 0.7 }}>
+                <span className={`sidebar-label ${isActive ? 'active' : ''}`}>
                     {item.label}
                 </span>
             </Link>
@@ -321,8 +325,7 @@ function AdminHeader() {
                         style={{
                             position: 'fixed', top: '80px', right: '150px', zIndex: 99999,
                             background: 'var(--surface-base)', color: 'var(--text-primary)',
-                            backdropFilter: 'blur(10px)',
-                            WebkitBackdropFilter: 'blur(10px)',
+
                             minWidth: '320px', maxWidth: '400px',
                             maxHeight: '70vh', overflowY: 'auto',
                             borderRadius: '24px',

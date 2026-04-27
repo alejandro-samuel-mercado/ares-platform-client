@@ -201,7 +201,8 @@ body::after {
     font-family: var(--font-display);
     font-weight: 800;
     font-size: 1.1rem;
-    padding: 1rem 2.5rem;
+    justify-content: center;
+    padding: 1rem 1rem;
     border-radius: var(--radius-full);
     border: var(--border-thick);
     box-shadow: 6px 6px 0px 0px #000000;
@@ -224,7 +225,8 @@ body::after {
     color: var(--text-primary);
     border: var(--border-thick);
     border-radius: var(--radius-full);
-    padding: 0.8rem 1.8rem;
+    justify-content: center;
+    padding: 1rem 1rem;
     font-weight: 800;
     cursor: pointer;
     transition: 0.2s;
@@ -279,6 +281,18 @@ body::after {
     box-shadow: 6px 6px 0px 0px var(--color-primary);
 }
 
+/* Hide Spinners/Arrows in Number Inputs */
+input::-webkit-outer-spin-button,
+input::-webkit-inner-spin-button {
+    -webkit-appearance: none !important;
+    margin: 0 !important;
+}
+
+input[type=number] {
+    -moz-appearance: textfield !important;
+    appearance: textfield !important;
+}
+
 .input-label {
     font-family: var(--font-primary);
     font-size: 0.75rem;
@@ -292,12 +306,13 @@ body::after {
 
 /* TABLE SYSTEM — 3D CARTOON */
 .table-container {
-    overflow-x: auto;
+    overflow: auto;
     border: var(--border-thick);
     border-radius: var(--radius-lg);
     box-shadow: var(--shadow-heavy);
     background: var(--surface-card);
     backdrop-filter: blur(20px);
+    position: relative;
 }
 
 .table {
@@ -315,6 +330,9 @@ body::after {
     text-transform: uppercase;
     letter-spacing: 0.1em;
     border-right: 1px solid rgba(255, 255, 255, 0.1);
+    position: sticky;
+    top: 0;
+    z-index: 20;
 }
 
 .table td {
@@ -354,12 +372,14 @@ body::after {
     display: inline-block;
     width: 60px;
     height: 34px;
+
 }
 
 .switch input {
     opacity: 0;
     width: 0;
     height: 0;
+
 }
 
 .slider {
@@ -434,7 +454,7 @@ input:checked+.slider:before {
     display: flex;
     align-items: center;
     justify-content: center;
-    z-index: 2000;
+    z-index: 6000;
 }
 
 .modal-container {
@@ -504,13 +524,37 @@ input:checked+.slider:before {
     transition: all 0.3s ease;
 }
 
-@media (max-width: 767px) {
+@media (max-width: 767px) and (min-width: 641px) {
     .theme-selector {
-        bottom: 120px;
+        bottom: 20px;
         /* Above bottom-nav */
         right: 15px;
         transform: scale(0.7);
         padding: 8px;
+    }
+}
+
+@media (max-width: 640px) {
+    .theme-selector {
+        bottom: 20px;
+        /* Above bottom-nav */
+        right: 2px;
+        transform: scale(0.7);
+        padding: 8px;
+    }
+
+
+    .table-container {
+        border-radius: 0;
+        border-left: none;
+        border-right: none;
+    }
+
+    /* Forzar que grids de 2 columnas (formularios) se apilen verticalmente */
+    .modal-container div[style*="grid"],
+    .modal-container div[style*="flex"] {
+        grid-template-columns: 1fr !important;
+        flex-direction: column !important;
     }
 }
 

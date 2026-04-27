@@ -157,10 +157,10 @@ export default function CatalogoPage() {
                                             </div>
                                             <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
                                                 <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', fontWeight: 800 }}>{svc.categoria}</div>
-                                                <div style={{ 
+                                                <div style={{
                                                     fontSize: '0.65rem', fontWeight: 900, padding: '0.1rem 0.5rem', borderRadius: '6px', border: '1.5px solid #000',
-                                                    background: (svc as any).stock > 10 ? '#10B981' : (svc as any).stock > 0 ? '#F59E0B' : '#EF4444', 
-                                                    color: '#000' 
+                                                    background: (svc as any).stock > 10 ? '#10B981' : (svc as any).stock > 0 ? '#F59E0B' : '#EF4444',
+                                                    color: '#000'
                                                 }}>
                                                     STOCK: {(svc as any).stock || 0}
                                                 </div>
@@ -184,11 +184,11 @@ export default function CatalogoPage() {
                                     </div>
                                     {active ? (
                                         <button onClick={() => handleDeactivate(svc.id)} className="btn-secondary" style={{ width: '45px', height: '45px', padding: 0, borderRadius: '14px', borderColor: 'var(--color-danger)', color: 'var(--color-danger)', boxShadow: 'none' }}>
-                                            <Minus size={22} strokeWidth={3} />
+                                            <Minus style={{ margin: "0 auto" }} size={22} strokeWidth={3} />
                                         </button>
                                     ) : (
                                         <button onClick={() => handleActivate(svc)} className="btn-primary" style={{ width: '45px', height: '45px', padding: 0, borderRadius: '14px', boxShadow: 'none' }}>
-                                            <Plus size={22} strokeWidth={3} />
+                                            <Plus style={{ margin: "0 auto" }} size={22} strokeWidth={3} />
                                         </button>
                                     )}
                                 </div>

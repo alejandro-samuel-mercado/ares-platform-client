@@ -62,19 +62,10 @@ export default function MarketplacePage() {
 
   useEffect(() => { loadMarketplace(); }, []);
 
-  const handleTrackInterest = async (svc: ExternalService) => {
-    try {
-      await api.post('/admin/marketplace/track', {
-        vendor_id: vendor?.id,
-        servicio_id: svc.id,
-        proveedor_id: svc.proveedor_id
-      });
-      // Abrir WhatsApp del proveedor
+  const handleTrackInterest = (svc: ExternalService) => {
+      // Abrir WhatsApp del proveedor directamente
       const text = `Hola ${svc.proveedor.nombre}, vi tu servicio "${svc.nombre}" en el Marketplace de Ares y me interesa revenderlo.`;
       window.open(`https://wa.me/${svc.proveedor.whatsapp}?text=${encodeURIComponent(text)}`, '_blank');
-    } catch (err) {
-      console.error(err);
-    }
   };
 
   const handleSubmitProposal = async (e: React.FormEvent) => {
@@ -177,13 +168,6 @@ export default function MarketplacePage() {
               <div>
                 <h3 style={{ fontWeight: 900, fontSize: '1.1rem' }}>{svc.nombre}</h3>
                 <p style={{ fontSize: '0.8rem', fontWeight: 700, opacity: 0.6, marginTop: '0.25rem', height: '2.4rem', overflow: 'hidden' }}>{svc.descripcion_base}</p>
-                <div style={{ 
-                    marginTop: '0.5rem', display: 'inline-block', fontSize: '0.65rem', fontWeight: 900, padding: '0.2rem 0.6rem', borderRadius: '8px', border: '1.5px solid #000',
-                    background: (svc as any).stock > 10 ? '#10B981' : (svc as any).stock > 0 ? '#F59E0B' : '#EF4444', 
-                    color: '#000' 
-                }}>
-                    STOCK DISPONIBLE: {(svc as any).stock || 0}
-                </div>
               </div>
 
               <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', padding: '0.75rem', background: 'var(--surface-base)', borderRadius: '12px', border: '1px solid rgba(0,0,0,0.1)' }}>

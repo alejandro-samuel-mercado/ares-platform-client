@@ -5,11 +5,14 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { Download, Megaphone, Loader2, RefreshCw, Zap, Plus, Trash2, Edit, X, Upload } from 'lucide-react';
 import api from '@/lib/api';
 import { useAuth } from '@/lib/auth';
+import { useWatermark } from '@/hooks/useWatermark';
+import { WatermarkedImage } from '@/components/WatermarkedImage';
 
 interface Imagen { id: string; titulo: string; url_base: string; categoria: string; etiquetas: string; }
 
 export default function PromocionesPage() {
     const { isAdmin, isColaborador } = useAuth();
+    const { getUrl, settings } = useWatermark();
     const canManage = isAdmin || isColaborador;
 
     const [promos, setPromos] = useState<Imagen[]>([]);
@@ -142,7 +145,7 @@ export default function PromocionesPage() {
                         <motion.div key={promo.id} className="card" initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: idx * 0.05 }}
                             style={{ padding: 0, overflow: 'hidden', background: 'var(--surface-raised)' }}>
                             <div style={{ width: '100%', aspectRatio: '1/1', background: '#000', position: 'relative' }}>
-                                <img src={promo.url_base} alt={promo.titulo} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                                <WatermarkedImage src={promo.url_base} settings={settings || undefined} alt={promo.titulo} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
                                 {canManage && (
                                     <div style={{ position: 'absolute', top: 10, right: 10, display: 'flex', gap: '0.5rem' }}>
                                         <button onClick={() => { setEditingImg(promo); setForm({ titulo: promo.titulo, etiquetas: promo.etiquetas, archivo: null }); setIsModalOpen(true); }}
@@ -163,7 +166,7 @@ export default function PromocionesPage() {
                                         {(() => { try { return JSON.parse(promo.etiquetas).join(', '); } catch { return ''; } })()}
                                     </div>
                                 </div>
-                                <button className="btn-primary" onClick={() => downloadImage(promo.url_base, promo.titulo, promo.id)}
+                                <button className="btn-primary" onClick={() => downloadImage(getUrl(promo.url_base), promo.titulo, promo.id)}
                                     disabled={downloading.has(promo.id)} style={{ width: '42px', height: '42px', padding: 0, borderRadius: '14px' }}>
                                     {downloading.has(promo.id) ? <Loader2 className="animate-spin" size={18} /> : <Download size={18} />}
                                 </button>

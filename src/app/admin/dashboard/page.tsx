@@ -134,7 +134,7 @@ export default function AdminDashboard() {
                 <div style={{ maxWidth: '650px', position: 'relative' }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', marginBottom: '1rem' }}>
                         <div style={{ width: '10px', height: '10px', background: 'var(--color-accent)', borderRadius: '2px', boxShadow: '0 0 10px var(--color-accent)' }} />
-                        <p style={{ fontWeight: 900, fontSize: '0.75rem', letterSpacing: '0.3rem', color: 'rgba(255,255,255,0.7)' }}>MAESTRO DE OPERACIONES</p>
+                        <p style={{ fontWeight: 900, fontSize: '0.75rem', letterSpacing: '0.3rem', color: 'rgba(255,255,255,0.7)' }}>OPERACIONES</p>
                     </div>
                     <h1 className="dash-welcome-title" style={{ lineHeight: 0.9, marginBottom: '1.5rem', fontFamily: 'var(--font-display)', fontWeight: 900, textShadow: '4px 4px 0px #000' }}>
                         HOLA, <span style={{ color: 'var(--color-accent)' }}>ADMIN</span>
@@ -192,15 +192,17 @@ export default function AdminDashboard() {
 
             {/* Bento-Box 2.3 */}
             <div className="dash-bento">
-                <div className="flex flex-col gap-8">
+                <div className="flex flex-col gap-8 max-md:mx-auto max-w-full">
                     {/* Gráfico de Servicios Futurista */}
                     <div className="card-static" style={{ background: 'var(--surface-raised)', padding: '2.5rem' }}>
-                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '3rem' }}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '3rem' }} className="max-sm:flex-col max-sm:gap-4">
                             <h3 style={{ fontSize: '1.8rem', fontWeight: 900, display: 'flex', alignItems: 'center', gap: '1rem', color: 'var(--text-primary)' }}>
                                 <div style={{ background: 'var(--color-primary)', color: 'white', padding: '0.5rem', borderRadius: '10px' }}>
                                     <TrendingUp size={22} />
                                 </div>
-                                SERVICIOS <span className="text-gradient-primary">ACTIVOS</span>
+                                <div>
+                                    SERVICIOS <span className="text-gradient-primary">ACTIVOS</span>
+                                </div>
                             </h3>
                             <button onClick={() => router.push('/admin/servicios')} className="btn-secondary" style={{ padding: '0.6rem 1.25rem', fontSize: '0.8rem', fontWeight: 900 }}>DETALLES</button>
                         </div>
@@ -233,8 +235,8 @@ export default function AdminDashboard() {
                     </div>
 
                     {/* Gráfico de Crecimiento Semanal (NUEVO) */}
-                    <div className="card-static" style={{ background: 'var(--surface-raised)', padding: '2.5rem' }}>
-                        <h3 style={{ fontSize: '1.5rem', fontWeight: 900, display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: '3rem' }}>
+                    <div className="card-static max-sm:flex-col max-sm:gap-4" style={{ background: 'var(--surface-raised)', padding: '2.5rem' }} >
+                        <h3 style={{ fontSize: '1.4rem', fontWeight: 900, display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: '3rem' }}>
                             <BarChart2 size={24} color="var(--color-primary)" /> CRECIMIENTO <span className="text-gradient-primary">SEMANAL</span>
                         </h3>
                         <div style={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', height: '200px', padding: '0 1rem', gap: '1rem' }}>
@@ -254,16 +256,16 @@ export default function AdminDashboard() {
                 </div>
 
                 {/* Status y Actividad */}
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '2.5rem' }}>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '2.5rem', margin: "0 auto" }}>
                     <div className="card" style={{ background: 'var(--color-accent)', border: '4px solid #000', padding: '2rem', boxShadow: '10px 10px 0px 0px #000' }}>
-                        <h3 style={{ color: '#000', marginBottom: '1.5rem', fontWeight: 900, fontSize: '1.2rem' }}>ESTADO DEL NÚCLEO</h3>
+                        <h3 style={{ color: '#000', marginBottom: '1.5rem', fontWeight: 900, fontSize: '1.2rem' }}>ESTADO </h3>
                         <div style={{ display: 'flex', alignItems: 'center', gap: '1.25rem', background: 'rgba(0,0,0,0.15)', padding: '1.25rem', borderRadius: '20px', border: '2px solid rgba(0,0,0,0.1)' }}>
                             <motion.div
                                 animate={{ scale: [1, 1.2, 1] }}
                                 transition={{ repeat: Infinity, duration: 1.5 }}
                                 style={{ width: '16px', height: '16px', background: '#22C55E', borderRadius: '50%', boxShadow: '0 0 15px #22C55E' }}
                             />
-                            <p style={{ color: '#000', fontWeight: 900, fontSize: '0.9rem' }}>MAESTRO OPERATIVO SIN ERRORES</p>
+                            <p style={{ color: '#000', fontWeight: 900, fontSize: '0.9rem' }}>OPERATIVO SIN ERRORES</p>
                         </div>
                     </div>
 

@@ -25,6 +25,7 @@ interface Vendor {
     enlace_publico: boolean;
     marketplace_proveedor: boolean;
     limite_servicios: number | null;
+    watermark_enabled: boolean;
   };
   texto_limite?: string;
   plan_id: string;
@@ -114,6 +115,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       });
       setVendor(data);
       localStorage.setItem('ares_vendor', JSON.stringify(data));
+      // Sincronizar watermark logic si es necesario (generalmente lee de vendor directo)
     } catch (err) {
       console.error('[AUTH] Error refrescando vendor:', err);
     }

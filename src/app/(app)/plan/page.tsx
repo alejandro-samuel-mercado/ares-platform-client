@@ -268,13 +268,19 @@ export default function PlanPage() {
                                     {plan.marketplace_proveedor ? <CheckCircle2 size={18} color="var(--color-primary)" style={{ flexShrink: 0, marginTop: '2px' }} /> : <X size={18} style={{ flexShrink: 0, marginTop: '2px' }} />}
                                     <span style={{ fontSize: '0.85rem', fontWeight: 800 }}>Modo Proveedor (Marketplace)</span>
                                 </div>
+
+                                {/* Marca de Agua */}
+                                <div style={{ display: 'flex', gap: '10px', alignItems: 'flex-start', opacity: plan.watermark_enabled ? 1 : 0.4 }}>
+                                    {plan.watermark_enabled ? <CheckCircle2 size={18} color="var(--color-primary)" style={{ flexShrink: 0, marginTop: '2px' }} /> : <X size={18} style={{ flexShrink: 0, marginTop: '2px' }} />}
+                                    <span style={{ fontSize: '0.85rem', fontWeight: 800 }}>Marca de Agua Personalizada</span>
+                                </div>
                             </div>
 
                             <button
                                 onClick={() => setSelectedPlan(plan)}
                                 disabled={hasPending}
                                 className="btn-primary"
-                                style={{ width: '100%', height: '54px', fontSize: '1rem', background: isMiddle ? 'var(--color-primary)' : 'var(--surface-base)' }}
+                                style={{ width: '100%', height: '54px', fontSize: '1rem', color: "var(--color-text)", background: isMiddle ? 'var(--color-primary)' : 'var(--surface-base)' }}
                             >
                                 R E N O V A R
                             </button>
@@ -283,80 +289,87 @@ export default function PlanPage() {
                 })}
             </div>
 
-            {/* Modal De Pago Custom */}
+            {/* Modal De Pago Custom - REFORMED FOR HIGH DENSITY & RESPONSIVENESS */}
             {selectedPlan && (
-                <div style={{ position: 'fixed', inset: 0, zIndex: 9999, background: 'rgba(0,0,0,0.85)', backdropFilter: 'blur(10px)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '1.5rem' }}>
+                <div style={{ position: 'fixed', inset: 0, zIndex: 9999, background: 'rgba(0,0,0,0.85)', backdropFilter: 'blur(10px)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '1rem' }}>
                     <motion.div
                         initial={{ scale: 0.9, opacity: 0 }}
                         animate={{ scale: 1, opacity: 1 }}
-                        className="card"
-                        style={{ width: '100%', maxWidth: '500px', background: 'var(--surface-base)', padding: '2rem', border: '5px solid #000' }}
+                        className="card custom-scroll"
+                        style={{
+                            width: '100%', maxWidth: '440px', maxHeight: '92vh', overflowY: 'auto',
+                            background: 'var(--surface-base)', padding: '1.25rem', border: 'var(--border-thick)',
+                            boxShadow: 'var(--shadow-heavy)'
+                        }}
                     >
-                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2rem' }}>
-                            <h2 style={{ fontSize: '1.8rem', fontWeight: 900 }}>RENOVAR LICENCIA</h2>
-                            <button className="btn-secondary" onClick={() => { setSelectedPlan(null); setFile(null); }} style={{ padding: '8px', borderRadius: '50%' }}>
-                                <X size={24} />
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem', borderBottom: '2px solid rgba(255,255,255,0.05)', paddingBottom: '0.75rem' }}>
+                            <div>
+                                <h2 style={{ fontSize: '1.4rem', fontWeight: 950, margin: 0, letterSpacing: '-0.03em' }}>RENOVAR LICENCIA</h2>
+                                <p style={{ fontSize: '0.65rem', fontWeight: 900, color: 'var(--color-primary)', margin: 0 }}>{selectedPlan.nombre.toUpperCase()}</p>
+                            </div>
+                            <button className="btn-secondary" onClick={() => { setSelectedPlan(null); setFile(null); }} style={{ width: '32px', height: '32px', borderRadius: '8px', padding: 0, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                                <X size={20} />
                             </button>
                         </div>
 
-                        {/* Selector de Moneda */}
-                        <div style={{ display: 'flex', background: 'rgba(255,255,255,0.05)', borderRadius: '16px', padding: '4px', marginBottom: '2rem', border: '2px solid rgba(255,255,255,0.1)' }}>
+                        {/* Selector de Moneda - Ultra Tight */}
+                        <div style={{ display: 'flex', background: 'rgba(255,255,255,0.03)', borderRadius: '12px', padding: '3px', marginBottom: '1.25rem', border: '1px solid rgba(255,255,255,0.05)' }}>
                             <button
                                 onClick={() => setCurrency('BOB')}
-                                style={{ flex: 1, padding: '12px', borderRadius: '12px', background: currency === 'BOB' ? 'var(--color-primary)' : 'transparent', color: currency === 'BOB' ? '#000' : 'var(--text-primary)', fontWeight: 900, transition: '0.3s' }}
+                                style={{ flex: 1, padding: '10px', borderRadius: '10px', background: currency === 'BOB' ? 'var(--color-primary)' : 'transparent', color: currency === 'BOB' ? 'var(--text-inverse)' : 'var(--text-primary)', fontWeight: 950, fontSize: '0.75rem', transition: '0.3s' }}
                             >
                                 BOLIVIANOS (Bs)
                             </button>
                             <button
                                 onClick={() => setCurrency('USD')}
-                                style={{ flex: 1, padding: '12px', borderRadius: '12px', background: currency === 'USD' ? 'var(--color-primary)' : 'transparent', color: currency === 'USD' ? '#000' : 'var(--text-primary)', fontWeight: 900, transition: '0.3s' }}
+                                style={{ flex: 1, padding: '10px', borderRadius: '10px', background: currency === 'USD' ? 'var(--color-primary)' : 'transparent', color: currency === 'USD' ? 'var(--text-inverse)' : 'var(--text-primary)', fontWeight: 950, fontSize: '0.75rem', transition: '0.3s' }}
                             >
                                 DÓLARES (USD)
                             </button>
                         </div>
 
                         {/* Monto Dinámico */}
-                        <div style={{ textAlign: 'center', marginBottom: '2rem' }}>
-                            <p style={{ fontSize: '0.75rem', fontWeight: 900, color: 'var(--color-primary)', marginBottom: '0.5rem' }}>IMPORTE A DEPOSITAR:</p>
-                            <p style={{ fontSize: '2.5rem', fontWeight: 900, lineHeight: 1 }}>
+                        <div style={{ textAlign: 'center', marginBottom: '1.25rem', background: 'rgba(0,0,0,0.2)', padding: '1rem', borderRadius: '16px', border: 'var(--border-thin)' }}>
+                            <p style={{ fontSize: '0.6rem', fontWeight: 950, color: 'var(--color-primary)', marginBottom: '0.2rem', letterSpacing: '0.1em' }}>IMPORTE A DEPOSITAR</p>
+                            <p style={{ fontSize: '2rem', fontWeight: 950, lineHeight: 1, letterSpacing: '-0.02em' }}>
                                 {currency === 'BOB' ? `Bs. ${selectedPlan.precio}` : `$${(selectedPlan.precio / (ajustes?.tasa_cambio_bob || 6.96)).toFixed(2)} USD`}
                             </p>
                         </div>
 
-                        {/* QR Dinámico */}
+                        {/* QR Dinámico - Standardized Width */}
                         <div style={{
-                            background: 'white', padding: '1rem', borderRadius: '24px',
-                            border: '4px solid #000', width: '220px', margin: '0 auto 2rem',
-                            boxShadow: '10px 10px 0px 0px rgba(0,0,0,0.2)'
+                            background: 'white', padding: '0.75rem', borderRadius: '20px',
+                            border: '3px solid #000', width: '200px', margin: '0 auto 1.25rem',
+                            boxShadow: '8px 8px 0px 0px rgba(0,0,0,0.1)'
                         }}>
                             {(currency === 'BOB' ? (ajustes?.qr_cobro_bob || ajustes?.qr_cobro_url) : ajustes?.qr_cobro_usd) ? (
-                                <img src={currency === 'BOB' ? (ajustes.qr_cobro_bob || ajustes.qr_cobro_url) : ajustes.qr_cobro_usd} style={{ width: '100%', borderRadius: '12px' }} alt="QR" />
+                                <img src={currency === 'BOB' ? (ajustes.qr_cobro_bob || ajustes.qr_cobro_url) : ajustes.qr_cobro_usd} style={{ width: '100%', borderRadius: '8px' }} alt="QR" />
                             ) : (
-                                <div style={{ height: '200px', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#ccc', flexDirection: 'column' }}>
-                                    <QrCode size={64} style={{ marginBottom: '10px' }} />
-                                    <span style={{ fontSize: '10px', fontWeight: 900, textAlign: 'center' }}>QR NO DISPONIBLE EN GLOBAL</span>
+                                <div style={{ height: '160px', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#ccc', flexDirection: 'column' }}>
+                                    <QrCode size={48} style={{ marginBottom: '10px' }} />
+                                    <span style={{ fontSize: '9px', fontWeight: 900, textAlign: 'center', opacity: 0.5 }}>QR NO DISPONIBLE</span>
                                 </div>
                             )}
                         </div>
 
-                        {/* Uploader Comprobante */}
-                        <div style={{ position: 'relative', marginBottom: '2rem', height: '100px', border: '3px dashed #000', borderRadius: '24px', display: 'flex', alignItems: 'center', justifyItems: 'center', flexDirection: 'column', background: 'var(--surface-raised)' }}>
+                        {/* Uploader Comprobante - High Density */}
+                        <div style={{ position: 'relative', marginBottom: '1.25rem', height: '80px', border: '2px dashed var(--color-primary)', borderRadius: '16px', display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'rgba(var(--color-primary-rgb), 0.03)' }}>
                             <input
                                 type="file"
                                 accept="image/*"
                                 onChange={(e) => setFile(e.target.files?.[0] || null)}
                                 style={{ position: 'absolute', inset: 0, opacity: 0, cursor: 'pointer', zIndex: 10, width: '100%', height: '100%' }}
                             />
-                            <div style={{ pointerEvents: 'none', marginTop: '24px' }}>
+                            <div style={{ pointerEvents: 'none' }}>
                                 {file ? (
-                                    <div style={{ color: 'var(--color-primary)', fontWeight: 900, textAlign: 'center' }}>
-                                        <CheckCircle2 size={24} style={{ margin: '0 auto 0.25rem' }} />
-                                        {file.name}
+                                    <div style={{ color: 'var(--color-primary)', fontWeight: 950, textAlign: 'center', fontSize: '0.8rem' }}>
+                                        <CheckCircle2 size={20} style={{ margin: '0 auto 0.2rem' }} />
+                                        {file.name.length > 25 ? file.name.substring(0, 22) + '...' : file.name}
                                     </div>
                                 ) : (
-                                    <div style={{ opacity: 0.4, textAlign: 'center' }}>
-                                        <Upload size={24} style={{ margin: '0 auto 0.25rem' }} />
-                                        <p style={{ fontWeight: 900, fontSize: '0.7rem' }}>CARGAR COMPROBANTE DE PAGO</p>
+                                    <div style={{ opacity: 0.6, textAlign: 'center' }}>
+                                        <Upload size={20} style={{ margin: '0 auto 0.2rem' }} color="var(--color-primary)" />
+                                        <p style={{ fontWeight: 950, fontSize: '0.65rem' }}>CARGAR COMPROBANTE</p>
                                     </div>
                                 )}
                             </div>
@@ -366,13 +379,14 @@ export default function PlanPage() {
                             onClick={handleSendReceipt}
                             disabled={uploading || !file}
                             className="btn-primary"
-                            style={{ width: '100%', height: '60px', opacity: !file ? 0.5 : 1, fontSize: '1.1rem' }}
+                            style={{ width: '100%', height: '52px', opacity: !file ? 0.5 : 1, fontSize: '1rem', borderRadius: '14px', fontWeight: 950, boxShadow: 'var(--shadow-glow)' }}
                         >
-                            {uploading ? 'ENVIANDO...' : (currency === 'BOB' ? 'Confirmar y Notificar' : 'Confirm and Notify')}
+                            {uploading ? <RefreshCw className="animate-spin" /> : (currency === 'BOB' ? 'CONFIRMAR Y ENVIAR' : 'CONFIRM AND SEND')}
                         </button>
-                        <div style={{ textAlign: 'center', marginTop: '1rem' }}>
-                            <p style={{ fontSize: '0.65rem', fontWeight: 800, color: 'var(--text-muted)' }}>
-                                Tu pago será validado por un agente antes de ser activado
+
+                        <div style={{ textAlign: 'center', marginTop: '0.75rem' }}>
+                            <p style={{ fontSize: '0.6rem', fontWeight: 900, color: 'var(--text-muted)', textTransform: 'uppercase', opacity: 0.6 }}>
+                                El tiempo de activación es de 5 a 60 minutos
                             </p>
                         </div>
                     </motion.div>

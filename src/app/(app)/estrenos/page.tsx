@@ -7,6 +7,9 @@ import { Clapperboard, Search, Loader2, CalendarDays, RefreshCw, Download, Plus,
 import { motion, AnimatePresence } from 'framer-motion';
 import api from '@/lib/api';
 import { useAuth } from '@/lib/auth';
+import { useWatermark } from '@/hooks/useWatermark';
+import { WatermarkedImage } from '@/components/WatermarkedImage';
+import { downloadMedia } from '@/lib/mediaUtils';
 
 interface Estreno {
     id: string;
@@ -17,24 +20,20 @@ interface Estreno {
     imagen_url?: string;
 }
 
-const PLATAFORMAS = ['NETFLIX', 'DISNEY', 'HBO', 'AMAZON', 'APPLE', 'PARAMOUNT', 'IPTV', 'OTHER'];
-
-const PLATFORM_COLORS: Record<string, string> = {
-    NETFLIX: '#E50914', DISNEY: '#113CCF', HBO: '#5B2D8E',
-    AMAZON: '#FF9900', APPLE: '#1D1D1F', PARAMOUNT: '#0065CC',
-    IPTV: '#00A36C', OTHER: '#6B7280',
-};
-
-const PLATFORM_EMOJIS: Record<string, string> = {
-    NETFLIX: '🔴', DISNEY: '🔵', HBO: '🟣', AMAZON: '🟡',
-    APPLE: '⬛', PARAMOUNT: '⚡', IPTV: '📡', OTHER: '🎬',
-};
+interface Plataforma {
+    id: string;
+    nombre: string;
+    color: string;
+    emoji?: string;
+}
 
 export default function EstrenosVendorPage() {
-    const { isAdmin, isColaborador } = useAuth();
+    const { isAdmin, isColaborador, vendor } = useAuth();
+    const { settings, getUrl } = useWatermark();
     const canManage = isAdmin || isColaborador;
 
     const [estrenos, setEstrenos] = useState<Estreno[]>([]);
+    const [dbPlataformas, setDbPlataformas] = useState<Plataforma[]>([]);
     const [loading, setLoading] = useState(true);
     const [search, setSearch] = useState('');
     const [filterPlataforma, setFilterPlataforma] = useState('TODOS');
@@ -56,16 +55,14 @@ export default function EstrenosVendorPage() {
     const showToast = (msg: string) => { setToast(msg); setTimeout(() => setToast(''), 3000); };
 
     const downloadImage = async (url: string, name: string, id?: string) => {
-        try {
-            if (id) setDownloading(prev => new Set(prev).add(id));
-            const response = await fetch(url);
-            const blob = await response.blob();
-            const link = document.createElement('a');
-            link.href = URL.createObjectURL(blob);
-            link.download = `${name.replace(/\s+/g, '_')}.jpg`;
-            link.click();
-            URL.revokeObjectURL(link.href);
-        } catch { } finally { if (id) { setDownloading(prev => { const n = new Set(prev); n.delete(id!); return n; }); } }
+        await downloadMedia(
+            url,
+            name,
+            vendor,
+            settings || undefined,
+            () => id && setDownloading(prev => new Set(prev).add(id)),
+            () => id && setDownloading(prev => { const n = new Set(prev); n.delete(id!); return n; })
+        );
     };
 
     const downloadAll = async () => {
@@ -79,8 +76,15 @@ export default function EstrenosVendorPage() {
     const fetchEstrenos = async () => {
         setLoading(true);
         try {
-            const d = await api.get('/estrenos');
-            setEstrenos(d);
+            const [estrenosData, plataformasData] = await Promise.all([
+                api.get('/estrenos'),
+                api.get('/plataformas')
+            ]);
+            setEstrenos(estrenosData);
+            setDbPlataformas(plataformasData);
+            if (plataformasData.length > 0 && !form.plataforma) {
+                setForm(prev => ({ ...prev, plataforma: plataformasData[0].nombre }));
+            }
         } catch (err) {
             console.error(err);
         } finally {
@@ -103,7 +107,7 @@ export default function EstrenosVendorPage() {
         } else {
             setEditingId(null);
             setForm({
-                titulo: '', descripcion: '', plataforma: 'NETFLIX',
+                titulo: '', descripcion: '', plataforma: dbPlataformas[0]?.nombre || 'NETFLIX',
                 fecha_estreno: new Date().toISOString().slice(0, 10),
                 imagen_url: '', imagen_archivo: null
             });
@@ -151,7 +155,7 @@ export default function EstrenosVendorPage() {
         } catch { showToast('ERROR AL ELIMINAR'); }
     };
 
-    const plataformas = ['TODOS', ...Array.from(new Set(estrenos.map(e => e.plataforma)))];
+    const filterTabs = ['TODOS', ...dbPlataformas.map(p => p.nombre)];
 
     const filtered = estrenos.filter(e => {
         const matchSearch = e.titulo.toLowerCase().includes(search.toLowerCase());
@@ -172,9 +176,11 @@ export default function EstrenosVendorPage() {
             {/* Header */}
             <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} style={{ marginBottom: '2.5rem', display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: '1rem' }}>
                 <div>
-                    <h1 style={{ fontSize: '2rem', fontWeight: 900, display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+                    <h1 style={{ fontSize: '2rem', fontWeight: 900, display: 'flex', alignItems: 'center', gap: '1rem' }}>
                         <Clapperboard color="var(--color-primary)" />
-                        ESTRENOS <span className="text-gradient-primary">& NOVEDADES</span>
+                        <div className='flex max-sm:flex-col'>
+                            ESTRENOS &<span className="text-gradient-primary"> NOVEDADES</span>
+                        </div>
                         <button
                             onClick={fetchEstrenos}
                             className="btn-secondary"
@@ -209,18 +215,22 @@ export default function EstrenosVendorPage() {
             </div>
 
             {/* Platform Filter */}
-            <div style={{ display: 'flex', gap: '0.75rem', overflowX: 'auto', paddingBottom: '1rem', marginBottom: '2rem', scrollbarWidth: 'none' }}>
-                {plataformas.map(p => (
-                    <button key={p} onClick={() => setFilterPlataforma(p)}
-                        style={{
-                            whiteSpace: 'nowrap', padding: '0.5rem 1.25rem', borderRadius: 20, border: '2px solid',
-                            borderColor: filterPlataforma === p ? (PLATFORM_COLORS[p] || 'var(--color-primary)') : '#00000020',
-                            background: filterPlataforma === p ? (PLATFORM_COLORS[p] || 'var(--color-primary)') : 'transparent',
-                            color: filterPlataforma === p ? 'white' : 'inherit', fontWeight: 900, fontSize: '0.7rem', cursor: 'pointer'
-                        }}>
-                        {PLATFORM_EMOJIS[p] || '🎬'} {p}
-                    </button>
-                ))}
+            <div style={{ display: 'flex', gap: '0.75rem', overflowX: 'auto', paddingBottom: '1rem', marginBottom: '2rem', scrollbarWidth: 'none', }}>
+                {filterTabs.map(p => {
+                    const platInfo = dbPlataformas.find(x => x.nombre === p);
+                    const color = platInfo?.color || 'var(--color-primary)';
+                    return (
+                        <button key={p} onClick={() => setFilterPlataforma(p)}
+                            style={{
+                                whiteSpace: 'nowrap', padding: '0.5rem 1.25rem', borderRadius: 20, border: '2px solid',
+                                borderColor: filterPlataforma === p ? color : '#00000020',
+                                background: filterPlataforma === p ? color : 'transparent',
+                                color: filterPlataforma === p ? 'white' : 'inherit', fontWeight: 900, fontSize: '0.7rem', cursor: 'pointer'
+                            }}>
+                            {platInfo?.emoji || '🎬'} {p}
+                        </button>
+                    );
+                })}
             </div>
 
             {loading ? (
@@ -231,19 +241,28 @@ export default function EstrenosVendorPage() {
                     <p style={{ fontWeight: 900 }}>SIN ESTRENOS DISPONIBLES</p>
                 </div>
             ) : (
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))', gap: '2rem' }}>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))', gap: '2rem' }} className='px-[10vw] max-sm:px-2'>
                     {filtered.map((e, i) => (
                         <motion.div key={e.id} className="card" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.04 }}
                             style={{ padding: 0, overflow: 'hidden' }}>
                             {/* Image */}
-                            <div style={{ height: 180, background: '#000', position: 'relative', overflow: 'hidden' }}>
+                            <div style={{ height: '360px', position: 'relative', overflow: 'hidden' }}>
                                 {e.imagen_url
-                                    ? <img src={e.imagen_url} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                                    ? <WatermarkedImage
+                                        src={e.imagen_url}
+                                        settings={settings || undefined}
+                                        style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                                        alt={e.titulo}
+                                    />
                                     : <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                                         <Clapperboard size={64} color="white" style={{ opacity: 0.1 }} />
                                     </div>}
-                                <div style={{ position: 'absolute', top: 12, left: 12, background: PLATFORM_COLORS[e.plataforma] || '#000', color: 'white', padding: '4px 12px', borderRadius: 20, fontSize: '0.65rem', fontWeight: 900 }}>
-                                    {e.plataforma}
+                                <div style={{
+                                    position: 'absolute', top: 12, left: 12,
+                                    background: dbPlataformas.find(p => p.nombre === e.plataforma)?.color || '#000',
+                                    color: 'white', padding: '4px 12px', borderRadius: 20, fontSize: '0.65rem', fontWeight: 900
+                                }}>
+                                    {dbPlataformas.find(p => p.nombre === e.plataforma)?.emoji} {e.plataforma}
                                 </div>
                                 {canManage && (
                                     <div style={{ position: 'absolute', top: 12, right: 12, display: 'flex', gap: '0.5rem' }}>
@@ -307,7 +326,7 @@ export default function EstrenosVendorPage() {
                                     <div>
                                         <label className="input-label">PLATAFORMA</label>
                                         <select className="input" value={form.plataforma} onChange={e => setForm({ ...form, plataforma: e.target.value })}>
-                                            {PLATAFORMAS.map(p => <option key={p} value={p}>{p}</option>)}
+                                            {dbPlataformas.map(p => <option key={p.id} value={p.nombre}>{p.nombre}</option>)}
                                         </select>
                                     </div>
                                     <div>

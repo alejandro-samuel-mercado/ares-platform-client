@@ -5,14 +5,21 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { Download, Image as ImageIcon, Loader2, RefreshCw, Zap, Plus, Trash2, Edit, X, Upload } from 'lucide-react';
 import api from '@/lib/api';
 import { useAuth } from '@/lib/auth';
+import { useWatermark } from '@/hooks/useWatermark';
+import { WatermarkedImage } from '@/components/WatermarkedImage';
+import { downloadMedia } from '@/lib/mediaUtils';
 
+interface Categoria { id: string; nombre: string; }
 interface Imagen { id: string; titulo: string; url_base: string; categoria: string; etiquetas: string; }
 
 export default function FlyersPage() {
-    const { isAdmin, isColaborador } = useAuth();
+    const { isAdmin, isColaborador, vendor } = useAuth();
+    const { settings, getUrl } = useWatermark();
     const canManage = isAdmin || isColaborador;
 
     const [flyers, setFlyers] = useState<Imagen[]>([]);
+    const [categorias, setCategorias] = useState<Categoria[]>([]);
+    const [selectedCat, setSelectedCat] = useState('TODOS');
     const [loading, setLoading] = useState(true);
     const [downloading, setDownloading] = useState<Set<string>>(new Set());
     const [downloadingAll, setDownloadingAll] = useState(false);
@@ -22,14 +29,21 @@ export default function FlyersPage() {
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [editingImg, setEditingImg] = useState<Imagen | null>(null);
     const [saving, setSaving] = useState(false);
-    const [form, setForm] = useState({ titulo: '', etiquetas: '', archivo: null as File | null });
+    const [form, setForm] = useState({ titulo: '', etiquetas: '', categoria: '', archivo: null as File | null });
     const [toDelete, setToDelete] = useState<Imagen | null>(null);
 
     const load = async () => {
         setLoading(true);
         try {
-            const all = await api.get('/imagenes');
-            setFlyers(all.filter((img: Imagen) => img.categoria === 'FLYER'));
+            const [all, cats] = await Promise.all([
+                api.get('/imagenes'),
+                api.get('/categorias?tipo=IMAGEN')
+            ]);
+            setFlyers(all);
+            setCategorias(cats);
+            if (cats.length > 0 && !form.categoria) {
+                setForm(prev => ({ ...prev, categoria: cats[0].nombre }));
+            }
         } catch (err) { console.error(err); }
         finally { setLoading(false); }
     };
@@ -38,27 +52,20 @@ export default function FlyersPage() {
     const showToast = (msg: string) => { setToast(msg); setTimeout(() => setToast(''), 3000); };
 
     const downloadImage = async (url: string, name: string, id?: string) => {
-        try {
-            if (id) setDownloading(prev => new Set(prev).add(id));
-            const response = await fetch(url);
-            const blob = await response.blob();
-            const link = document.createElement('a');
-            link.href = URL.createObjectURL(blob);
-            link.download = `${name.replace(/\s+/g, '_')}.jpg`;
-            link.click();
-            URL.revokeObjectURL(link.href);
-            if (id) {
-                const next = new Set(downloading);
-                next.delete(id);
-                setDownloading(next);
-            }
-        } catch { if (id) { const next = new Set(downloading); next.delete(id); setDownloading(next); } }
+        await downloadMedia(
+            url, 
+            name, 
+            vendor, 
+            settings || undefined, 
+            () => id && setDownloading(prev => new Set(prev).add(id)),
+            () => id && setDownloading(prev => { const n = new Set(prev); n.delete(id!); return n; })
+        );
     };
 
     const downloadAll = async () => {
         setDownloadingAll(true);
         for (const flyer of flyers) {
-            await downloadImage(flyer.url_base, flyer.titulo);
+            await downloadImage(getUrl(flyer.url_base), flyer.titulo);
             await new Promise(r => setTimeout(r, 300));
         }
         setDownloadingAll(false);
@@ -70,9 +77,9 @@ export default function FlyersPage() {
         setSaving(true);
         try {
             const formData = new FormData();
-            formData.append('titulo', form.titulo);
+        formData.append('titulo', form.titulo);
             formData.append('etiquetas', form.etiquetas);
-            formData.append('categoria', 'FLYER');
+            formData.append('categoria', form.categoria || 'FLYER');
             if (form.archivo) formData.append('imagen', form.archivo);
 
             const token = localStorage.getItem('ares_token');
@@ -101,6 +108,7 @@ export default function FlyersPage() {
             load();
         } catch { showToast('Error al eliminar ❌'); }
     };
+    const filteredFlyers = flyers.filter(f => selectedCat === 'TODOS' || f.categoria === selectedCat);
 
     return (
         <div style={{ display: 'flex', flexDirection: 'column', gap: '2rem', paddingBottom: '8rem' }}>
@@ -117,45 +125,68 @@ export default function FlyersPage() {
                         <span className="text-gradient-primary">FLYERS</span>
                         <button onClick={load} className="btn-secondary" style={{ padding: '0.5rem', borderRadius: '50%' }}><RefreshCw size={20} /></button>
                     </h1>
-                    <p style={{ fontWeight: 800, fontSize: '0.8rem', color: 'var(--text-muted)', marginTop: '0.5rem' }}>Material publicitario para WhatsApp y Facebook</p>
+                    <p style={{ fontWeight: 800, fontSize: '0.8rem', color: 'var(--text-muted)', marginTop: '0.5rem' }}>Banco de recursos visuales y material publicitario</p>
                 </div>
                 <div style={{ display: 'flex', gap: '0.75rem' }}>
                     {canManage && (
-                        <button className="btn-primary" onClick={() => { setEditingImg(null); setForm({ titulo: '', etiquetas: '', archivo: null }); setIsModalOpen(true); }}
+                        <button className="btn-primary" onClick={() => { setEditingImg(null); setForm({ titulo: '', etiquetas: '', categoria: categorias[0]?.nombre || 'FLYER', archivo: null }); setIsModalOpen(true); }}
                             style={{ padding: '0.7rem 1.5rem', fontSize: '0.8rem', display: 'flex', alignItems: 'center', gap: '0.5rem', background: 'var(--ambient-1)', color: 'white' }}>
                             <Plus size={16} /> SUBIR NUEVO
                         </button>
                     )}
-                    {flyers.length > 0 && (
+                    {filteredFlyers.length > 0 && (
                         <button className="btn-primary" onClick={downloadAll} disabled={downloadingAll}
                             style={{ padding: '0.7rem 1.5rem', fontSize: '0.8rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
                             {downloadingAll ? <Loader2 className="animate-spin" size={16} /> : <Download size={16} />}
-                            DESCARGAR TODOS ({flyers.length})
+                            DESCARGAR TODOS ({filteredFlyers.length})
                         </button>
                     )}
                 </div>
+            </div>
+
+            {/* Category Filter Tabs */}
+            <div style={{ display: 'flex', gap: '1rem', overflowX: 'auto', paddingBottom: '0.5rem' }}>
+                {['TODOS', ...categorias.map(c => c.nombre)].map(c => (
+                    <button key={c} onClick={() => setSelectedCat(c)}
+                        style={{
+                            padding: '0.6rem 1.25rem', borderRadius: '12px', fontWeight: 900, fontSize: '0.75rem', cursor: 'pointer',
+                            background: selectedCat === c ? 'var(--color-primary)' : 'var(--surface-raised)',
+                            color: selectedCat === c ? 'white' : 'var(--text-muted)',
+                            border: '2px solid', borderColor: selectedCat === c ? 'var(--color-primary)' : 'rgba(0,0,0,0.1)'
+                        }}>
+                        {c.toUpperCase()}
+                    </button>
+                ))}
             </div>
 
             {loading ? (
                 <div style={{ padding: '5rem 0', textAlign: 'center' }}>
                     <Zap className="animate-pulse" size={40} color="var(--color-primary)" style={{ margin: '0 auto' }} />
                 </div>
-            ) : flyers.length === 0 ? (
+            ) : filteredFlyers.length === 0 ? (
                 <div className="card" style={{ textAlign: 'center', padding: '3rem' }}>
                     <ImageIcon size={50} color="var(--text-muted)" style={{ margin: '0 auto 1rem' }} />
-                    <h3 style={{ fontWeight: 900, color: 'var(--text-primary)' }}>SIN FLYERS DISPONIBLES</h3>
-                    <p style={{ fontWeight: 700, color: 'var(--text-muted)', marginTop: '0.5rem' }}>Aún no hay material publicitario subido</p>
+                    <h3 style={{ fontWeight: 900, color: 'var(--text-primary)' }}>SIN MATERIAL DISPONIBLE</h3>
+                    <p style={{ fontWeight: 700, color: 'var(--text-muted)', marginTop: '0.5rem' }}>Aún no hay recursos subidos en esta categoría</p>
                 </div>
             ) : (
                 <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(260px, 1fr))', gap: '1.25rem' }}>
-                    {flyers.map((flyer, idx) => (
+                    {filteredFlyers.map((flyer, idx) => (
                         <motion.div key={flyer.id} className="card" initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: idx * 0.05 }}
                             style={{ padding: 0, overflow: 'hidden', background: 'var(--surface-raised)' }}>
-                            <div style={{ width: '100%', aspectRatio: '1/1', background: '#000', position: 'relative' }}>
-                                <img src={flyer.url_base} alt={flyer.titulo} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                            <div style={{ aspectRatio: '1/1', background: 'var(--surface-base)', overflow: 'hidden', position: 'relative' }}>
+                                <WatermarkedImage 
+                                    src={flyer.url_base} 
+                                    settings={settings || undefined}
+                                    style={{ width: '100%', height: '100%', objectFit: 'cover' }} 
+                                    alt={flyer.titulo} 
+                                />
+                                <div style={{ position: 'absolute', bottom: 10, left: 10, background: 'var(--color-primary)', color: 'white', padding: '2px 8px', borderRadius: '6px', fontSize: '0.6rem', fontWeight: 900, boxShadow: '2px 2px 0px 0px #000' }}>
+                                    {flyer.categoria}
+                                </div>
                                 {canManage && (
                                     <div style={{ position: 'absolute', top: 10, right: 10, display: 'flex', gap: '0.5rem' }}>
-                                        <button onClick={() => { setEditingImg(flyer); setForm({ titulo: flyer.titulo, etiquetas: flyer.etiquetas, archivo: null }); setIsModalOpen(true); }}
+                                        <button onClick={() => { setEditingImg(flyer); setForm({ titulo: flyer.titulo, etiquetas: flyer.etiquetas, categoria: flyer.categoria, archivo: null }); setIsModalOpen(true); }}
                                             style={{ background: 'var(--color-primary)', color: 'white', border: 'none', borderRadius: '8px', width: '32px', height: '32px', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }}>
                                             <Edit size={16} />
                                         </button>
@@ -175,7 +206,7 @@ export default function FlyersPage() {
                                 </div>
                                 <button
                                     className="btn-primary"
-                                    onClick={() => downloadImage(flyer.url_base, flyer.titulo, flyer.id)}
+                                    onClick={() => downloadImage(getUrl(flyer.url_base), flyer.titulo, flyer.id)}
                                     disabled={downloading.has(flyer.id)}
                                     style={{ width: '42px', height: '42px', padding: 0, borderRadius: '14px' }}
                                 >
@@ -205,6 +236,13 @@ export default function FlyersPage() {
                                 <div>
                                     <label className="input-label">ETIQUETAS (COMAS)</label>
                                     <input className="input" value={form.etiquetas} onChange={e => setForm({ ...form, etiquetas: e.target.value })} placeholder="netflix, promo, etc" />
+                                </div>
+                                <div>
+                                    <label className="input-label">CATEGORÍA</label>
+                                    <select className="input" value={form.categoria} onChange={e => setForm({ ...form, categoria: e.target.value })}>
+                                        {categorias.map(c => <option key={c.id} value={c.nombre}>{c.nombre}</option>)}
+                                        <option value="FLYER">FLYER (LEGACY)</option>
+                                    </select>
                                 </div>
                                 <div style={{ border: '2px dashed var(--color-primary)', padding: '2rem', borderRadius: '16px', textAlign: 'center', position: 'relative' }}>
                                     <input type="file" accept="image/*" style={{ position: 'absolute', inset: 0, opacity: 0, cursor: 'pointer' }}

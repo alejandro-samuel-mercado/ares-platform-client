@@ -7,6 +7,10 @@ import { Trophy, Clock, Tv, Copy, Calendar as CalendarIcon, Zap, Loader2, Star, 
 import { motion, AnimatePresence } from 'framer-motion';
 import html2canvas from 'html2canvas';
 import { useAuth } from '@/lib/auth';
+import { useWatermark } from '@/hooks/useWatermark';
+import { WatermarkedImage } from '@/components/WatermarkedImage';
+import { downloadMedia } from '@/lib/mediaUtils';
+import { shouldApplyWatermark } from '@/lib/watermark';
 
 interface Partido {
     id: string;
@@ -23,8 +27,10 @@ interface Partido {
 }
 
 export default function PartidosVendorPage() {
-    const { isAdmin, isColaborador } = useAuth();
+    const { isAdmin, isColaborador, vendor } = useAuth();
+    const { settings, getUrl } = useWatermark();
     const canManage = isAdmin || isColaborador;
+    const applyWM = shouldApplyWatermark(vendor?.plan_id, settings || undefined);
 
     const [partidos, setPartidos] = useState<Partido[]>([]);
     const [loading, setLoading] = useState(true);
@@ -76,16 +82,13 @@ export default function PartidosVendorPage() {
         try {
             setDownloadingImg(prev => new Set(prev).add(id));
             if (customImage && customImage.startsWith('http')) {
-                const response = await fetch(customImage);
-                const blob = await response.blob();
-                const url = window.URL.createObjectURL(blob);
-                const link = document.createElement('a');
-                link.download = `Flyer_${equipoLocal}_vs_${equipoVisita}.jpg`.replace(/\s+/g, '_');
-                link.href = url;
-                document.body.appendChild(link);
-                link.click();
-                link.remove();
-                window.URL.revokeObjectURL(url);
+                await downloadMedia(
+                    customImage,
+                    `Flyer_${equipoLocal}_vs_${equipoVisita}`,
+                    vendor,
+                    settings || undefined
+                );
+                setDownloadingImg(prev => { const n = new Set(prev); n.delete(id); return n; });
                 return;
             }
             const node = document.getElementById(`fixture-export-${id}`);
@@ -326,7 +329,7 @@ export default function PartidosVendorPage() {
                     <p style={{ fontWeight: 800, fontSize: '0.9rem', opacity: 0.4 }}>SIN EVENTOS PROGRAMADOS</p>
                 </div>
             ) : (
-                <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
+                <div className="grid grid-cols-1 max-md:grid-cols-1 xl:grid-cols-3 gap-6 max-md:px-10">
                     {partidos.map((p, idx) => (
                         <motion.div key={p.id} id={`fixture-${p.id}`} initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: idx * 0.1 }}
                             className="card" style={{ padding: '0', overflow: 'hidden', background: 'var(--surface-raised)', position: 'relative' }}>
@@ -359,8 +362,13 @@ export default function PartidosVendorPage() {
                             </div>
 
                             {p.imagen_personalizada && p.imagen_personalizada.startsWith('http') ? (
-                                <div style={{ width: '100%', height: '220px', background: '#000', overflow: 'hidden', position: 'relative' }}>
-                                    <img src={p.imagen_personalizada} crossOrigin="anonymous" alt="Flyer" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                                <div style={{ position: 'relative', width: '100%', height: '220px', background: '#000', overflow: 'hidden' }}>
+                                    <img
+                                        src={getUrl(p.imagen_personalizada)}
+                                        crossOrigin="anonymous"
+                                        alt="Flyer"
+                                        style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                                    />
                                     <div style={{ position: 'absolute', bottom: '10px', right: '10px', padding: '0.4rem 0.8rem', background: 'rgba(0,0,0,0.8)', backdropFilter: 'blur(10px)', borderRadius: '12px', border: '1px solid rgba(255,255,255,0.2)' }}>
                                         <div style={{ display: 'flex', alignItems: 'center', gap: '0.3rem', color: 'var(--color-primary)', fontWeight: 900, fontSize: '0.7rem' }}>
                                             <Tv size={12} /> {p.canal}
@@ -535,7 +543,7 @@ export default function PartidosVendorPage() {
                                         <span style={{ fontWeight: 900, fontSize: '0.75rem' }}>CONTENIDO PRO</span>
                                         <label className="switch">
                                             <input type="checkbox" checked={formData.requiere_iptv} onChange={e => setFormData({ ...formData, requiere_iptv: e.target.checked })} />
-                                            <span className="slider round"></span>
+                                            <span className="slider round" style={{ backgroundColor: 'var(--color-primary)' }}></span>
                                         </label>
                                     </div>
                                 </div>
@@ -547,7 +555,14 @@ export default function PartidosVendorPage() {
                                         {formData.imagen_personalizada_archivo ? (
                                             <div style={{ fontSize: '0.7rem', fontWeight: 900, color: 'var(--color-primary)' }}>{formData.imagen_personalizada_archivo.name}</div>
                                         ) : formData.imagen_personalizada ? (
-                                            <img src={formData.imagen_personalizada} style={{ height: '40px', objectFit: 'contain' }} />
+                                            <div style={{ height: '350px', position: 'relative', overflow: 'hidden' }}>
+                                                <WatermarkedImage
+                                                    src={formData.imagen_personalizada}
+                                                    settings={settings || undefined}
+                                                    style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                                                    alt="Custom"
+                                                />
+                                            </div>
                                         ) : (
                                             <div style={{ opacity: 0.5 }}><Upload size={18} /><p style={{ fontSize: '0.6rem', fontWeight: 900 }}>SUBIR FLYER .JPG</p></div>
                                         )}
@@ -629,8 +644,23 @@ export default function PartidosVendorPage() {
                                 <span style={{ fontSize: '2rem', fontWeight: 900 }}>{p.canal}</span>
                             </div>
                         </div>
+                        {applyWM && (
+                            <div style={{
+                                position: 'absolute', top: 0, left: 0, width: '100%', height: '100%',
+                                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                                pointerEvents: 'none', zIndex: 10, opacity: settings?.watermark_opacity || 0.4
+                            }}>
+                                {settings?.watermark_type === 'IMAGE' && settings.watermark_image_url ? (
+                                    <img src={settings.watermark_image_url} crossOrigin="anonymous" style={{ maxWidth: '40%', maxHeight: '40%', position: 'absolute', bottom: '60px', right: '60px' }} />
+                                ) : (
+                                    <div style={{ fontSize: '8rem', fontWeight: 900, transform: 'rotate(-45deg)', opacity: 0.5, border: '15px solid white', padding: '2rem 4rem', textTransform: 'uppercase', color: 'white' }}>
+                                        {settings?.watermark_text || 'ARES PLATFORM'}
+                                    </div>
+                                )}
+                            </div>
+                        )}
                         <div style={{ position: 'absolute', bottom: '2rem', fontSize: '1.2rem', fontWeight: 900, opacity: 0.3, letterSpacing: '8px' }}>
-                            ARES PLATFORM
+                            {settings?.watermark_text || 'ARES PLATFORM'}
                         </div>
                     </div>
                 ))}

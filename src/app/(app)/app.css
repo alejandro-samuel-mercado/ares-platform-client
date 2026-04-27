@@ -43,6 +43,15 @@
     margin-bottom: 1rem;
 }
 
+
+
+@media (max-width: 1281px) {
+    .vendor-sidebar {
+        margin: 5vh 0 5vh 2.5vw;
+    }
+
+}
+
 /* ═══════════════════════════════════════════
    PWA NAVIGATION — FLOATING PILL (Mobile)
    ═══════════════════════════════════════════ */

@@ -8,6 +8,7 @@ import React, { useState, useEffect } from 'react';
 import api from '@/lib/api';
 import { ShoppingBag, Plus, Trash2, Edit2, Loader2, Search, X, CheckCircle2, ShieldAlert, Upload, Link, ImageIcon, AlertCircle, RefreshCw } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
+import Combobox from '@/components/Combobox';
 
 interface MarketService {
     id: string;
@@ -166,13 +167,15 @@ export default function MarketplaceAdminPage() {
                 )}
             </AnimatePresence>
 
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '3.5rem' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '3.5rem' }} className='max-sm:flex-col max-sm:items-start max-sm:gap-4'>
                 <div>
                     <h1 style={{ fontSize: '2.8rem', fontWeight: 900, display: 'flex', alignItems: 'center', gap: '1rem' }}>
-                        CATÁLOGO DE <span className="text-gradient-primary">SOLUCIONES</span>
-                        <button 
-                            onClick={fetchServices} 
-                            className="btn-secondary" 
+                        <div>
+                            CATÁLOGO
+                        </div>
+                        <button
+                            onClick={fetchServices}
+                            className="btn-secondary max-xl:mr-10"
                             style={{ padding: '0.75rem', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
                             title="Refrescar Servicios"
                         >
@@ -181,7 +184,7 @@ export default function MarketplaceAdminPage() {
                     </h1>
                     <p style={{ fontWeight: 800, opacity: 0.5, color: 'var(--text-muted)' }}>MERCADO GLOBAL DE SERVICIOS DIGITALES</p>
                 </div>
-                <button onClick={() => openModal()} className="btn-primary" style={{ padding: '1.25rem 2.5rem' }}>
+                <button onClick={() => openModal()} className="btn-primary" style={{ padding: '1rem 2rem' }}>
                     <Plus size={22} /> NUEVO SERVICIO
                 </button>
             </div>
@@ -194,7 +197,7 @@ export default function MarketplaceAdminPage() {
             {loading ? (
                 <div style={{ textAlign: 'center', padding: '10rem' }}><Loader2 className="animate-spin" size={48} color="var(--color-primary)" /></div>
             ) : (
-                <div className="table-container">
+                <div className="table-container max-xl:w-[115%] max-xl:-ml-15  max-md:w-[100%] max-md:ml-0 ">
                     <table className="table">
                         <thead>
                             <tr>
@@ -284,13 +287,18 @@ export default function MarketplaceAdminPage() {
                                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '2rem' }}>
                                     <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
                                         <div>
-                                            <label className="input-label">Categoría</label>
-                                            <select className="input" value={formData.categoria} onChange={e => setFormData({ ...formData, categoria: e.target.value })}>
-                                                <option value="STREAMING">STREAMING</option>
-                                                <option value="APPS">APLICACIONES</option>
-                                                <option value="GAMES">JUEGOS</option>
-                                                <option value="OTHER">OTROS</option>
-                                            </select>
+                                            <Combobox
+                                                label="Categoría"
+                                                placeholder="Seleccionar categoría..."
+                                                options={[
+                                                    { id: 'STREAMING', nombre: 'STREAMING' },
+                                                    { id: 'APPS', nombre: 'APLICACIONES' },
+                                                    { id: 'GAMES', nombre: 'JUEGOS' },
+                                                    { id: 'OTHER', nombre: 'OTROS' }
+                                                ]}
+                                                value={formData.categoria}
+                                                onChange={(val: any) => setFormData({ ...formData, categoria: val })}
+                                            />
                                         </div>
                                         <div>
                                             <label className="input-label">URL del Logo</label>

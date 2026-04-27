@@ -121,7 +121,7 @@ export default function VendorHome() {
             >
                 <button
                     onClick={loadDynamicData}
-                    style={{ position: 'absolute', top: 0, right: '1rem', background: 'transparent', border: 'none', color: 'var(--color-primary)', cursor: 'pointer' }}
+                    style={{ position: 'absolute', top: 0, right: '0rem', background: 'transparent', border: 'none', color: 'var(--color-primary)', cursor: 'pointer' }}
                     title="Actualizar Datos"
                 >
                     <RefreshCw size={24} className={loading ? 'animate-spin' : ''} />
@@ -217,7 +217,7 @@ export default function VendorHome() {
                                         <img src={m.logo_visita} style={{ width: '100%', height: '100%', objectFit: 'contain' }} />
                                     </div>
                                 </div>
-                                <div style={{ minWidth: '50px', textAlign: 'right', fontWeight: 900, fontSize: '0.75rem', color: 'var(--color-primary)' }}>
+                                <div style={{ minWidth: '50px', textAlign: 'center', fontWeight: 900, fontSize: '0.75rem', color: 'var(--color-primary)' }}>
                                     {m.hora}
                                 </div>
                             </div>

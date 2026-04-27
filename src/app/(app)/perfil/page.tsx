@@ -109,7 +109,7 @@ export default function PerfilPage() {
     const handleSave = async () => {
         console.log('[PERFIL] Iniciando guardado. Form actual:', form);
         console.log('[PERFIL] Archivos seleccionados:', Object.keys(selectedFiles));
-        
+
         setSaving(true);
         try {
             const formData = new FormData();
@@ -120,7 +120,7 @@ export default function PerfilPage() {
             formData.append('whatsapp_api_enabled', form.whatsapp_api_enabled.toString());
             formData.append('whatsapp_api_token', form.whatsapp_api_token);
             formData.append('tigo_money', form.tigo_money);
-            
+
             // URLs manuales (si no hay archivo nuevo)
             if (!selectedFiles.logo) formData.append('logo_url', vendor?.logo_url || '');
             if (!selectedFiles.qr_bob) formData.append('qr_bob_url', form.qr_bob);
@@ -154,7 +154,7 @@ export default function PerfilPage() {
 
             triggerToast('Perfil actualizado correctamente ✅');
             setSelectedFiles({});
-            
+
             if (refreshVendor) {
                 console.log('[PERFIL] Refrescando vendor context...');
                 await refreshVendor();
@@ -170,9 +170,9 @@ export default function PerfilPage() {
 
     return (
         <div style={{
-            maxWidth: '90%', margin: '0 auto', paddingBottom: '6rem',
+            margin: '0 auto', paddingBottom: '6rem',
 
-        }}>
+        }} className='max-w-[90%] max-sm:max-w-[100%]'>
             {/* Header */}
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '2rem', marginBottom: '2.5rem' }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
@@ -210,14 +210,7 @@ export default function PerfilPage() {
                 )}
             </AnimatePresence>
 
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '2.5rem' }}>
-                <h1 style={{ fontSize: '2rem', display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-                    ID <span className="text-gradient-primary">VENDEDOR</span>
-                </h1>
-                <div style={{ background: '#000', padding: '0.5rem', borderRadius: '12px', border: '2px solid var(--color-primary)' }}>
-                    <QrCode size={20} color="var(--color-primary)" />
-                </div>
-            </div>
+
 
             {/* Hero Profile Card - REDESIGNED */}
             <div className="card" style={{
@@ -260,9 +253,9 @@ export default function PerfilPage() {
                             <User size={60} color="#000" />
                         </div>
                     )}
-                    
+
                     {/* Botón flotante para subir foto */}
-                    <button 
+                    <button
                         onClick={() => logoInputRef.current?.click()}
                         style={{
                             position: 'absolute', bottom: '-10px', right: '-10px',
@@ -275,10 +268,10 @@ export default function PerfilPage() {
                     >
                         <ImageIcon size={20} color="#000" />
                     </button>
-                    <input 
-                        type="file" 
-                        ref={logoInputRef} 
-                        style={{ display: 'none' }} 
+                    <input
+                        type="file"
+                        ref={logoInputRef}
+                        style={{ display: 'none' }}
                         accept="image/*"
                         onChange={(e) => {
                             const file = e.target.files?.[0];
@@ -337,7 +330,7 @@ export default function PerfilPage() {
                         background: 'rgba(255,255,255,0.1)', padding: '1rem 1.25rem', borderRadius: '16px', border: '1.5px solid rgba(255,255,255,0.1)',
                         display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '1rem'
                     }}>
-                        <code style={{ fontSize: '0.8rem', fontWeight: 800, color: 'var(--color-primary)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                        <code style={{ fontSize: '0.8rem', fontWeight: 800, color: '#ffff', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                             {typeof window !== 'undefined' ? `${window.location.origin}/u/${vendor?.alias || ''}` : `.../u/${vendor?.alias || ''}`}
                         </code>
                         <button
@@ -469,95 +462,95 @@ export default function PerfilPage() {
 
                 {/* Métodos de Pago B2B (Solo para Proveedores) */}
                 {vendor?.plan?.toLowerCase() === 'proveedor' && (
-                  <div className="card-static" style={{ padding: '2rem' }}>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', marginBottom: '2rem' }}>
-                          <div style={{ background: '#000', color: 'white', padding: '0.6rem', borderRadius: '12px' }}><QrCode size={20} /></div>
-                          <h3 style={{ fontWeight: 900, fontSize: '1.2rem' }}>PAGOS MARKETPLACE</h3>
-                      </div>
-                      <p style={{ fontSize: '0.7rem', fontWeight: 700, opacity: 0.6, marginBottom: '1.5rem', lineHeight: 1.4 }}>
-                        Configura tus métodos de cobro para que otros vendedores puedan pagarte directamente.
-                      </p>
-                      
-                      <div style={{ display: 'flex', flexDirection: 'column', gap: '1.75rem' }}>
-                          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
-                              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
-                                  <label className="input-label">QR Bolivianos (Bs)</label>
-                                  <div 
-                                    onClick={() => qrBobInputRef.current?.click()}
-                                    style={{
-                                        border: '2.5px dashed var(--color-primary)', borderRadius: '18px', padding: '1rem',
-                                        height: '140px', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
-                                        cursor: 'pointer', background: 'var(--surface-raised)', transition: '0.2s', position: 'relative'
-                                    }}
-                                    className="hover-bright"
-                                  >
-                                  {selectedFiles.qr_bob ? (
-                                         <>
-                                            <CheckCircle2 color="var(--color-success)" size={32} />
-                                            <span style={{ fontSize: '0.7rem', fontWeight: 900, marginTop: '0.5rem', textAlign: 'center' }}>{selectedFiles.qr_bob.name}</span>
-                                         </>
-                                      ) : form.qr_bob ? (
-                                         <img src={form.qr_bob} style={{ width: '100%', height: '100%', objectFit: 'contain', borderRadius: '12px' }} alt="QR BOB" />
-                                      ) : (
-                                         <>
-                                            <UploadCloud size={32} color="var(--color-primary)" />
-                                            <span style={{ fontSize: '0.7rem', fontWeight: 900, marginTop: '0.5rem' }}>Subir QR BS</span>
-                                         </>
-                                      )}
-                                  </div>
-                                  <input type="file" ref={qrBobInputRef} style={{ display: 'none' }} accept="image/*" onChange={(e) => { const file = e.target.files?.[0]; if (file) setSelectedFiles({ ...selectedFiles, qr_bob: file }); }} />
-                                  {/* URL fallback removed to enforce local upload */}
-                              </div>
+                    <div className="card-static" style={{ padding: '2rem' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', marginBottom: '2rem' }}>
+                            <div style={{ background: '#000', color: 'white', padding: '0.6rem', borderRadius: '12px' }}><QrCode size={20} /></div>
+                            <h3 style={{ fontWeight: 900, fontSize: '1.2rem' }}>PAGOS MARKETPLACE</h3>
+                        </div>
+                        <p style={{ fontSize: '0.7rem', fontWeight: 700, opacity: 0.6, marginBottom: '1.5rem', lineHeight: 1.4 }}>
+                            Configura tus métodos de cobro para que otros vendedores puedan pagarte directamente.
+                        </p>
 
-                              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
-                                  <label className="input-label">QR Dólares ($)</label>
-                                  <div 
-                                    onClick={() => qrUsdInputRef.current?.click()}
-                                    style={{
-                                        border: '2.5px dashed var(--color-primary)', borderRadius: '18px', padding: '1rem',
-                                        height: '140px', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
-                                        cursor: 'pointer', background: 'var(--surface-raised)', transition: '0.2s', position: 'relative'
-                                    }}
-                                    className="hover-bright"
-                                  >
-                                      {selectedFiles.qr_usd ? (
-                                         <>
-                                            <CheckCircle2 color="var(--color-success)" size={32} />
-                                            <span style={{ fontSize: '0.7rem', fontWeight: 900, marginTop: '0.5rem', textAlign: 'center' }}>{selectedFiles.qr_usd.name}</span>
-                                         </>
-                                      ) : form.qr_usd ? (
-                                         <img src={form.qr_usd} style={{ width: '100%', height: '100%', objectFit: 'contain', borderRadius: '12px' }} alt="QR USD" />
-                                      ) : (
-                                         <>
-                                            <UploadCloud size={32} color="var(--color-primary)" />
-                                            <span style={{ fontSize: '0.7rem', fontWeight: 900, marginTop: '0.5rem' }}>Subir QR USD</span>
-                                         </>
-                                      )}
-                                  </div>
-                                  <input type="file" ref={qrUsdInputRef} style={{ display: 'none' }} accept="image/*" onChange={(e) => { const file = e.target.files?.[0]; if (file) setSelectedFiles({ ...selectedFiles, qr_usd: file }); }} />
-                                  {/* URL fallback removed to enforce local upload */}
-                              </div>
-                          </div>
-                          <div>
-                              <label className="input-label">Número Tigo Money</label>
-                              <input 
-                                className="input" 
-                                placeholder="7XXXXXXX" 
-                                value={form.tigo_money} 
-                                onChange={e => setForm({ ...form, tigo_money: e.target.value })} 
-                              />
-                          </div>
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '1.75rem' }}>
+                            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
+                                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+                                    <label className="input-label">QR Bolivianos (Bs)</label>
+                                    <div
+                                        onClick={() => qrBobInputRef.current?.click()}
+                                        style={{
+                                            border: '2.5px dashed var(--color-primary)', borderRadius: '18px', padding: '1rem',
+                                            height: '140px', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
+                                            cursor: 'pointer', background: 'var(--surface-raised)', transition: '0.2s', position: 'relative'
+                                        }}
+                                        className="hover-bright"
+                                    >
+                                        {selectedFiles.qr_bob ? (
+                                            <>
+                                                <CheckCircle2 color="var(--color-success)" size={32} />
+                                                <span style={{ fontSize: '0.7rem', fontWeight: 900, marginTop: '0.5rem', textAlign: 'center' }}>{selectedFiles.qr_bob.name}</span>
+                                            </>
+                                        ) : form.qr_bob ? (
+                                            <img src={form.qr_bob} style={{ width: '100%', height: '100%', objectFit: 'contain', borderRadius: '12px' }} alt="QR BOB" />
+                                        ) : (
+                                            <>
+                                                <UploadCloud size={32} color="var(--color-primary)" />
+                                                <span style={{ fontSize: '0.7rem', fontWeight: 900, marginTop: '0.5rem' }}>Subir QR BS</span>
+                                            </>
+                                        )}
+                                    </div>
+                                    <input type="file" ref={qrBobInputRef} style={{ display: 'none' }} accept="image/*" onChange={(e) => { const file = e.target.files?.[0]; if (file) setSelectedFiles({ ...selectedFiles, qr_bob: file }); }} />
+                                    {/* URL fallback removed to enforce local upload */}
+                                </div>
 
-                          <button
-                            className="btn-primary"
-                            style={{ width: '100%', marginTop: '1rem', padding: '1rem', fontSize: '0.9rem' }}
-                            onClick={handleSave}
-                            disabled={saving}
-                          >
-                            {saving ? <Loader2 size={24} className="animate-spin" /> : <><Save size={18} /> GUARDAR CAMBIOS</>}
-                          </button>
-                      </div>
-                  </div>
+                                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+                                    <label className="input-label">QR Dólares ($)</label>
+                                    <div
+                                        onClick={() => qrUsdInputRef.current?.click()}
+                                        style={{
+                                            border: '2.5px dashed var(--color-primary)', borderRadius: '18px', padding: '1rem',
+                                            height: '140px', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
+                                            cursor: 'pointer', background: 'var(--surface-raised)', transition: '0.2s', position: 'relative'
+                                        }}
+                                        className="hover-bright"
+                                    >
+                                        {selectedFiles.qr_usd ? (
+                                            <>
+                                                <CheckCircle2 color="var(--color-success)" size={32} />
+                                                <span style={{ fontSize: '0.7rem', fontWeight: 900, marginTop: '0.5rem', textAlign: 'center' }}>{selectedFiles.qr_usd.name}</span>
+                                            </>
+                                        ) : form.qr_usd ? (
+                                            <img src={form.qr_usd} style={{ width: '100%', height: '100%', objectFit: 'contain', borderRadius: '12px' }} alt="QR USD" />
+                                        ) : (
+                                            <>
+                                                <UploadCloud size={32} color="var(--color-primary)" />
+                                                <span style={{ fontSize: '0.7rem', fontWeight: 900, marginTop: '0.5rem' }}>Subir QR USD</span>
+                                            </>
+                                        )}
+                                    </div>
+                                    <input type="file" ref={qrUsdInputRef} style={{ display: 'none' }} accept="image/*" onChange={(e) => { const file = e.target.files?.[0]; if (file) setSelectedFiles({ ...selectedFiles, qr_usd: file }); }} />
+                                    {/* URL fallback removed to enforce local upload */}
+                                </div>
+                            </div>
+                            <div>
+                                <label className="input-label">Número Tigo Money</label>
+                                <input
+                                    className="input"
+                                    placeholder="7XXXXXXX"
+                                    value={form.tigo_money}
+                                    onChange={e => setForm({ ...form, tigo_money: e.target.value })}
+                                />
+                            </div>
+
+                            <button
+                                className="btn-primary"
+                                style={{ width: '100%', marginTop: '1rem', padding: '1rem', fontSize: '0.9rem' }}
+                                onClick={handleSave}
+                                disabled={saving}
+                            >
+                                {saving ? <Loader2 size={24} className="animate-spin" /> : <><Save size={18} /> GUARDAR CAMBIOS</>}
+                            </button>
+                        </div>
+                    </div>
                 )}
 
                 <div style={{ marginTop: '1rem' }}>

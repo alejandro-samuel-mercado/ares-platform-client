@@ -129,56 +129,51 @@ export default function PedidosAdminPage() {
                     )}
                 </AnimatePresence>
 
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '4rem' }}>
+                <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 mb-8 px-4 md:px-0">
                     <div>
-                        <h1 style={{ fontSize: '3rem', display: 'flex', alignItems: 'center', gap: '1.5rem', lineHeight: 1 }}>
-                            <div style={{ background: 'var(--surface-raised)', padding: '1rem', borderRadius: '18px', color: 'var(--color-primary)', border: '3px solid #000' }}>
-                                <Package size={36} />
+                        <h1 className="text-2xl md:text-4xl lg:text-5xl flex flex-wrap items-center gap-3 md:gap-5 leading-tight">
+                            <div style={{ background: 'var(--surface-raised)', padding: '0.75rem', borderRadius: '14px', color: 'var(--color-primary)', border: '2.5px solid #000' }}>
+                                <Package size={28} />
                             </div>
                             FLUJO DE <span className="text-gradient-primary">SOLICITUDES</span>
                             <button
                                 onClick={fetchPedidos}
                                 className="btn-secondary"
-                                style={{ padding: '0.75rem', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', marginLeft: '1rem' }}
+                                style={{ padding: '0.5rem', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
                                 title="Refrescar Peticiones"
                             >
-                                <RefreshCw size={24} />
+                                <RefreshCw size={20} />
                             </button>
                         </h1>
-                        <p style={{ fontWeight: 800, marginTop: '0.75rem', color: 'var(--text-muted)', fontSize: '1.1rem' }}>
+                        <p style={{ fontWeight: 800, marginTop: '0.5rem', color: 'var(--text-muted)', fontSize: '0.95rem', opacity: 0.8 }}>
                             Bandeja maestra de atención y soporte proactivo para vendedores.
                         </p>
-                    </div>
-                    <div className="card-static" style={{ padding: '1.25rem 2.5rem', display: 'flex', alignItems: 'center', gap: '2rem', background: 'var(--surface-raised)' }}>
-                        <div style={{ textAlign: 'right' }}>
-                            <div style={{ fontSize: '0.7rem', fontWeight: 900, opacity: 0.5, letterSpacing: '0.2rem' }}>ESTADO CRÍTICO</div>
-                            <div style={{ fontSize: '1.8rem', fontWeight: 900, lineHeight: 1, color: 'var(--color-danger)' }}>{pedidos.filter(p => p.status === 'PENDIENTE').length}</div>
-                        </div>
-                        <AlertCircle size={32} color="var(--color-danger)" />
                     </div>
                 </div>
 
                 {/* Toolbar Premium */}
-                <div style={{ display: 'flex', gap: '1.25rem', flexWrap: 'wrap', marginBottom: '3rem' }}>
+                <div className="grid grid-cols-2 xs:grid-cols-3 sm:flex sm:flex-wrap gap-2 md:gap-3 mb-6 px-4 md:px-0">
                     {['ALL', 'PENDIENTE', 'EN_PROCESO', 'COMPLETADO', 'CANCELADO'].map(s => (
                         <button
                             key={s}
                             onClick={() => setFilter(s)}
                             className={filter === s ? 'btn-primary' : 'btn-secondary'}
                             style={{
-                                padding: '0.8rem 2rem',
-                                fontSize: '0.85rem',
+                                padding: '0.6rem 1.25rem',
+                                fontSize: '0.75rem',
                                 fontWeight: 900,
-                                boxShadow: filter === s ? '5px 5px 0px 0px #000' : 'none'
+                                boxShadow: filter === s ? '4px 4px 0px 0px #000' : 'none',
+                                flex: '1 1 auto',
+                                minWidth: 'fit-content'
                             }}
                         >
-                            {s === 'ALL' ? 'VER TODO EL NÚCLEO' : s.replace('_', ' ')}
+                            {s === 'ALL' ? 'VER TODO' : s.replace('_', ' ')}
                         </button>
                     ))}
                 </div>
 
                 {/* Grid de Pedidos Nuclear */}
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr', gap: '2rem' }}>
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr', gap: '1.25rem' }}>
                     {loading ? (
                         <div style={{ textAlign: 'center', padding: '12rem' }}>
                             <Zap className="animate-pulse" size={48} color="var(--color-primary)" style={{ margin: '0 auto 1rem' }} />
@@ -200,60 +195,56 @@ export default function PedidosAdminPage() {
                                     animate={{ opacity: 1, y: 0 }}
                                     exit={{ opacity: 0, scale: 0.95 }}
                                     transition={{ delay: i * 0.05 }}
-                                    className="card"
+                                    className="card flex flex-col lg:flex-row items-start gap-4 md:gap-6 p-4 md:p-6"
                                     style={{
-                                        padding: '2rem 3rem',
-                                        display: 'flex',
-                                        alignItems: 'center',
-                                        gap: '3rem',
                                         background: p.status === 'PENDIENTE' ? 'rgba(var(--color-primary-rgb), 0.05)' : 'var(--surface-raised)',
                                         borderColor: p.status === 'PENDIENTE' ? 'var(--color-primary)' : '#000',
-                                        boxShadow: p.status === 'PENDIENTE' ? '12px 12px 0px 0px var(--color-primary)' : '8px 8px 0px 0px #000'
+                                        boxShadow: p.status === 'PENDIENTE' ? '8px 8px 0px 0px var(--color-primary)' : '6px 6px 0px 0px #000'
                                     }}
                                 >
                                     {/* Status Column */}
-                                    <div style={{ width: '130px', flexShrink: 0 }}>
+                                    <div className="w-full lg:w-[120px] shrink-0">
                                         {getStatusBadge(p.status)}
                                     </div>
 
                                     {/* Vendor Identity */}
-                                    <div style={{ width: '280px', display: 'flex', alignItems: 'center', gap: '1.5rem', flexShrink: 0 }}>
+                                    <div className="w-full lg:w-[240px] flex items-center gap-3 shrink-0">
                                         <div style={{
-                                            width: '56px', height: '56px', borderRadius: '18px',
-                                            background: 'var(--surface-base)', border: '2.5px solid #000',
+                                            width: '48px', height: '48px', borderRadius: '14px',
+                                            background: 'var(--surface-base)', border: '2px solid #000',
                                             display: 'flex', alignItems: 'center', justifyContent: 'center',
-                                            fontWeight: 900, color: 'var(--color-primary)', fontSize: '1.4rem',
-                                            boxShadow: '4px 4px 0px 0px #000'
+                                            fontWeight: 900, color: 'var(--color-primary)', fontSize: '1.2rem',
+                                            boxShadow: '3px 3px 0px 0px #000'
                                         }}>
                                             {p.vendor.nombre.charAt(0).toUpperCase()}
                                         </div>
                                         <div style={{ overflow: 'hidden' }}>
-                                            <div style={{ fontWeight: 900, fontSize: '1.2rem', whiteSpace: 'nowrap', textOverflow: 'ellipsis', overflow: 'hidden', color: 'var(--text-primary)' }}>{p.vendor.nombre.toUpperCase()}</div>
-                                            <div style={{ fontSize: '0.8rem', fontWeight: 900, color: 'var(--color-primary)', letterSpacing: '0.1em' }}>@{p.vendor.alias}</div>
+                                            <div style={{ fontWeight: 900, fontSize: '1.05rem', whiteSpace: 'nowrap', textOverflow: 'ellipsis', overflow: 'hidden', color: 'var(--text-primary)' }}>{p.vendor.nombre.toUpperCase()}</div>
+                                            <div style={{ fontSize: '0.75rem', fontWeight: 900, color: 'var(--color-primary)', letterSpacing: '0.05em' }}>@{p.vendor.alias}</div>
                                         </div>
                                     </div>
 
                                     {/* Order Details (The "Bento" Note) */}
-                                    <div style={{
-                                        flex: 1, background: 'var(--surface-base)', padding: '1.75rem 2.5rem',
-                                        borderRadius: '24px', border: '3.5px solid #000',
+                                    <div className="w-full flex-1 shrink-0 lg:shrink" style={{
+                                        background: 'var(--surface-base)', padding: '1.25rem 1.75rem',
+                                        borderRadius: '20px', border: '3px solid #000',
                                         position: 'relative',
-                                        boxShadow: 'inset 5px 5px 0px 0px rgba(0,0,0,0.05)'
+                                        boxShadow: 'inset 4px 4px 0px 0px rgba(0,0,0,0.05)'
                                     }}>
                                         <div style={{
-                                            position: 'absolute', top: '-14px', left: '25px',
+                                            position: 'absolute', top: '-12px', left: '20px',
                                             background: 'var(--color-primary)', color: 'white',
-                                            fontSize: '0.7rem', padding: '4px 12px', borderRadius: '6px', fontWeight: 900,
-                                            border: '2px solid #000', display: 'flex', alignItems: 'center', gap: '0.5rem'
+                                            fontSize: '0.65rem', padding: '3px 10px', borderRadius: '5px', fontWeight: 900,
+                                            border: '2px solid #000', display: 'flex', alignItems: 'center', gap: '0.4rem'
                                         }}>
                                             {p.servicio?.logo_url && <img src={p.servicio.logo_url} style={{ width: '14px', height: '14px', objectFit: 'contain' }} />}
-                                            {p.servicio?.nombre ? p.servicio.nombre.toUpperCase() : 'REQUERIMIENTO MAESTRO'}
+                                            {p.servicio?.nombre ? p.servicio.nombre.toUpperCase() : 'REQUERIMIENTO'}
                                         </div>
                                         <p style={{ fontWeight: 800, fontSize: '1rem', color: 'var(--text-primary)', lineHeight: 1.5 }}>
                                             <MessageCircle size={16} style={{ display: 'inline', marginRight: '0.75rem', color: 'var(--color-primary)' }} />
                                             <span style={{ fontStyle: 'italic', opacity: 0.9 }}>"{p.notas}"</span>
                                         </p>
-                                        
+
                                         {p.comprobante_url && (
                                             <div style={{ marginTop: '1rem', padding: '1rem', background: 'var(--surface-base)', borderRadius: '16px', border: '2px solid var(--color-primary)' }}>
                                                 <div style={{ fontSize: '0.65rem', fontWeight: 900, color: 'var(--color-primary)', marginBottom: '0.75rem', letterSpacing: '0.1em' }}>COMPROBANTE ADJUNTO</div>
@@ -268,7 +259,7 @@ export default function PedidosAdminPage() {
                                             </div>
                                         )}
                                         {!p.comprobante_url && (
-                                            <div style={{ fontSize: '0.6rem', opacity: 0.2, marginTop: '0.5rem' }}>SIN COMPROBANTE REGISTRADO</div>
+                                            <div style={{ fontSize: '0.6rem', opacity: 0.7, marginTop: '0.5rem', color: "var(--color-text)" }}>SIN COMPROBANTE REGISTRADO</div>
                                         )}
                                         {p.respuesta_admin && (
                                             <div style={{
@@ -284,16 +275,16 @@ export default function PedidosAdminPage() {
                                                 )}
                                             </div>
                                         )}
-                                        <div style={{ marginTop: '1rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center', opacity: 0.5 }}>
-                                            <div style={{ fontSize: '0.7rem', fontWeight: 900, display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                                                <Clock size={12} /> ENTRADA: {new Date(p.creado_en).toLocaleString()}
+                                        <div style={{ marginTop: '0.75rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center', opacity: 0.5 }}>
+                                            <div style={{ fontSize: '0.65rem', fontWeight: 900, display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+                                                <Clock size={11} /> ENTRADA: {new Date(p.creado_en).toLocaleString()}
                                             </div>
-                                            <div style={{ fontSize: '0.65rem', fontWeight: 900 }}>REF: {p.id.slice(-8).toUpperCase()}</div>
+                                            <div style={{ fontSize: '0.6rem', fontWeight: 900 }}>REF: {p.id.slice(-8).toUpperCase()}</div>
                                         </div>
                                     </div>
 
                                     {/* Actions Grid */}
-                                    <div style={{ width: '240px', display: 'flex', gap: '1rem', justifyContent: 'flex-end', flexShrink: 0 }}>
+                                    <div className="w-full lg:w-auto flex flex-wrap gap-2 justify-start lg:justify-end shrink-0">
                                         {updating === p.id ? (
                                             <div style={{ fontWeight: 900, fontSize: '0.8rem', color: 'var(--color-primary)' }} className="animate-pulse">
                                                 ACTUALIZANDO NÚCLEO...
@@ -344,6 +335,7 @@ export default function PedidosAdminPage() {
                                 </motion.div>
                             ))}
                         </AnimatePresence>
+
                     )}
                 </div>
             </div>
@@ -360,7 +352,7 @@ export default function PedidosAdminPage() {
                             initial={{ scale: 0.9, opacity: 0 }}
                             animate={{ scale: 1, opacity: 1 }}
                             exit={{ scale: 0.9, opacity: 0 }}
-                            className="card-static"
+                            className="modal-container max-sm:p-8"
                             style={{
                                 width: '90%', maxWidth: '550px', padding: '3rem',
                                 background: 'var(--surface-raised)', borderWidth: '3px',
@@ -381,11 +373,11 @@ export default function PedidosAdminPage() {
                             <div style={{ marginBottom: '1.5rem' }}>
                                 <label className="input-label">Credenciales / Instrucciones para el vendedor</label>
                                 <textarea
-                                    className="input"
+                                    className="input min-h-[100px] md:min-h-[140px]"
                                     placeholder="Ej: Usuario: netflix_user@mail.com&#10;Contraseña: abc123&#10;Perfil: #3"
                                     value={respuestaText}
                                     onChange={(e) => setRespuestaText(e.target.value)}
-                                    style={{ minHeight: '140px', resize: 'none', paddingTop: '1rem' }}
+                                    style={{ resize: 'none', paddingTop: '1rem' }}
                                 />
                             </div>
 

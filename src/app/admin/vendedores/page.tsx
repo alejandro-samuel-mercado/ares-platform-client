@@ -4,7 +4,7 @@
 
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
     Users, Ban, CheckCircle, Clock, ArrowUpCircle,
@@ -13,6 +13,7 @@ import {
 } from 'lucide-react';
 import api from '@/lib/api';
 import { useAuth } from '@/lib/auth';
+import Combobox from '@/components/Combobox';
 
 interface Vendor {
     id: string;
@@ -57,6 +58,9 @@ export default function VendedoresPage() {
     const [showCreateModal, setShowCreateModal] = useState(false);
     const [createForm, setCreateForm] = useState({ nombre: '', alias: '', telefono: '', password: '', plan_id: '', whatsapp: '' });
     const [creatingVendor, setCreatingVendor] = useState(false);
+    const topScrollRef = useRef<HTMLDivElement>(null);
+    const tableContainerRef = useRef<HTMLDivElement>(null);
+    const [tableScrollWidth, setTableScrollWidth] = useState(0);
 
     const loadData = async () => {
         setLoading(true);
@@ -162,6 +166,29 @@ export default function VendedoresPage() {
         return true;
     });
 
+    useEffect(() => {
+        if (tableContainerRef.current) {
+            setTableScrollWidth(tableContainerRef.current.scrollWidth);
+        }
+    }, [filteredVendors, loading]);
+
+    useEffect(() => {
+        const top = topScrollRef.current;
+        const table = tableContainerRef.current;
+        if (!top || !table) return;
+
+        const syncTop = () => { if (table.scrollLeft !== top.scrollLeft) table.scrollLeft = top.scrollLeft; };
+        const syncTable = () => { if (top.scrollLeft !== table.scrollLeft) top.scrollLeft = table.scrollLeft; };
+
+        top.addEventListener('scroll', syncTop);
+        table.addEventListener('scroll', syncTable);
+
+        return () => {
+            top.removeEventListener('scroll', syncTop);
+            table.removeEventListener('scroll', syncTable);
+        };
+    }, []);
+
     const getStatusChip = (status: string) => {
         switch (status) {
             case 'ACTIVE': return <div className="chip chip-active">Activo</div>;
@@ -212,25 +239,30 @@ export default function VendedoresPage() {
             </AnimatePresence>
 
             {/* Header Bento */}
-            <div className="card" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '2.5rem' }}>
+            <div className="card max-sm:flex-col max-sm:items-start max-sm:gap-4 max-sm:px-2" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '2.5rem' }} >
                 <div>
-                    <h1 style={{ fontSize: '2.5rem', display: 'flex', alignItems: 'center', gap: '1rem' }}>
+                    <h1 style={{ fontSize: '2rem', display: 'flex', alignItems: 'center', gap: '1rem' }}>
                         <div style={{ background: '#000', padding: '0.8rem', borderRadius: '16px', color: 'var(--color-primary)' }}>
                             <Users size={32} />
                         </div>
-                        RED DE <span className="text-gradient-primary">VENDEDORES</span>
+                        <div>
+                            RED DE <span className="text-gradient-primary">VENDEDORES</span>
+                        </div>
                     </h1>
-                    <p style={{ fontWeight: 800, color: 'var(--text-muted)', marginTop: '0.5rem' }}>
+                    <p style={{ fontWeight: 800, color: 'var(--text-muted)', marginTop: '0.5rem' }} className="max-sm:hidden">
                         Gestionas {vendors.length} aliados comerciales en la plataforma.
                     </p>
+
                 </div>
-                <button onClick={loadData} className="btn-secondary" disabled={loading}>
-                    <RefreshCw size={20} className={loading ? 'animate-spin' : ''} />
-                    {loading ? 'Sincronizando...' : 'Actualizar'}
-                </button>
-                <button onClick={() => { setCreateForm({ nombre: '', alias: '', telefono: '', password: '', plan_id: planes[0]?.id || '', whatsapp: '' }); setShowCreateModal(true); }} className="btn-primary" style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                    <UserPlus size={20} /> CREAR VENDEDOR
-                </button>
+                <div className="flex items-center gap-4">
+                    <button onClick={loadData} className="btn-secondary max-lg:mr-10" disabled={loading}>
+                        <RefreshCw size={20} className={loading ? 'animate-spin' : ''} />
+
+                    </button>
+                    <button onClick={() => { setCreateForm({ nombre: '', alias: '', telefono: '', password: '', plan_id: planes[0]?.id || '', whatsapp: '' }); setShowCreateModal(true); }} className="btn-primary" style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                        <UserPlus size={20} /> CREAR VENDEDOR
+                    </button>
+                </div>
             </div>
 
             {/* Toolbar */}
@@ -245,29 +277,53 @@ export default function VendedoresPage() {
                         style={{ paddingLeft: '3.5rem', height: '60px' }}
                     />
                 </div>
-                <select
-                    className="input"
-                    value={filterPlan}
-                    onChange={e => setFilterPlan(e.target.value)}
-                    style={{ width: 'auto', minWidth: '180px', height: '60px' }}
-                >
-                    <option value="">TODOS LOS PLANES</option>
-                    {planes.map(p => <option key={p.id} value={p.nombre}>{p.nombre.toUpperCase()}</option>)}
-                </select>
-                <select
-                    className="input"
-                    value={filterStatus}
-                    onChange={e => setFilterStatus(e.target.value)}
-                    style={{ width: 'auto', minWidth: '180px', height: '60px' }}
-                >
-                    <option value="">TODOS LOS ESTADOS</option>
-                    <option value="ACTIVE">ACTIVO</option>
-                    <option value="SUSPENDED">SUSPENDIDO</option>
-                </select>
+                <div style={{ width: '220px' }}>
+                    <Combobox
+                        placeholder="Filtrar plan..."
+                        options={[
+                            { id: '', nombre: 'TODOS LOS PLANES' },
+                            ...planes.map(p => ({ id: p.nombre, nombre: p.nombre.toUpperCase() }))
+                        ]}
+                        value={filterPlan}
+                        onChange={(val: any) => setFilterPlan(val)}
+                    />
+                </div>
+                <div style={{ width: '220px' }}>
+                    <Combobox
+                        placeholder="Filtrar estado..."
+                        options={[
+                            { id: '', nombre: 'TODOS LOS ESTADOS' },
+                            { id: 'ACTIVE', nombre: 'ACTIVO' },
+                            { id: 'SUSPENDED', nombre: 'SUSPENDIDO' }
+                        ]}
+                        value={filterStatus}
+                        onChange={(val: any) => setFilterStatus(val)}
+                    />
+                </div>
             </div>
 
-            {/* Table Futurista */}
-            <div className="table-container">
+            {/* Top Scrollbar — Sync with table */}
+            <div
+                ref={topScrollRef}
+                className="max-xl:block hidden"
+                style={{
+                    overflowX: 'auto',
+                    overflowY: 'hidden',
+                    height: '14px',
+                    marginBottom: '-1rem',
+                    zIndex: 30,
+                    position: 'relative'
+                }}
+            >
+                <div style={{ width: `${tableScrollWidth}px`, height: '1px' }}></div>
+            </div>
+
+            {/* Table Futurista — Double Scroll Enabled */}
+            <div
+                ref={tableContainerRef}
+                className="table-container max-xl:overflow-x-auto max-xl:-ml-16 max-xl:w-[110%] max-md:ml-0 max-md:w-full "
+                style={{ overflowY: 'visible' }}
+            >
                 <table className="table">
                     <thead>
                         <tr>
@@ -352,36 +408,36 @@ export default function VendedoresPage() {
                                             </div>
                                         </td>
                                         {!isColaborador && (
-                                        <td>
-                                            <div style={{ display: 'flex', gap: '0.75rem', justifyContent: 'center' }}>
-                                                {v.status === 'ACTIVE' ? (
-                                                    <button onClick={() => setConfirmAction({ id: v.id, action: 'SUSPEND', nombre: v.nombre })} className="btn-secondary" style={{ padding: '0.5rem', borderColor: 'var(--color-danger)', color: 'var(--color-danger)', boxShadow: 'none' }} title="Suspender">
-                                                        <Ban size={18} />
+                                            <td>
+                                                <div style={{ display: 'flex', gap: '0.75rem', justifyContent: 'center' }}>
+                                                    {v.status === 'ACTIVE' ? (
+                                                        <button onClick={() => setConfirmAction({ id: v.id, action: 'SUSPEND', nombre: v.nombre })} className="btn-secondary" style={{ borderColor: 'var(--color-danger)', color: 'var(--color-danger)', boxShadow: 'none' }} title="Suspender">
+                                                            <Ban size={18} />
+                                                        </button>
+                                                    ) : (
+                                                        <button onClick={() => handleActivate(v.id)} className="btn-secondary" style={{ padding: '0.5rem', borderColor: '#16A34A', color: '#16A34A', boxShadow: 'none', borderRadius: "100%" }} title="Activar">
+                                                            <CheckCircle size={18} />
+                                                        </button>
+                                                    )}
+                                                    <button onClick={() => openHistory(v)} className="btn-secondary" style={{ borderColor: 'var(--color-primary)', color: 'var(--color-primary)', boxShadow: 'none' }} title="Historial de Pagos">
+                                                        <History size={18} />
                                                     </button>
-                                                ) : (
-                                                    <button onClick={() => handleActivate(v.id)} className="btn-secondary" style={{ padding: '0.5rem', borderColor: '#16A34A', color: '#16A34A', boxShadow: 'none' }} title="Activar">
-                                                        <CheckCircle size={18} />
+                                                    <button onClick={() => openEdit(v)} className="btn-secondary" style={{ borderColor: '#6366F1', color: '#6366F1', boxShadow: 'none' }} title="Editar Vendedor">
+                                                        <Pencil size={18} />
                                                     </button>
-                                                )}
-                                                <button onClick={() => openHistory(v)} className="btn-secondary" style={{ padding: '0.5rem', borderColor: 'var(--color-primary)', color: 'var(--color-primary)', boxShadow: 'none' }} title="Historial de Pagos">
-                                                    <History size={18} />
-                                                </button>
-                                                <button onClick={() => openEdit(v)} className="btn-secondary" style={{ padding: '0.5rem', borderColor: '#6366F1', color: '#6366F1', boxShadow: 'none' }} title="Editar Vendedor">
-                                                    <Pencil size={18} />
-                                                </button>
-                                                <button onClick={() => setConfirmAction({ id: v.id, action: 'EXTEND', nombre: v.nombre })} className="btn-secondary" style={{ padding: '0.5rem', borderColor: 'var(--color-accent)', color: 'var(--color-accent)', boxShadow: 'none' }} title="Extender 30 días">
-                                                    <Clock size={18} />
-                                                </button>
-                                                <select
-                                                    className="input"
-                                                    style={{ padding: '0.4rem', fontSize: '0.75rem', width: 'auto', minWidth: '120px', boxShadow: 'none', height: '40px' }}
-                                                    value={v.plan_id}
-                                                    onChange={e => handleChangePlan(v.id, e.target.value)}
-                                                >
-                                                    {planes.map(p => <option key={p.id} value={p.id}>{p.nombre.toUpperCase()}</option>)}
-                                                </select>
-                                            </div>
-                                        </td>
+                                                    <button onClick={() => setConfirmAction({ id: v.id, action: 'EXTEND', nombre: v.nombre })} className="btn-secondary" style={{ borderColor: 'var(--color-accent)', color: 'var(--color-accent)', boxShadow: 'none' }} title="Extender 30 días">
+                                                        <Clock size={18} />
+                                                    </button>
+                                                    <div style={{ width: '150px' }}>
+                                                        <Combobox
+                                                            placeholder="Plan..."
+                                                            options={planes.map(p => ({ id: p.id, nombre: p.nombre.toUpperCase() }))}
+                                                            value={v.plan_id}
+                                                            onChange={(val: any) => handleChangePlan(v.id, val)}
+                                                        />
+                                                    </div>
+                                                </div>
+                                            </td>
                                         )}
                                     </motion.tr>
                                 );
@@ -614,11 +670,13 @@ export default function VendedoresPage() {
                                     <input className="input" type="password" value={createForm.password} onChange={e => setCreateForm(f => ({ ...f, password: e.target.value }))} placeholder="Contraseña inicial" />
                                 </div>
                                 <div>
-                                    <label style={{ fontSize: '0.7rem', fontWeight: 900, opacity: 0.6, display: 'block', marginBottom: '0.4rem' }}>PLAN</label>
-                                    <select className="input" value={createForm.plan_id} onChange={e => setCreateForm(f => ({ ...f, plan_id: e.target.value }))}>
-                                        <option value="">Seleccionar plan...</option>
-                                        {planes.map(p => <option key={p.id} value={p.id}>{p.nombre.toUpperCase()}</option>)}
-                                    </select>
+                                    <Combobox
+                                        label="PLAN"
+                                        placeholder="Seleccionar plan..."
+                                        options={planes.map(p => ({ id: p.id, nombre: p.nombre.toUpperCase() }))}
+                                        value={createForm.plan_id}
+                                        onChange={(val: any) => setCreateForm({ ...createForm, plan_id: val })}
+                                    />
                                 </div>
                             </div>
 

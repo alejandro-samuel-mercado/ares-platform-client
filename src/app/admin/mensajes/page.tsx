@@ -8,6 +8,7 @@ import React, { useState, useEffect } from 'react';
 import api from '@/lib/api';
 import { MessageSquare, Plus, Trash2, Edit2, Loader2, Save, X, RefreshCw, CheckCircle2 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
+import Combobox from '@/components/Combobox';
 
 interface MensajeRapido {
     id: string;
@@ -108,14 +109,14 @@ export default function AdminMensajesPage() {
                 )}
             </AnimatePresence>
 
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '3rem' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '3rem' }} className='max-sm:flex-col max-sm:items-start max-sm:gap-4'>
                 <div>
                     <h1 style={{ fontSize: '2.8rem', fontWeight: 900, display: 'flex', alignItems: 'center', gap: '1rem' }}>
                         <MessageSquare size={40} color="var(--color-primary)" />
-                        SCRIPTS <span className="text-gradient-primary">MAESTROS</span>
-                        <button 
-                            onClick={fetchMensajes} 
-                            className="btn-secondary" 
+                        SCRIPTS <span className="text-gradient-primary"></span>
+                        <button
+                            onClick={fetchMensajes}
+                            className="btn-secondary"
                             style={{ padding: '0.6rem', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
                             title="Refrescar Mensajes"
                         >
@@ -135,25 +136,25 @@ export default function AdminMensajesPage() {
                 <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))', gap: '1.5rem' }}>
                     {mensajes.map((msg, i) => (
                         <motion.div key={msg.id} initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.04 }}
-                            className="card-static" style={{ 
-                            background: 'var(--surface-raised)', 
-                            border: '3px solid #000', 
-                            padding: '1.5rem', 
-                            borderRadius: '16px',
-                            display: 'flex',
-                            flexDirection: 'column',
-                            gap: '1rem',
-                            boxShadow: '4px 4px 0px 0px #000'
-                        }}>
+                            className="card-static" style={{
+                                background: 'var(--surface-raised)',
+                                border: '3px solid #000',
+                                padding: '1.5rem',
+                                borderRadius: '16px',
+                                display: 'flex',
+                                flexDirection: 'column',
+                                gap: '1rem',
+                                boxShadow: '4px 4px 0px 0px #000'
+                            }}>
                             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
                                 <h3 style={{ fontWeight: 900, fontSize: '1.2rem', color: 'var(--text-primary)' }}>{msg.titulo.toUpperCase()}</h3>
                                 <div className="chip chip-primary" style={{ fontSize: '0.7rem', background: 'var(--color-primary)', color: 'white', padding: '4px 8px', borderRadius: '8px', fontWeight: 900 }}>ORDEN: {msg.orden}</div>
                             </div>
-                            
-                            <div style={{ 
-                                background: 'var(--surface-base)', 
-                                padding: '1rem', 
-                                borderRadius: '12px', 
+
+                            <div style={{
+                                background: 'var(--surface-base)',
+                                padding: '1rem',
+                                borderRadius: '12px',
                                 border: '2px solid rgba(0,0,0,0.1)',
                                 fontSize: '0.9rem',
                                 color: 'var(--text-primary)',
@@ -186,7 +187,7 @@ export default function AdminMensajesPage() {
             <AnimatePresence>
                 {isModalOpen && (
                     <div className="modal-overlay">
-                        <motion.div 
+                        <motion.div
                             initial={{ scale: 0.9, opacity: 0 }}
                             animate={{ scale: 1, opacity: 1 }}
                             exit={{ scale: 0.9, opacity: 0 }}
@@ -203,49 +204,50 @@ export default function AdminMensajesPage() {
                             <form onSubmit={handleSave} style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
                                 <div>
                                     <label className="input-label">TÍTULO DEL MENSAJE</label>
-                                    <input 
-                                        type="text" 
-                                        className="input" 
-                                        required 
+                                    <input
+                                        type="text"
+                                        className="input"
+                                        required
                                         value={formData.titulo}
-                                        onChange={e => setFormData({...formData, titulo: e.target.value})}
+                                        onChange={e => setFormData({ ...formData, titulo: e.target.value })}
                                         placeholder="Ej: Bienvenida Clientes"
                                     />
                                 </div>
                                 <div>
-                                    <label className="input-label">CONTENIDO (TEXTO MAESTRO)</label>
-                                    <p style={{fontSize:'0.6rem', fontWeight: 800, opacity:0.4, marginBottom:'0.5rem'}}>VARIABLES: [SERVICIO], [PRECIO], [WHATSAPP], [NOMBRE_VENDEDOR]</p>
-                                    <textarea 
-                                        className="input" 
-                                        required 
+                                    <label className="input-label">CONTENIDO (TEXTO)</label>
+                                    <p style={{ fontSize: '0.6rem', fontWeight: 800, opacity: 0.4, marginBottom: '0.5rem' }}>VARIABLES: [SERVICIO], [PRECIO], [WHATSAPP], [NOMBRE_VENDEDOR]</p>
+                                    <textarea
+                                        className="input"
+                                        required
                                         rows={6}
                                         value={formData.template}
-                                        onChange={e => setFormData({...formData, template: e.target.value})}
+                                        onChange={e => setFormData({ ...formData, template: e.target.value })}
                                         placeholder="Escribe el mensaje..."
                                     />
                                 </div>
                                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
                                     <div style={{ flex: 1 }}>
                                         <label className="input-label">ORDEN DE APARICIÓN</label>
-                                        <input 
-                                            type="number" 
-                                            className="input" 
-                                            required 
+                                        <input
+                                            type="number"
+                                            className="input"
+                                            required
                                             min="0"
                                             value={formData.orden}
-                                            onChange={e => setFormData({...formData, orden: parseInt(e.target.value)})}
+                                            onChange={e => setFormData({ ...formData, orden: parseInt(e.target.value) })}
                                         />
                                     </div>
                                     <div style={{ flex: 1 }}>
-                                        <label className="input-label">ESTADO DEL SCRIPT</label>
-                                        <select 
-                                            className="input"
+                                        <Combobox
+                                            label="ESTADO DEL SCRIPT"
+                                            placeholder="Seleccionar estado..."
+                                            options={[
+                                                { id: 'true', nombre: 'SISTEMA ACTIVO' },
+                                                { id: 'false', nombre: 'SISTEMA INACTIVO' }
+                                            ]}
                                             value={formData.activo.toString()}
-                                            onChange={e => setFormData({...formData, activo: e.target.value === 'true'})}
-                                        >
-                                            <option value="true">SISTEMA ACTIVO</option>
-                                            <option value="false">SISTEMA INACTIVO</option>
-                                        </select>
+                                            onChange={(val: any) => setFormData({ ...formData, activo: val === 'true' })}
+                                        />
                                     </div>
                                 </div>
                                 <button type="submit" className="btn-primary" disabled={saving} style={{ height: 64, fontSize: '1.1rem', marginTop: '1rem' }}>
