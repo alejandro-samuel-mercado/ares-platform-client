@@ -536,7 +536,7 @@ input:checked+.slider:before {
 
 @media (max-width: 640px) {
     .theme-selector {
-        bottom: 20px;
+        bottom: 60px;
         /* Above bottom-nav */
         right: 2px;
         transform: scale(0.7);
