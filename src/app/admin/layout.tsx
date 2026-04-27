@@ -107,13 +107,16 @@ function AdminSidebar() {
                 >
                     <div style={{ padding: '1rem 0', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
                         <div style={{ marginBottom: '2.5rem' }}>
-                            <div style={{
-                                width: '50px', height: '50px',
-                                background: 'var(--color-accent)', borderRadius: '16px',
-                                border: '2px solid #000', boxShadow: '4px 4px 0px 0px #000',
-                                display: 'flex', alignItems: 'center', justifyContent: 'center',
-                                fontWeight: 900, fontFamily: 'var(--font-display)', fontSize: '1.2rem', color: '#000'
-                            }}>A</div>
+                            <img 
+                                src="/images/icono.png" 
+                                alt="Ares Icon"
+                                style={{
+                                    width: '50px', height: '50px',
+                                    borderRadius: '16px',
+                                    border: '2px solid #000', boxShadow: '4px 4px 0px 0px #000',
+                                    objectFit: 'cover'
+                                }} 
+                            />
                         </div>
                         <div style={{ display: 'flex', flexDirection: 'column', gap: '0.1rem', paddingBottom: '2rem' }}>
                             {renderLinks()}
@@ -190,13 +193,16 @@ function AdminSidebar() {
                             transition={{ type: 'spring', damping: 25, stiffness: 300 }}
                         >
                             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2rem', padding: '0 0.5rem' }}>
-                                <div style={{
-                                    width: '44px', height: '44px',
-                                    background: 'var(--color-accent)', borderRadius: '14px',
-                                    border: '2px solid #000', boxShadow: '3px 3px 0px 0px #000',
-                                    display: 'flex', alignItems: 'center', justifyContent: 'center',
-                                    fontWeight: 900, fontFamily: 'var(--font-display)', fontSize: '1rem', color: '#000'
-                                }}>A</div>
+                                <img 
+                                    src="/images/icono.png" 
+                                    alt="Ares Icon"
+                                    style={{
+                                        width: '44px', height: '44px',
+                                        borderRadius: '14px',
+                                        border: '2px solid #000', boxShadow: '3px 3px 0px 0px #000',
+                                        objectFit: 'cover'
+                                    }} 
+                                />
                                 <button onClick={() => setMobileOpen(false)} style={{
                                     background: 'rgba(255,255,255,0.1)', border: '2px solid rgba(255,255,255,0.2)',
                                     borderRadius: '12px', padding: '0.5rem', color: 'white', cursor: 'pointer'
@@ -532,12 +538,18 @@ function AdminHeader() {
                         <p style={{ fontWeight: 800, fontSize: '0.9rem' }}>{isColaborador ? 'Colaborador' : 'Admin Ares'}</p>
                         <p style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>{isColaborador ? 'Acceso Limitado' : 'Super Usuario'}</p>
                     </div>
-                    <div style={{
-                        width: '44px', height: '44px', minWidth: '44px',
-                        borderRadius: '12px', border: '2px solid #000',
-                        background: 'var(--color-primary)',
-                        boxShadow: '4px 4px 0px 0px #000'
-                    }} />
+                    <img 
+                        src="/images/icono.png" 
+                        alt="Admin Avatar"
+                        style={{
+                            width: '44px', height: '44px', minWidth: '44px',
+                            borderRadius: '12px', border: '2px solid #000',
+                            boxShadow: '4px 4px 0px 0px #000',
+                            background: 'var(--color-primary)',
+                            objectFit: 'contain',
+                            padding: '4px'
+                        }} 
+                    />
                 </div>
             </div>
         </header>
@@ -554,7 +566,21 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
         }
     }, [isColaborador, isLoading, router]);
 
-    if (isLoading) return <div style={{ padding: '2rem', textAlign: 'center' }}>Cargando...</div>;
+    if (isLoading) return (
+        <div style={{ 
+            height: '100vh', display: 'flex', flexDirection: 'column', 
+            alignItems: 'center', justifyContent: 'center', gap: '2rem',
+            background: 'var(--surface-base)'
+        }}>
+            <motion.img 
+                src="/images/icono.png" 
+                animate={{ scale: [1, 1.1, 1], rotate: [0, 360] }}
+                transition={{ duration: 2, repeat: Infinity, ease: "easeInOut" }}
+                style={{ width: '80px', height: '80px', filter: 'drop-shadow(0 0 20px var(--color-primary))' }}
+            />
+            <p style={{ fontWeight: 900, letterSpacing: '0.3em', color: 'var(--color-primary)', fontSize: '0.8rem' }}>SINCRONIZANDO...</p>
+        </div>
+    );
     if (isColaborador) return null;
 
     return (
@@ -562,7 +588,12 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
             <AdminSidebar />
             <main className="admin-content">
                 <AdminHeader />
-                <Suspense fallback={<div style={{ padding: '2rem', textAlign: 'center' }}>Cargando...</div>}>
+                <Suspense fallback={
+                    <div style={{ padding: '4rem', textAlign: 'center', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '1rem' }}>
+                        <div className="spinner" style={{ borderTopColor: 'var(--color-primary)' }}></div>
+                        <p style={{ fontWeight: 800, fontSize: '0.7rem', opacity: 0.5 }}>CARGANDO MÓDULO...</p>
+                    </div>
+                }>
                     {children}
                 </Suspense>
             </main>

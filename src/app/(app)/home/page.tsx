@@ -105,8 +105,17 @@ export default function VendorHome() {
 
     if (loading) {
         return (
-            <div style={{ height: '70vh', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                <Loader2 className="animate-spin" size={40} color="var(--color-primary)" />
+            <div style={{ 
+                height: '80vh', display: 'flex', flexDirection: 'column', 
+                alignItems: 'center', justifyContent: 'center', gap: '2rem' 
+            }}>
+                <motion.img 
+                    src="/images/icono.png" 
+                    animate={{ scale: [1, 1.1, 1], rotate: [0, 360] }}
+                    transition={{ duration: 3, repeat: Infinity, ease: "linear" }}
+                    style={{ width: '60px', height: '60px', opacity: 0.5 }}
+                />
+                <p style={{ fontWeight: 900, fontSize: '0.7rem', letterSpacing: '0.3em', opacity: 0.3 }}>SINCRONIZANDO PROTOCOLOS...</p>
             </div>
         );
     }
@@ -307,8 +316,8 @@ export default function VendorHome() {
             {/* Sección de Soporte Rápido Dinámico */}
             <div className="card-static" style={{ display: 'flex', alignItems: 'center', gap: '1.5rem', padding: '1.5rem', background: 'var(--surface-raised)' }}>
                 <div style={{ position: 'relative' }}>
-                    <div style={{ background: '#000', padding: '0.75rem', borderRadius: '50%', color: 'var(--color-primary)' }}>
-                        <ShieldCheck size={32} />
+                    <div style={{ background: '#000', padding: '0.75rem', borderRadius: '50%', border: '2px solid rgba(255,255,255,0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                        <img src="/images/icono.png" style={{ width: '30px', height: '30px', objectFit: 'contain' }} />
                     </div>
                     <div className="animate-float" style={{ position: 'absolute', top: -5, right: -5 }}>
                         <Sparkles size={18} color="var(--color-accent)" />

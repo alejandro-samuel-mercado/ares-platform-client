@@ -87,16 +87,15 @@ export default function LoginPage() {
             transition={{ repeat: Infinity, duration: 4 }}
             style={{ 
               display: 'inline-flex', 
-              background: 'var(--color-accent)', 
-              padding: '1.25rem', 
+              background: 'white', 
+              padding: '1rem', 
               borderRadius: '24px', 
-              border: '3px solid #000',
+              border: '4px solid #000',
               boxShadow: '8px 8px 0px 0px #000',
-              marginBottom: '3rem',
-              color: '#000'
+              marginBottom: '3rem'
             }}
           >
-            <ShieldCheck size={56} />
+            <img src="/images/logo.png" alt="Ares Logo" style={{ width: '120px', height: 'auto' }} />
           </motion.div>
           
           <h1 style={{ fontSize: '5rem', lineHeight: 0.9, marginBottom: '2rem', fontFamily: 'var(--font-display)', fontWeight: 900, textShadow: '4px 4px 0px #000' }}>

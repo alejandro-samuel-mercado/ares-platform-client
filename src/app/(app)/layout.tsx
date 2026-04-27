@@ -126,7 +126,12 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
             }} />
 
             <main className="main-content">
-                <Suspense fallback={<div style={{ padding: '3rem', textAlign: 'center', fontWeight: 800 }}>CARGANDO...</div>}>
+                <Suspense fallback={
+                    <div style={{ height: '70vh', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: '1.5rem' }}>
+                        <div className="spinner" style={{ width: '40px', height: '40px' }}></div>
+                        <p style={{ fontWeight: 900, fontSize: '0.7rem', letterSpacing: '0.2em', opacity: 0.6 }}>OPTIMIZANDO RECURSOS...</p>
+                    </div>
+                }>
                     {children}
                 </Suspense>
             </main>

@@ -12,6 +12,10 @@ export const metadata: Metadata = {
   title: 'Ares — Plataforma de Revendedores',
   description: 'Plataforma SaaS B2B para revendedores de streaming e IPTV en Bolivia',
   manifest: '/manifest.json',
+  icons: {
+    icon: '/images/icono.png',
+    apple: '/images/icono.png',
+  },
 };
 
 export const viewport: Viewport = {

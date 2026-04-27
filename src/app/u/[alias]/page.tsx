@@ -240,7 +240,7 @@ export default function PublicVendorPage() {
 
       <div style={{ marginTop: '6rem', textAlign: 'center', opacity: 0.2 }}>
         <p style={{ fontSize: '0.7rem', fontWeight: 900, letterSpacing: '0.4em', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem' }}>
-          <ShieldCheck size={14} /> POTENCIADO POR ARES V3
+          <img src="/images/icono.png" style={{ width: '18px', height: '18px', opacity: 0.8 }} /> POTENCIADO POR ARES V3
         </p>
       </div>
     </div>

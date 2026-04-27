@@ -9,7 +9,7 @@
   "orientation": "portrait",
   "icons": [
     {
-      "src": "/ares_pwa_icon.png",
+      "src": "/images/icono.png",
       "sizes": "512x512",
       "type": "image/png",
       "purpose": "any maskable"

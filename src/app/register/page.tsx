@@ -84,20 +84,19 @@ export default function RegisterPage() {
         
         <div style={{ position: 'relative', zIndex: 10 }}>
           <motion.div 
-            animate={{ scale: [1, 1.1, 1] }}
+            animate={{ scale: [1, 1.05, 1] }}
             transition={{ repeat: Infinity, duration: 4 }}
             style={{ 
               display: 'inline-flex', 
-              background: 'var(--color-primary)', 
+              background: 'white', 
               padding: '1.25rem', 
               borderRadius: '24px', 
-              border: '3px solid #000',
+              border: '4px solid #000',
               boxShadow: '8px 8px 0px 0px #000',
-              marginBottom: '3rem',
-              color: '#000'
+              marginBottom: '3rem'
             }}
           >
-            <ShieldCheck size={56} />
+            <img src="/images/logo.png" alt="Ares Logo" style={{ width: '120px', height: 'auto' }} />
           </motion.div>
           
           <h1 style={{ fontSize: '4rem', lineHeight: 1, marginBottom: '2rem', fontFamily: 'var(--font-display)', fontWeight: 900, textShadow: '4px 4px 0px #000' }}>
