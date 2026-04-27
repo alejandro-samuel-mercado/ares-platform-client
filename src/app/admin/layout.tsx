@@ -328,11 +328,9 @@ function AdminHeader() {
                         initial={{ opacity: 0, scale: 0.9, y: 20 }}
                         animate={{ opacity: 1, scale: 1, y: 0 }}
                         exit={{ opacity: 0, scale: 0.9 }}
+                        className="notification-dropdown"
                         style={{
-                            position: 'fixed', top: '80px', right: '150px', zIndex: 99999,
                             background: 'var(--surface-base)', color: 'var(--text-primary)',
-
-                            minWidth: '320px', maxWidth: '400px',
                             maxHeight: '70vh', overflowY: 'auto',
                             borderRadius: '24px',
                             border: '3px solid #000',

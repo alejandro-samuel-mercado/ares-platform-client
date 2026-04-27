@@ -538,7 +538,7 @@ input:checked+.slider:before {
     .theme-selector {
         bottom: 80px;
         /* Above bottom-nav */
-        right: 2px;
+        right: 0.5rem;
         transform: scale(0.7);
         padding: 8px;
     }
@@ -648,5 +648,45 @@ input:checked+.slider:before {
     /* Force ALL 2-column grids inside modals to stack */
     .modal-container div[style] {
         max-width: 100% !important;
+    }
+}
+
+/* NOTIFICATION DROPDOWN RESPONSIVE */
+.notification-dropdown {
+    position: fixed;
+    top: 80px;
+    right: 1.5rem;
+    z-index: 99999;
+    min-width: 320px;
+    max-width: 400px;
+    width: 100%;
+}
+
+@media (max-width: 640px) {
+    .notification-dropdown {
+        right: 1rem;
+        left: 1rem;
+        min-width: unset;
+        max-width: unset;
+        width: calc(100% - 2rem);
+    }
+}
+
+/* TOAST SYSTEM RESPONSIVE */
+.toast-system {
+    position: fixed;
+    bottom: 40px;
+    right: 40px;
+    z-index: 10000;
+}
+
+@media (max-width: 640px) {
+    .toast-system {
+        bottom: 2rem;
+        right: 1rem;
+        left: 1rem;
+        padding: 1rem !important;
+        font-size: 0.8rem !important;
+        border-radius: 16px !important;
     }
 }

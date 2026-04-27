@@ -146,8 +146,8 @@ export default function AjustesPage() {
             <AnimatePresence>
                 {showToast && (
                     <motion.div initial={{ opacity: 0, y: 50 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, scale: 0.9 }}
+                        className="toast-system"
                         style={{
-                            position: 'fixed', bottom: '40px', right: '40px', zIndex: 10000,
                             background: 'var(--surface-raised)', color: 'var(--text-primary)', padding: '1.25rem 2.5rem',
                             borderRadius: '24px', border: '3px solid var(--color-primary)',
                             boxShadow: '12px 12px 0px 0px rgba(0,0,0,0.5)',
@@ -159,8 +159,8 @@ export default function AjustesPage() {
                 )}
                 {errorToast && (
                     <motion.div initial={{ opacity: 0, scale: 0.8 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0 }}
+                        className="toast-system"
                         style={{
-                            position: 'fixed', bottom: '40px', right: '40px', zIndex: 10000,
                             background: 'var(--color-danger)', color: 'white', padding: '1.25rem 2.5rem',
                             borderRadius: '24px', border: '4px solid #000',
                             boxShadow: '12px 12px 0px 0px rgba(0,0,0,0.5)',
@@ -393,15 +393,15 @@ export default function AjustesPage() {
 
                 {/* 5. Avisos (FULL WIDTH) */}
                 <div className="card ajustes-full ajustes-card" style={{ background: 'var(--surface-overlay)', border: '4px solid #000' }}>
-                    <div style={{ display: 'flex', gap: '4rem', flexWrap: 'wrap' }}>
-                        <div style={{ flex: 2, minWidth: 'min(100%, 350px)' }}>
+                    <div style={{ display: 'flex', gap: '2rem', flexWrap: 'wrap' }}>
+                        <div style={{ flex: 1, minWidth: 'min(100%, 300px)' }}>
                             <div style={{ display: 'flex', alignItems: 'center', gap: '1.25rem', marginBottom: '2rem' }}>
                                 <div style={{ background: 'var(--color-secondary)', color: 'white', padding: '0.6rem', border: '2px solid #000' }}><Megaphone size={24} /></div>
                                 <h3 style={{ fontWeight: 900, fontSize: '1.5rem' }}>NOTICIA GLOBAL</h3>
                             </div>
                             <textarea style={{ minHeight: '100px', width: '100%' }} value={ajustes.noticia_global} onChange={e => setAjustes({ ...ajustes, noticia_global: e.target.value })} className="input" />
                         </div>
-                        <div style={{ flex: 1, minWidth: 'min(100%, 300px)' }}>
+                        <div style={{ flex: 1, minWidth: 'min(100%, 280px)' }}>
                             <div style={{ display: 'flex', alignItems: 'center', gap: '1.25rem', marginBottom: '2rem' }}>
                                 <div style={{ background: '#25D366', color: 'white', padding: '0.6rem', border: '2px solid #000' }}><HelpCircle size={24} /></div>
                                 <h3 style={{ fontWeight: 900, fontSize: '1.5rem' }}>SOPORTE</h3>
