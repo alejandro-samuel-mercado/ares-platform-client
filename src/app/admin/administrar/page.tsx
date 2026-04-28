@@ -76,6 +76,19 @@ export default function AdministrarPage() {
         }
     };
 
+    const handleDelete = async (id: string, tab: 'PLATAFORMAS' | 'CATEGORIAS') => {
+        if (!confirm('¿Estás seguro de eliminar este registro?')) return;
+        try {
+            const endpoint = tab === 'PLATAFORMAS' ? '/admin/plataformas' : '/admin/categorias';
+            await api.delete(`${endpoint}/${id}`);
+            triggerToast('ELIMINADO CORRECTAMENTE');
+            loadData();
+        } catch (err) {
+            triggerToast('ERROR AL ELIMINAR');
+            console.error(err);
+        }
+    };
+
     return (
         <div style={{ maxWidth: '1200px', margin: '0 auto' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '3rem' }} className='max-sm:flex-col max-sm:items-start max-sm:gap-4'>
@@ -152,6 +165,7 @@ export default function AdministrarPage() {
                                         <td>
                                             <div style={{ display: 'flex', gap: '0.5rem' }}>
                                                 <button className="btn-secondary" style={{ padding: '0.5rem' }} onClick={() => { setEditing(p); setShowModal(true); }}><Edit2 size={16} /></button>
+                                                <button className="btn-ghost" style={{ padding: '0.5rem', color: 'red' }} onClick={() => handleDelete(p.id, 'PLATAFORMAS')}><Trash2 size={16} /></button>
                                             </div>
                                         </td>
                                     </tr>
@@ -164,6 +178,7 @@ export default function AdministrarPage() {
                                         <td>
                                             <div style={{ display: 'flex', gap: '0.5rem' }}>
                                                 <button className="btn-secondary" style={{ padding: '0.5rem' }} onClick={() => { setEditing(c); setShowModal(true); }}><Edit2 size={16} /></button>
+                                                <button className="btn-ghost" style={{ padding: '0.5rem', color: 'red' }} onClick={() => handleDelete(c.id, 'CATEGORIAS')}><Trash2 size={16} /></button>
                                             </div>
                                         </td>
                                     </tr>
