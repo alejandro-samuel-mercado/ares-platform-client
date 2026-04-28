@@ -510,7 +510,7 @@ function AdminHeader() {
                 </button>
 
                 <button
-                    onClick={() => { logout(); window.location.href = '/login' }}
+                    onClick={logout}
                     style={{
                         padding: '0.6rem', borderRadius: '14px',
                         border: '2px solid #000', cursor: 'pointer',

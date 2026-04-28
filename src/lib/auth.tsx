@@ -109,6 +109,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
          OneSignal.logout();
       }
     }
+    // Forzar recarga total para limpiar estados de React y cachés
+    window.location.href = '/login';
   }, []);
 
   const refreshVendor = useCallback(async () => {

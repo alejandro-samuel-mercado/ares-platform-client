@@ -28,9 +28,9 @@ export default function LoginPage() {
     try {
       const user = await login(email, password);
       if (user.role === 'SUPERADMIN' || user.role === 'ADMIN' || user.es_colaborador) {
-        router.push('/admin/dashboard');
+        window.location.href = '/admin/dashboard';
       } else {
-        router.push('/home');
+        window.location.href = '/home';
       }
     } catch (err: any) {
       setError(err?.response?.data?.error || 'Credenciales incorrectas');

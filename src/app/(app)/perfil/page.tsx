@@ -566,7 +566,7 @@ export default function PerfilPage() {
 
                 {/* Logout Section */}
                 <button
-                    onClick={() => { logout(); window.location.href = '/login'; }}
+                    onClick={logout}
                     style={{
                         background: 'none', border: 'none', padding: 0, width: '100%', textAlign: 'left', cursor: 'pointer'
                     }}
