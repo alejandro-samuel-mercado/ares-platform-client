@@ -174,7 +174,7 @@ export default function MisServiciosPage() {
             <div style={{ marginTop: '1rem', display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
                 <div>
                     <h1 style={{ fontSize: '2.2rem', lineHeight: 1, color: 'var(--text-primary)', display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-                        MIS <span className="text-gradient-primary">SERVICIOS ACTIVOS</span>
+                        <span className="text-gradient-primary">SERVICIOS ACTIVOS</span>
                         <button onClick={load} className="btn-secondary" style={{ padding: '0.5rem', borderRadius: '50%' }}><RefreshCw size={20} /></button>
                     </h1>
                     <p style={{ fontWeight: 800, fontSize: '0.8rem', color: 'var(--text-muted)', marginTop: '0.5rem' }}>
@@ -192,7 +192,7 @@ export default function MisServiciosPage() {
                     <p style={{ fontWeight: 700, color: 'var(--text-muted)', marginTop: '0.5rem' }}>Activa servicios desde el <a href="/catalogo" style={{ color: 'var(--color-primary)' }}>Catálogo</a></p>
                 </div>
             ) : (
-                <div className="grid grid-cols-1 max-md:grid-cols-2 lg:grid-cols-2 xl:grid-cols-3 gap-8">
+                <div className="grid max-sm:grid-cols-1 max-md:grid-cols-2 lg:grid-cols-2 xl:grid-cols-3 gap-8">
                     {misServicios.map((ms) => {
                         const svcCreds = getServiceCredentials(ms.servicio_id);
                         const svcPedidos = getServicePedidos(ms.servicio_id);
