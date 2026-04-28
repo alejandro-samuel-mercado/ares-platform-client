@@ -5,7 +5,7 @@
 
 import React, { useState, useEffect, useRef } from 'react';
 import api from '@/lib/api';
-import { Package, Plus, Clock, CheckCircle2, AlertCircle, Loader2, Send, MessageSquare, X, Smartphone, Zap, RefreshCw, UploadCloud, File as FileIcon, QrCode } from 'lucide-react';
+import { Package, Plus, Clock, CheckCircle2, AlertCircle, Loader2, Send, MessageSquare, X, Smartphone, Zap, RefreshCw, UploadCloud, File as FileIcon, QrCode, Trash, AlertOctagon } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 
 import { useAuth } from '@/lib/auth';
@@ -49,6 +49,7 @@ export default function PedidosVendorPage() {
   });
   const [misServicios, setMisServicios] = useState<any[]>([]);
   const [showQRModal, setShowQRModal] = useState<string | null>(null);
+  const [deleteModal, setDeleteModal] = useState<{ open: boolean; pedidoId: string | null }>({ open: false, pedidoId: null });
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => { 
@@ -128,6 +129,18 @@ export default function PedidosVendorPage() {
       }
     } finally {
       setSaving(false);
+    }
+  };
+
+  const handleDeletePedido = async () => {
+    if (!deleteModal.pedidoId) return;
+    try {
+      await api.delete(`/pedidos/${deleteModal.pedidoId}`);
+      triggerToast('PEDIDO ELIMINADO');
+      setDeleteModal({ open: false, pedidoId: null });
+      fetchData();
+    } catch (error) {
+      triggerToast('ERROR AL ELIMINAR PEDIDO');
     }
   };
 
@@ -256,16 +269,26 @@ export default function PedidosVendorPage() {
                 </div>
                 
                 <div style={{ flex: 1, minWidth: 0 }}>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.4rem' }}>
-                    <div className="chip" style={{ 
-                      fontSize: '0.6rem', padding: '0.1rem 0.5rem', 
-                      borderColor: config.color, color: config.color, background: 'rgba(0,0,0,0.05)'
-                    }}>
-                      {p.status}
+                  <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.4rem', alignItems: 'center' }}>
+                    <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
+                      <div className="chip" style={{ 
+                        fontSize: '0.6rem', padding: '0.1rem 0.5rem', 
+                        borderColor: config.color, color: config.color, background: 'rgba(0,0,0,0.05)'
+                      }}>
+                        {p.status}
+                      </div>
+                      <span style={{ fontSize: '0.65rem', fontWeight: 800, opacity: 0.4 }}>
+                        {new Date(p.creado_en).toLocaleDateString()}
+                      </span>
                     </div>
-                    <span style={{ fontSize: '0.65rem', fontWeight: 800, opacity: 0.4 }}>
-                      {new Date(p.creado_en).toLocaleDateString()}
-                    </span>
+                    <button 
+                      onClick={() => setDeleteModal({ open: true, pedidoId: p.id })}
+                      className="btn-ghost hover-bright" 
+                      style={{ padding: '0.2rem', color: 'var(--color-danger)' }}
+                      title="Eliminar Pedido"
+                    >
+                      <Trash size={16} />
+                    </button>
                   </div>
                   <p style={{ fontWeight: 700, fontSize: '0.9rem', color: 'var(--text-primary)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                     {p.notas}
@@ -545,6 +568,39 @@ export default function PedidosVendorPage() {
                 </button>
              </motion.div>
           </div>
+        )}
+      </AnimatePresence>
+
+      {/* Modal Eliminar Pedido */}
+      <AnimatePresence>
+        {deleteModal.open && (
+           <div className="modal-overlay" style={{ zIndex: 20000 }}>
+             <motion.div 
+               initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+               onClick={() => setDeleteModal({ open: false, pedidoId: null })}
+               style={{ position: 'absolute', inset: 0, background: 'rgba(0,0,0,0.8)' }}
+             />
+             <motion.div 
+               initial={{ scale: 0.8, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.8, opacity: 0 }}
+               className="modal-container"
+               style={{ padding: '2rem', width: '90%', maxWidth: '400px', textAlign: 'center', zIndex: 1 }}
+             >
+                <div style={{
+                    width: '60px', height: '60px', borderRadius: '50%', background: 'rgba(239, 68, 68, 0.1)',
+                    display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 1.5rem'
+                }}>
+                    <AlertOctagon size={32} color="var(--color-danger)" />
+                </div>
+                <h3 style={{ fontSize: '1.5rem', marginBottom: '1rem', fontWeight: 900 }}>¿ELIMINAR PEDIDO?</h3>
+                <p style={{ fontWeight: 700, color: 'var(--text-muted)', marginBottom: '1.5rem', fontSize: '0.9rem' }}>
+                    Esta acción eliminará la solicitud permanentemente de tu historial.
+                </p>
+                <div style={{ display: 'flex', gap: '1rem' }}>
+                   <button className="btn-secondary" style={{ flex: 1 }} onClick={() => setDeleteModal({ open: false, pedidoId: null })}>CANCELAR</button>
+                   <button className="btn-primary" style={{ flex: 1, background: 'var(--color-danger)', color: 'white', border: 'none' }} onClick={handleDeletePedido}>ELIMINAR</button>
+                </div>
+             </motion.div>
+           </div>
         )}
       </AnimatePresence>
     </div>

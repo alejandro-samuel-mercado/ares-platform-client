@@ -24,6 +24,12 @@
     padding: 0 2rem;
 }
 
+@media (max-width: 600px) {
+    .docs-container {
+        padding: 0 1rem;
+    }
+}
+
 .docs-nav-inner {
     display: flex;
     justify-content: space-between;
@@ -120,7 +126,7 @@
 }
 
 .markdown-pro h1 {
-    font-size: 2.8rem;
+    font-size: clamp(2rem, 5vw, 2.8rem);
     font-weight: 1000;
     letter-spacing: -0.05em;
     margin-top: 0;
@@ -131,7 +137,7 @@
 }
 
 .markdown-pro h2 {
-    font-size: 2rem;
+    font-size: clamp(1.5rem, 4vw, 2rem);
     font-weight: 900;
     margin-top: 4rem;
     margin-bottom: 1.5rem;
@@ -190,6 +196,9 @@
     width: 100%;
     border-collapse: collapse;
     margin: 2rem 0;
+    display: block;
+    overflow-x: auto;
+    max-width: 100vw;
 }
 
 .markdown-pro th {
@@ -213,4 +222,18 @@
     color: var(--color-danger);
     font-family: monospace;
     font-size: 0.9em;
+}
+
+.markdown-pro pre {
+    background: rgba(0,0,0,0.4);
+    padding: 1.5rem;
+    border-radius: 12px;
+    overflow-x: auto;
+    max-width: 100vw;
+}
+
+.markdown-pro pre code {
+    background: transparent;
+    color: var(--text-primary);
+    padding: 0;
 }

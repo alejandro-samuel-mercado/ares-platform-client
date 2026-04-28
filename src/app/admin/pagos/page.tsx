@@ -8,7 +8,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import {
     CreditCard, CheckCircle, XCircle, Search, Calendar,
     User, DollarSign, Image as ImageIcon, ExternalLink,
-    Clock, ShieldCheck, Ban, Info, AlertCircle, X, Plus, Upload, Loader2, RefreshCw
+    Clock, ShieldCheck, Ban, Info, AlertCircle, X, Plus, Upload, Loader2, RefreshCw, Trash
 } from 'lucide-react';
 import api from '@/lib/api';
 import Combobox from '@/components/Combobox';
@@ -61,6 +61,7 @@ export default function PagosPage() {
     }>({ show: false, type: 'APPROVE', pagoId: '', vendedor: '' });
 
     const [rejectNotes, setRejectNotes] = useState('');
+    const [deleteModal, setDeleteModal] = useState<{ open: boolean; pagoId: string | null }>({ open: false, pagoId: null });
 
     // Modal de Pago Manual
     const [showManualModal, setShowManualModal] = useState(false);
@@ -101,6 +102,17 @@ export default function PagosPage() {
             }
             setConfirmModal({ ...confirmModal, show: false });
             setRejectNotes('');
+            loadData();
+        } catch (err) {
+            console.error(err);
+        }
+    };
+
+    const handleDeletePago = async () => {
+        if (!deleteModal.pagoId) return;
+        try {
+            await api.delete(`/admin/pagos/${deleteModal.pagoId}`);
+            setDeleteModal({ open: false, pagoId: null });
             loadData();
         } catch (err) {
             console.error(err);
@@ -278,8 +290,11 @@ export default function PagosPage() {
                                                 </button>
                                             </>
                                         ) : (
-                                            <div style={{ opacity: 0.3, fontWeight: 900, fontSize: '0.7rem' }}>PROCESADO</div>
+                                            <div style={{ opacity: 0.3, fontWeight: 900, fontSize: '0.7rem', display: 'flex', alignItems: 'center' }}>PROCESADO</div>
                                         )}
+                                        <button className="btn-secondary" style={{ padding: '0.5rem', border: '2px solid var(--color-danger)', color: 'var(--color-danger)' }} onClick={() => setDeleteModal({ open: true, pagoId: p.id })} title="Eliminar Registro">
+                                            <Trash size={18} />
+                                        </button>
                                     </div>
                                 </td>
                             </motion.tr>
@@ -449,12 +464,8 @@ export default function PagosPage() {
                                     <button className="btn-secondary" onClick={() => setConfirmModal({ ...confirmModal, show: false })}>
                                         CANCELAR
                                     </button>
-                                    <button
-                                        className="btn-primary"
-                                        style={{ background: confirmModal.type === 'APPROVE' ? '#10B981' : '#EF4444' }}
-                                        onClick={executeAction}
-                                    >
-                                        {confirmModal.type === 'APPROVE' ? 'SÍ, APROBAR' : 'SÍ, RECHAZAR'}
+                                    <button className="btn-primary" style={{ background: confirmModal.type === 'APPROVE' ? '#10B981' : '#EF4444' }} onClick={executeAction}>
+                                        {confirmModal.type === 'APPROVE' ? 'APROBAR' : 'RECHAZAR'}
                                     </button>
                                 </div>
                             </div>
@@ -462,6 +473,39 @@ export default function PagosPage() {
                     </div>
                 )}
             </AnimatePresence>
+
+            {/* Modal Eliminar Pago */}
+            <AnimatePresence>
+                {deleteModal.open && (
+                    <div className="modal-overlay" onClick={() => setDeleteModal({ open: false, pagoId: null })}>
+                        <motion.div
+                            className="card"
+                            initial={{ y: 50, opacity: 0 }}
+                            animate={{ y: 0, opacity: 1 }}
+                            exit={{ y: 50, opacity: 0 }}
+                            onClick={e => e.stopPropagation()}
+                            style={{ padding: '2.5rem', maxWidth: '400px', width: '90%', textAlign: 'center' }}
+                        >
+                            <div style={{
+                                width: '70px', height: '70px', borderRadius: '20px',
+                                background: '#EF4444', margin: '0 auto 1.5rem', display: 'flex', alignItems: 'center', justifyContent: 'center',
+                                color: '#fff', boxShadow: '4px 4px 0px #000', border: '2px solid #000'
+                            }}>
+                                <Trash size={40} />
+                            </div>
+                            <h2 style={{ fontSize: '1.8rem', marginBottom: '1rem' }}>¿ELIMINAR PAGO?</h2>
+                            <p style={{ fontWeight: 700, color: 'var(--text-muted)', marginBottom: '1.5rem' }}>
+                                Esta acción eliminará permanentemente el registro de este pago.
+                            </p>
+                            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
+                                <button className="btn-secondary" onClick={() => setDeleteModal({ open: false, pagoId: null })}>CANCELAR</button>
+                                <button className="btn-primary" style={{ background: '#EF4444' }} onClick={handleDeletePago}>ELIMINAR</button>
+                            </div>
+                        </motion.div>
+                    </div>
+                )}
+            </AnimatePresence>
+
         </div>
     );
 }

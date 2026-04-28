@@ -9,7 +9,7 @@ import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
     Package, Check, X, Clock, MessageCircle,
-    ChevronRight, AlertCircle, ShoppingBag, Zap, UserCheck, RefreshCw
+    ChevronRight, AlertCircle, ShoppingBag, Zap, UserCheck, RefreshCw, Trash, AlertOctagon
 } from 'lucide-react';
 import api from '@/lib/api';
 
@@ -43,6 +43,7 @@ export default function PedidosAdminPage() {
     const [showToast, setShowToast] = useState(false);
     const [toastMsg, setToastMsg] = useState('');
     const [responseModal, setResponseModal] = useState<{ open: boolean; pedidoId: string | null }>({ open: false, pedidoId: null });
+    const [deleteModal, setDeleteModal] = useState<{ open: boolean; pedidoId: string | null }>({ open: false, pedidoId: null });
     const [respuestaText, setRespuestaText] = useState('');
 
     const fetchPedidos = async () => {
@@ -88,6 +89,21 @@ export default function PedidosAdminPage() {
         await handleStatusUpdate(responseModal.pedidoId, 'COMPLETADO', respuestaText);
         setResponseModal({ open: false, pedidoId: null });
         setRespuestaText('');
+    };
+
+    const handleDeletePedido = async () => {
+        if (!deleteModal.pedidoId) return;
+        setUpdating(deleteModal.pedidoId);
+        try {
+            await api.delete(`/admin/pedidos/${deleteModal.pedidoId}`);
+            triggerToast('SOLICITUD ELIMINADA');
+            await fetchPedidos();
+        } catch (error: any) {
+            triggerToast(error?.response?.data?.error || 'ERROR ELIMINANDO SOLICITUD');
+        } finally {
+            setUpdating(null);
+            setDeleteModal({ open: false, pedidoId: null });
+        }
     };
 
     const filteredPedidos = pedidos.filter(p =>
@@ -324,6 +340,14 @@ export default function PedidosAdminPage() {
                                                         <X size={22} />
                                                     </button>
                                                 )}
+                                                <button
+                                                    onClick={() => setDeleteModal({ open: true, pedidoId: p.id })}
+                                                    className="btn-secondary"
+                                                    style={{ padding: '0.75rem', width: '50px', height: '50px', display: 'flex', alignItems: 'center', justifyContent: 'center', borderColor: 'var(--color-danger)', color: 'var(--color-danger)', boxShadow: 'none' }}
+                                                    title="Eliminar Pedido"
+                                                >
+                                                    <Trash size={22} />
+                                                </button>
                                                 {(p.status === 'COMPLETADO' || p.status === 'CANCELADO') && (
                                                     <div style={{ fontSize: '0.75rem', fontWeight: 900, display: 'flex', alignItems: 'center', gap: '0.5rem', color: 'var(--text-muted)' }}>
                                                         PROCESO CERRADO <UserCheck size={16} />
@@ -402,6 +426,62 @@ export default function PedidosAdminPage() {
                                     disabled={updating !== null}
                                 >
                                     {updating ? 'PROCESANDO...' : 'COMPLETAR Y ENVIAR'}
+                                </button>
+                            </div>
+                        </motion.div>
+                    </div>
+                )}
+            </AnimatePresence>
+
+            {/* Modal de Eliminación de Pedido */}
+            <AnimatePresence>
+                {deleteModal.open && (
+                    <div style={{
+                        position: 'fixed', inset: 0, zIndex: 20000,
+                        display: 'flex', alignItems: 'center', justifyContent: 'center',
+                        background: 'rgba(0,0,0,0.6)', backdropFilter: 'blur(8px)'
+                    }}>
+                        <motion.div
+                            initial={{ scale: 0.9, opacity: 0 }}
+                            animate={{ scale: 1, opacity: 1 }}
+                            exit={{ scale: 0.9, opacity: 0 }}
+                            className="modal-container max-sm:p-8"
+                            style={{
+                                width: '90%', maxWidth: '450px', padding: '3rem',
+                                background: 'var(--surface-raised)', borderWidth: '3px',
+                                boxShadow: '16px 16px 0px 0px #000',
+                                textAlign: 'center'
+                            }}
+                        >
+                            <div style={{
+                                background: 'rgba(239, 68, 68, 0.1)',
+                                width: '80px', height: '80px', borderRadius: '50%', margin: '0 auto 2rem',
+                                display: 'flex', alignItems: 'center', justifyContent: 'center'
+                            }}>
+                                <AlertOctagon size={40} color="var(--color-danger)" />
+                            </div>
+
+                            <h2 style={{ fontSize: '1.8rem', marginBottom: '1rem' }}>ELIMINAR SOLICITUD</h2>
+
+                            <p style={{ fontWeight: 700, color: 'var(--text-muted)', marginBottom: '2.5rem' }}>
+                                Esta acción eliminará permanentemente la solicitud y liberará la credencial reservada en caso de tenerla.
+                            </p>
+
+                            <div style={{ display: 'flex', gap: '1rem' }}>
+                                <button
+                                    onClick={() => setDeleteModal({ open: false, pedidoId: null })}
+                                    className="btn-secondary"
+                                    style={{ flex: 1, padding: '1rem' }}
+                                >
+                                    CANCELAR
+                                </button>
+                                <button
+                                    onClick={handleDeletePedido}
+                                    className="btn-primary"
+                                    style={{ flex: 1, padding: '1rem', background: 'var(--color-danger)', color: 'white' }}
+                                    disabled={updating !== null}
+                                >
+                                    {updating ? 'PROCESANDO...' : 'ELIMINAR'}
                                 </button>
                             </div>
                         </motion.div>

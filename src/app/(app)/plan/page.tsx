@@ -5,7 +5,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { CreditCard, Upload, Clock, Zap, CheckCircle2, ShieldCheck, QrCode, RefreshCw, Layers, Calendar, ChevronRight, X } from 'lucide-react';
+import { CreditCard, Upload, Clock, Zap, CheckCircle2, ShieldCheck, QrCode, RefreshCw, Layers, Calendar, ChevronRight, X, Trash, AlertOctagon } from 'lucide-react';
 import api from '@/lib/api';
 import { useAuth } from '@/lib/auth';
 
@@ -22,6 +22,8 @@ export default function PlanPage() {
     const [selectedPlan, setSelectedPlan] = useState<any>(null);
     const [currency, setCurrency] = useState<'BOB' | 'USD'>('BOB');
     const [file, setFile] = useState<File | null>(null);
+    const [deleteModal, setDeleteModal] = useState<{ open: boolean; pagoId: string | null }>({ open: false, pagoId: null });
+    const [toastMsg, setToastMsg] = useState('COMPROBANTE ENVIADO A REVISIÓN');
 
     const fetchPagos = () => {
         api.get('/pagos').then(setPagos).catch(console.error);
@@ -41,9 +43,22 @@ export default function PlanPage() {
 
     const hasPending = pagos.some(p => p.status === 'PENDIENTE');
 
-    const triggerToast = () => {
+    const triggerToast = (msg?: string) => {
+        if (msg) setToastMsg(msg);
         setShowToast(true);
         setTimeout(() => setShowToast(false), 3000);
+    };
+
+    const handleDeletePago = async () => {
+        if (!deleteModal.pagoId) return;
+        try {
+            await api.delete(`/pagos/${deleteModal.pagoId}`);
+            setDeleteModal({ open: false, pagoId: null });
+            triggerToast('REGISTRO ELIMINADO');
+            fetchPagos();
+        } catch (err) {
+            console.error(err);
+        }
     };
 
     const daysLeft = vendor ? Math.max(0, Math.ceil((new Date(vendor.fecha_vencimiento).getTime() - Date.now()) / (1000 * 60 * 60 * 24))) : 0;
@@ -80,7 +95,7 @@ export default function PlanPage() {
 
             if (!res.ok) throw new Error('Error al subir');
 
-            triggerToast();
+            triggerToast('COMPROBANTE ENVIADO A REVISIÓN');
             setFile(null);
             setSelectedPlan(null); // Cierra modal
             fetchPagos(); // Recarga pagos
@@ -110,7 +125,7 @@ export default function PlanPage() {
                         }}
                     >
                         <CheckCircle2 color="var(--color-primary)" />
-                        COMPROBANTE ENVIADO A REVISIÓN
+                        {toastMsg}
                     </motion.div>
                 )}
             </AnimatePresence>
@@ -186,14 +201,19 @@ export default function PlanPage() {
                             </div>
                         ) : (
                             pagos.slice(0, 5).map(p => (
-                                <div key={p.id} style={{ display: 'flex', justifyContent: 'space-between', padding: '1rem 0', borderBottom: '2px dashed rgba(255,255,255,0.1)' }}>
+                                <div key={p.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '1rem 0', borderBottom: '2px dashed rgba(255,255,255,0.1)' }}>
                                     <div>
                                         <p style={{ fontWeight: 800, fontSize: '0.85rem' }}>{new Date(p.creado_en).toLocaleDateString('es-BO', { day: '2-digit', month: 'short' }).toUpperCase()}</p>
                                         <span style={{ fontSize: '0.7rem', fontWeight: 900, color: p.status === 'APROBADO' ? '#22C55E' : (p.status === 'RECHAZADO' ? '#EF4444' : '#F59E0B') }}>
                                             {p.status}
                                         </span>
                                     </div>
-                                    <div style={{ fontWeight: 900 }}>${p.monto.toFixed(2)}</div>
+                                    <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+                                        <div style={{ fontWeight: 900 }}>${p.monto.toFixed(2)}</div>
+                                        <button className="btn-ghost hover-bright" style={{ padding: '0.2rem', color: 'var(--color-danger)' }} onClick={() => setDeleteModal({ open: true, pagoId: p.id })}>
+                                            <Trash size={16} />
+                                        </button>
+                                    </div>
                                 </div>
                             ))
                         )}
@@ -393,6 +413,35 @@ export default function PlanPage() {
                 </div>
             )}
 
+            {/* Modal Eliminar Pago */}
+            <AnimatePresence>
+                {deleteModal.open && (
+                    <div className="modal-overlay" style={{ zIndex: 10000 }}>
+                        <motion.div
+                            initial={{ scale: 0.9, opacity: 0 }}
+                            animate={{ scale: 1, opacity: 1 }}
+                            exit={{ scale: 0.9, opacity: 0 }}
+                            className="card"
+                            style={{ padding: '2.5rem', maxWidth: '400px', width: '90%', textAlign: 'center' }}
+                        >
+                            <div style={{
+                                width: '60px', height: '60px', borderRadius: '50%', background: 'rgba(239, 68, 68, 0.1)',
+                                margin: '0 auto 1.5rem', display: 'flex', alignItems: 'center', justifyContent: 'center'
+                            }}>
+                                <AlertOctagon size={32} color="var(--color-danger)" />
+                            </div>
+                            <h2 style={{ fontSize: '1.5rem', marginBottom: '1rem', fontWeight: 900 }}>¿ELIMINAR PAGO?</h2>
+                            <p style={{ fontWeight: 700, color: 'var(--text-muted)', marginBottom: '1.5rem', fontSize: '0.9rem' }}>
+                                Se eliminará este registro permanentemente de tu historial.
+                            </p>
+                            <div style={{ display: 'flex', gap: '1rem' }}>
+                                <button className="btn-secondary" style={{ flex: 1 }} onClick={() => setDeleteModal({ open: false, pagoId: null })}>CANCELAR</button>
+                                <button className="btn-primary" style={{ flex: 1, background: 'var(--color-danger)', border: 'none', color: 'white' }} onClick={handleDeletePago}>ELIMINAR</button>
+                            </div>
+                        </motion.div>
+                    </div>
+                )}
+            </AnimatePresence>
         </div>
     );
 }

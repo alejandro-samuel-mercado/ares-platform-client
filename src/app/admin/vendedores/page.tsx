@@ -9,7 +9,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import {
     Users, Ban, CheckCircle, Clock, ArrowUpCircle,
     Search, Filter, RefreshCw, Phone, ShieldCheck,
-    History, CreditCard, X, AlertCircle, Pencil, Save, UserPlus, Loader2
+    History, CreditCard, X, AlertCircle, Pencil, Save, UserPlus, Loader2, Trash, AlertOctagon
 } from 'lucide-react';
 import api from '@/lib/api';
 import { useAuth } from '@/lib/auth';
@@ -99,7 +99,7 @@ export default function VendedoresPage() {
         setTimeout(() => setToast(''), 3000);
     };
 
-    const [confirmAction, setConfirmAction] = useState<{ id: string, action: 'SUSPEND' | 'EXTEND', nombre: string } | null>(null);
+    const [confirmAction, setConfirmAction] = useState<{ id: string, action: 'SUSPEND' | 'EXTEND' | 'DELETE_VENDOR', nombre: string } | null>(null);
 
     const handleSuspend = async () => {
         if (!confirmAction) return;
@@ -127,6 +127,18 @@ export default function VendedoresPage() {
             setConfirmAction(null);
             loadData();
         } catch (err) { console.error(err); }
+    };
+
+    const handleDeleteVendor = async () => {
+        if (!confirmAction) return;
+        try {
+            await api.delete(`/admin/vendors/${confirmAction.id}`);
+            showToast('Vendedor eliminado permanentemente 🗑️');
+            setConfirmAction(null);
+            loadData();
+        } catch (err: any) { 
+            showToast(err?.response?.data?.error || 'Error eliminando vendedor ❌');
+        }
     };
 
     const handleChangePlan = async (vendorId: string, planId: string) => {
@@ -428,6 +440,9 @@ export default function VendedoresPage() {
                                                     <button onClick={() => setConfirmAction({ id: v.id, action: 'EXTEND', nombre: v.nombre })} className="btn-secondary" style={{ borderColor: 'var(--color-accent)', color: 'var(--color-accent)', boxShadow: 'none' }} title="Extender 30 días">
                                                         <Clock size={18} />
                                                     </button>
+                                                    <button onClick={() => setConfirmAction({ id: v.id, action: 'DELETE_VENDOR', nombre: v.nombre })} className="btn-secondary" style={{ borderColor: 'var(--color-danger)', color: 'var(--color-danger)', boxShadow: 'none' }} title="Eliminar definitivamente">
+                                                        <Trash size={18} />
+                                                    </button>
                                                     <div style={{ width: '150px' }}>
                                                         <Combobox
                                                             placeholder="Plan..."
@@ -459,20 +474,22 @@ export default function VendedoresPage() {
                             style={{ padding: '3rem', maxWidth: '450px', border: '3px solid #000', textAlign: 'center' }}
                         >
                             <div style={{
-                                background: confirmAction.action === 'SUSPEND' ? 'rgba(239, 68, 68, 0.1)' : 'rgba(139, 92, 246, 0.1)',
+                                background: confirmAction.action === 'SUSPEND' || confirmAction.action === 'DELETE_VENDOR' ? 'rgba(239, 68, 68, 0.1)' : 'rgba(139, 92, 246, 0.1)',
                                 width: '80px', height: '80px', borderRadius: '50%', margin: '0 auto 2rem',
                                 display: 'flex', alignItems: 'center', justifyContent: 'center'
                             }}>
-                                {confirmAction.action === 'SUSPEND' ? <Ban size={40} color="var(--color-danger)" /> : <Clock size={40} color="var(--color-primary)" />}
+                                {confirmAction.action === 'SUSPEND' ? <Ban size={40} color="var(--color-danger)" /> : confirmAction.action === 'DELETE_VENDOR' ? <AlertOctagon size={40} color="var(--color-danger)" /> : <Clock size={40} color="var(--color-primary)" />}
                             </div>
 
                             <h2 style={{ fontSize: '1.8rem', marginBottom: '1rem' }}>
-                                {confirmAction.action === 'SUSPEND' ? '¿SUSPENDER ACCESO?' : '¿EXTENDER LICENCIA?'}
+                                {confirmAction.action === 'SUSPEND' ? '¿SUSPENDER ACCESO?' : confirmAction.action === 'DELETE_VENDOR' ? '¿ELIMINAR VENDEDOR?' : '¿EXTENDER LICENCIA?'}
                             </h2>
 
                             <p style={{ fontWeight: 700, color: 'var(--text-muted)', marginBottom: '2.5rem' }}>
                                 {confirmAction.action === 'SUSPEND'
                                     ? `El vendedor ${confirmAction.nombre} perderá el acceso a la plataforma de inmediato.`
+                                    : confirmAction.action === 'DELETE_VENDOR'
+                                    ? `ADVERTENCIA: Esta acción es irreversible. Se eliminará a ${confirmAction.nombre} y todo su historial de pedidos y pagos.`
                                     : `Se añadirán 30 días de vigencia a la cuenta de ${confirmAction.nombre}.`}
                             </p>
 
@@ -482,12 +499,12 @@ export default function VendedoresPage() {
                                     className="btn-primary"
                                     style={{
                                         flex: 1,
-                                        background: confirmAction.action === 'SUSPEND' ? 'var(--color-danger)' : 'var(--color-primary)',
+                                        background: confirmAction.action === 'SUSPEND' || confirmAction.action === 'DELETE_VENDOR' ? 'var(--color-danger)' : 'var(--color-primary)',
                                         color: 'white'
                                     }}
-                                    onClick={confirmAction.action === 'SUSPEND' ? handleSuspend : handleExtend}
+                                    onClick={confirmAction.action === 'SUSPEND' ? handleSuspend : confirmAction.action === 'DELETE_VENDOR' ? handleDeleteVendor : handleExtend}
                                 >
-                                    {confirmAction.action === 'SUSPEND' ? 'SUSPENDER' : 'CONFIRMAR'}
+                                    {confirmAction.action === 'SUSPEND' ? 'SUSPENDER' : confirmAction.action === 'DELETE_VENDOR' ? 'ELIMINAR' : 'CONFIRMAR'}
                                 </button>
                             </div>
                         </motion.div>

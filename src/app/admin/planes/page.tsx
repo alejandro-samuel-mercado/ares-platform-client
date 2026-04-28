@@ -5,7 +5,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { CreditCard, Plus, Edit2, X, ShieldCheck, Zap, Globe, ShoppingCart, CheckCircle2 } from 'lucide-react';
+import { CreditCard, Plus, Edit2, X, ShieldCheck, Zap, Globe, ShoppingCart, CheckCircle2, Trash, AlertOctagon } from 'lucide-react';
 import api from '@/lib/api';
 
 interface Plan {
@@ -18,8 +18,10 @@ export default function PlanesPage() {
     const [planes, setPlanes] = useState<Plan[]>([]);
     const [loading, setLoading] = useState(true);
     const [editingPlan, setEditingPlan] = useState<Partial<Plan> | null>(null);
+    const [planToDelete, setPlanToDelete] = useState<{id: string, nombre: string} | null>(null);
     const [showModal, setShowModal] = useState(false);
     const [showToast, setShowToast] = useState(false);
+    const [toastMessage, setToastMessage] = useState('PLAN ACTUALIZADO EXITOSAMENTE');
     const [tasaCambio, setTasaCambio] = useState(6.96);
 
     const loadPlanes = () => {
@@ -35,7 +37,8 @@ export default function PlanesPage() {
 
     useEffect(loadPlanes, []);
 
-    const triggerToast = () => {
+    const triggerToast = (msg: string = 'PLAN ACTUALIZADO EXITOSAMENTE') => {
+        setToastMessage(msg);
         setShowToast(true);
         setTimeout(() => setShowToast(false), 3000);
     };
@@ -50,9 +53,22 @@ export default function PlanesPage() {
             }
             setShowModal(false);
             setEditingPlan(null);
-            triggerToast();
+            triggerToast('PLAN ACTUALIZADO EXITOSAMENTE');
             loadPlanes();
         } catch (err) { console.error(err); }
+    };
+
+    const handleDeletePlan = async () => {
+        if (!planToDelete) return;
+        try {
+            await api.delete(`/admin/planes/${planToDelete.id}`);
+            triggerToast('PLAN ELIMINADO PERMANENTEMENTE');
+            setPlanToDelete(null);
+            loadPlanes();
+        } catch (err: any) {
+            triggerToast(err?.response?.data?.error || 'Error al eliminar el plan');
+            setPlanToDelete(null);
+        }
     };
 
     const planStyles: Record<string, { color: string, icon: React.ReactNode }> = {
@@ -80,7 +96,8 @@ export default function PlanesPage() {
                         }}
                     >
                         <CheckCircle2 color="var(--color-primary)" />
-                        PLAN ACTUALIZADO EXITOSAMENTE
+                        {toastMessage}
+
                     </motion.div>
                 )}
             </AnimatePresence>
@@ -135,9 +152,14 @@ export default function PlanesPage() {
                                     </div>
                                     <h3 style={{ fontSize: '1.25rem', fontWeight: 900, textTransform: 'uppercase', letterSpacing: '0.05em', color: "var(--text-inverse)" }}>{plan.nombre}</h3>
                                 </div>
-                                <button onClick={() => { setEditingPlan(plan); setShowModal(true); }} style={{ background: 'rgba(0,0,0,0.1)', border: 'none', padding: '0.5rem', borderRadius: '8px', cursor: 'pointer' }}>
-                                    <Edit2 size={18} />
-                                </button>
+                                <div style={{ display: 'flex', gap: '0.5rem' }}>
+                                    <button onClick={() => { setEditingPlan(plan); setShowModal(true); }} style={{ background: 'rgba(0,0,0,0.1)', border: 'none', padding: '0.5rem', borderRadius: '8px', cursor: 'pointer' }} title="Editar">
+                                        <Edit2 size={18} />
+                                    </button>
+                                    <button onClick={() => setPlanToDelete({ id: plan.id, nombre: plan.nombre })} style={{ background: 'rgba(239, 68, 68, 0.1)', border: 'none', padding: '0.5rem', borderRadius: '8px', cursor: 'pointer', color: 'var(--color-danger)' }} title="Eliminar definitivamente">
+                                        <Trash size={18} />
+                                    </button>
+                                </div>
                             </div>
 
                             <div style={{ padding: '2rem' }}>
@@ -258,6 +280,50 @@ export default function PlanesPage() {
                     </div>
                 )}
             </AnimatePresence>
+            {/* Modal de Eliminación */}
+            <AnimatePresence>
+                {planToDelete && (
+                    <div className="modal-overlay">
+                        <motion.div
+                            initial={{ scale: 0.9, opacity: 0 }}
+                            animate={{ scale: 1, opacity: 1 }}
+                            exit={{ scale: 0.9, opacity: 0 }}
+                            className="modal-container"
+                            style={{ padding: '3rem', maxWidth: '450px', border: '3px solid #000', textAlign: 'center' }}
+                        >
+                            <div style={{
+                                background: 'rgba(239, 68, 68, 0.1)',
+                                width: '80px', height: '80px', borderRadius: '50%', margin: '0 auto 2rem',
+                                display: 'flex', alignItems: 'center', justifyContent: 'center'
+                            }}>
+                                <AlertOctagon size={40} color="var(--color-danger)" />
+                            </div>
+
+                            <h2 style={{ fontSize: '1.8rem', marginBottom: '1rem' }}>
+                                ¿ELIMINAR PLAN?
+                            </h2>
+
+                            <p style={{ fontWeight: 700, color: 'var(--text-muted)', marginBottom: '2.5rem' }}>
+                                Esta acción eliminará permanentemente el plan <b>{planToDelete.nombre}</b>. 
+                                <br/><br/>
+                                <span style={{ color: 'var(--color-danger)'}}>IMPORTANTE: Solo se puede eliminar si no hay vendedores suscritos a él, de caso contrario el sistema abortará la operación.</span>
+                            </p>
+
+                            <div style={{ display: 'flex', gap: '1rem' }}>
+                                <button className="btn-secondary" style={{ flex: 1, border: 'none' }} onClick={() => setPlanToDelete(null)}>CANCELAR</button>
+                                <button
+                                    className="btn-primary"
+                                    style={{ flex: 1, background: 'var(--color-danger)', color: 'white' }}
+                                    onClick={handleDeletePlan}
+                                >
+                                    ELIMINAR
+                                </button>
+                            </div>
+                        </motion.div>
+                    </div>
+                )}
+            </AnimatePresence>
+
         </div>
     );
 }
