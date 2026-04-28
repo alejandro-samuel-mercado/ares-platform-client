@@ -1,5 +1,11 @@
 /**
- * Admin Layout — ARES Redesign v3 (Full Responsive)
+ * ─────────────────────────────────────────────────────────────────────────────
+ * ARES PLATFORM — Admin Layout v3 (Responsive Master)
+ * ─────────────────────────────────────────────────────────────────────────────
+ * Contenedor principal del panel administrativo. 
+ * Gestiona el Sidebar (escritorio), el Drawer (móvil) y la autenticación
+ * por roles (SUPERADMIN/COLABORADOR).
+ * ─────────────────────────────────────────────────────────────────────────────
  */
 
 'use client';
@@ -34,10 +40,9 @@ export const ADMIN_MENU_ITEMS = [
     { href: '/admin/ajustes', icon: Settings, label: 'Ajustes', keywords: ['ajustes', 'configuracion', 'sistema', 'settings'], collab: false },
 ];
 
-function AdminSidebar() {
+function AdminSidebar({ mobileOpen, setMobileOpen }: { mobileOpen: boolean, setMobileOpen: (open: boolean) => void }) {
     const pathname = usePathname();
     const { isColaborador } = useAuth();
-    const [mobileOpen, setMobileOpen] = useState(false);
     const [showScrollIndicator, setShowScrollIndicator] = React.useState(false);
     const scrollRef = React.useRef<HTMLDivElement>(null);
 
@@ -164,59 +169,6 @@ function AdminSidebar() {
                     )}
                 </AnimatePresence>
             </div>
-
-            {/* Mobile Hamburger Button */}
-            <button
-                className="admin-mobile-menu-btn mobile-only"
-                onClick={() => setMobileOpen(true)}
-                aria-label="Abrir menú"
-            >
-                <Menu size={24} />
-            </button>
-
-            {/* Mobile Fullscreen Drawer */}
-            <AnimatePresence>
-                {mobileOpen && (
-                    <>
-                        <motion.div
-                            className="admin-drawer-overlay"
-                            initial={{ opacity: 0 }}
-                            animate={{ opacity: 1 }}
-                            exit={{ opacity: 0 }}
-                            onClick={() => setMobileOpen(false)}
-                        />
-                        <motion.aside
-                            className="admin-drawer"
-                            initial={{ x: '-100%' }}
-                            animate={{ x: 0 }}
-                            exit={{ x: '-100%' }}
-                            transition={{ type: 'spring', damping: 25, stiffness: 300 }}
-                        >
-                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2rem', padding: '0 0.5rem' }}>
-                                <img 
-                                    src="/images/icono.png" 
-                                    alt="Ares Icon"
-                                    style={{
-                                        width: '44px', height: '44px',
-                                        borderRadius: '14px',
-                                        border: '2px solid #000', boxShadow: '3px 3px 0px 0px #000',
-                                        objectFit: 'cover'
-                                    }} 
-                                />
-                                <button onClick={() => setMobileOpen(false)} style={{
-                                    background: 'rgba(255,255,255,0.1)', border: '2px solid rgba(255,255,255,0.2)',
-                                    borderRadius: '12px', padding: '0.5rem', color: 'white', cursor: 'pointer'
-                                }}>
-                                    <X size={20} />
-                                </button>
-                            </div>
-                            <nav className="admin-drawer-nav">
-                                {renderLinks(() => setMobileOpen(false))}
-                            </nav>
-                        </motion.aside>
-                    </>
-                )}
-            </AnimatePresence>
         </>
     );
 }
@@ -598,6 +550,8 @@ function AdminHeader() {
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
     const { isAdmin, isColaborador, isLoading } = useAuth();
     const router = useRouter();
+    const pathname = usePathname();
+    const [mobileOpen, setMobileOpen] = useState(false);
 
     React.useEffect(() => {
         if (!isLoading && !isAdmin && !isColaborador) {
@@ -624,7 +578,80 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
 
     return (
         <div style={{ position: 'relative' }}>
-            <AdminSidebar />
+            {/* Mobile Hamburger Button */}
+            <button
+                className="admin-mobile-menu-btn mobile-only"
+                onClick={() => setMobileOpen(true)}
+                aria-label="Abrir menú"
+            >
+                <Menu size={24} />
+            </button>
+
+            {/* Mobile Fullscreen Drawer */}
+            <AnimatePresence>
+                {mobileOpen && (
+                    <>
+                        <motion.div
+                            className="admin-drawer-overlay"
+                            initial={{ opacity: 0 }}
+                            animate={{ opacity: 1 }}
+                            exit={{ opacity: 0 }}
+                            onClick={() => setMobileOpen(false)}
+                        />
+                        <motion.aside
+                            className="admin-drawer"
+                            initial={{ x: '-100%' }}
+                            animate={{ x: 0 }}
+                            exit={{ x: '-100%' }}
+                            transition={{ type: 'spring', damping: 25, stiffness: 300 }}
+                        >
+                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2rem', padding: '0 0.5rem' }}>
+                                <img 
+                                    src="/images/icono.png" 
+                                    alt="Ares Icon"
+                                    style={{
+                                        width: '44px', height: '44px',
+                                        borderRadius: '14px',
+                                        border: '2px solid #000', boxShadow: '3px 3px 0px 0px #000',
+                                        objectFit: 'cover'
+                                    }} 
+                                />
+                                <button onClick={() => setMobileOpen(false)} style={{
+                                    background: 'rgba(255,255,255,0.1)', border: '2px solid rgba(255,255,255,0.2)',
+                                    borderRadius: '12px', padding: '0.5rem', color: 'white', cursor: 'pointer'
+                                }}>
+                                    <X size={20} />
+                                </button>
+                            </div>
+                            <nav className="admin-drawer-nav">
+                                {ADMIN_MENU_ITEMS.filter(item => isColaborador ? item.collab : true).map((item) => {
+                                    const isActive = item.href === '/admin/dashboard' 
+                                        ? pathname === item.href 
+                                        : pathname.startsWith(item.href);
+                                        
+                                    return (
+                                        <Link
+                                            key={item.href}
+                                            href={item.href}
+                                            className={`admin-sidebar-link ${isActive ? 'active' : ''}`}
+                                            onClick={() => setMobileOpen(false)}
+                                        >
+                                            <div className="sidebar-icon-container">
+                                                <item.icon size={22} color={isActive ? "white" : "currentColor"} />
+                                            </div>
+                                            <span className={`sidebar-label ${isActive ? 'active' : ''}`}>
+                                                {item.label}
+                                            </span>
+                                        </Link>
+                                    );
+                                })}
+                            </nav>
+                        </motion.aside>
+                    </>
+                )}
+            </AnimatePresence>
+
+            <AdminSidebar mobileOpen={mobileOpen} setMobileOpen={setMobileOpen} />
             <main className="admin-content">
                 <AdminHeader />
                 <Suspense fallback={

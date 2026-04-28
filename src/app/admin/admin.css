@@ -129,15 +129,27 @@
     transition: 0.2s;
 }
 
-/* Ensure button only shows when mobile-only is flex */
-.admin-mobile-menu-btn:not(.mobile-only) {
-    display: none !important;
-}
-
 .admin-mobile-menu-btn:active {
     transform: translate(2px, 2px);
     box-shadow: 2px 2px 0px 0px #000;
 }
+
+/* --- Responsive Utilities --- */
+@media (min-width: 1025px) {
+    .mobile-only {
+        display: none !important;
+    }
+}
+
+@media (max-width: 1024px) {
+    .desktop-only {
+        display: none !important;
+    }
+    .mobile-only {
+        display: flex !important;
+    }
+}
+/* ---------------------------- */
 
 .admin-drawer-overlay {
     position: fixed;

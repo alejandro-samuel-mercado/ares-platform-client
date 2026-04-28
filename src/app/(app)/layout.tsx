@@ -4,21 +4,22 @@
 
 'use client';
 
-import React, { Suspense } from 'react';
+import React, { Suspense, useState } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { Home, ShoppingBag, Trophy, Package, User, MessageSquare, CreditCard, Calculator, Image as ImageIcon, Clapperboard, History, Key, Megaphone, Store, Layers, ShieldCheck } from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
+import { Home, ShoppingBag, Trophy, Package, User, MessageSquare, CreditCard, Calculator, Image as ImageIcon, Clapperboard, History, Key, Megaphone, Store, Layers, ShieldCheck, Menu, X } from 'lucide-react';
 import { useAuth } from '@/lib/auth';
 import './app.css';
 
 function Navigation() {
     const pathname = usePathname();
     const { vendor } = useAuth();
+    const [mobileOpen, setMobileOpen] = useState(false);
     const isProvider = vendor?.plan === 'Proveedor' || vendor?.role === 'SUPERADMIN';
 
     const sidebarItems = [
         { href: '/home', icon: Home, label: 'Inicio' },
-
         { href: '/mensajes', icon: MessageSquare, label: 'Mensajes' },
         { href: '/flyers', icon: ImageIcon, label: 'Flyers' },
         { href: '/partidos', icon: Trophy, label: 'Partidos' },
@@ -46,6 +47,56 @@ function Navigation() {
 
     return (
         <>
+            <button 
+                className="app-mobile-menu-btn mobile-only" 
+                onClick={() => setMobileOpen(true)}
+            >
+                <Menu size={24} />
+            </button>
+
+            <AnimatePresence>
+                {mobileOpen && (
+                    <>
+                        <motion.div 
+                            className="app-drawer-overlay"
+                            initial={{ opacity: 0 }}
+                            animate={{ opacity: 1 }}
+                            exit={{ opacity: 0 }}
+                            onClick={() => setMobileOpen(false)}
+                        />
+                        <motion.aside 
+                            className="app-drawer"
+                            initial={{ x: '-100%' }}
+                            animate={{ x: 0 }}
+                            exit={{ x: '-100%' }}
+                            transition={{ type: 'spring', damping: 25, stiffness: 200 }}
+                        >
+                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2rem' }}>
+                                <span style={{ fontWeight: 900, letterSpacing: '0.1rem', fontSize: '1.2rem' }}>ARES APP</span>
+                                <button onClick={() => setMobileOpen(false)} style={{ background: 'transparent', border: 'none', color: 'white' }}>
+                                    <X size={28} />
+                                </button>
+                            </div>
+
+                            {sidebarItems.map((item) => {
+                                const isActive = pathname === item.href;
+                                return (
+                                    <Link
+                                        key={item.href}
+                                        href={item.href}
+                                        className={`app-drawer-link ${isActive ? 'active' : ''}`}
+                                        onClick={() => setMobileOpen(false)}
+                                    >
+                                        <item.icon size={20} />
+                                        <span>{item.label}</span>
+                                    </Link>
+                                );
+                            })}
+                        </motion.aside>
+                    </>
+                )}
+            </AnimatePresence>
+
             <nav className="bottom-nav">
                 <div style={{ display: 'flex', width: '100%', justifyContent: 'space-around', alignItems: 'center' }}>
                     {bottomItems.map((item) => {
