@@ -256,7 +256,7 @@
     }
 
     .mobile-only {
-        display: flex !important;
+        display: block;
     }
 
     .vendor-sidebar {

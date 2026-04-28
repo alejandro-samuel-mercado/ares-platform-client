@@ -103,22 +103,8 @@ export default function VendorHome() {
         return true;
     });
 
-    if (loading) {
-        return (
-            <div style={{ 
-                height: '80vh', display: 'flex', flexDirection: 'column', 
-                alignItems: 'center', justifyContent: 'center', gap: '2rem' 
-            }}>
-                <motion.img 
-                    src="/images/icono.png" 
-                    animate={{ scale: [1, 1.1, 1], rotate: [0, 360] }}
-                    transition={{ duration: 3, repeat: Infinity, ease: "linear" }}
-                    style={{ width: '60px', height: '60px', opacity: 0.5 }}
-                />
-                <p style={{ fontWeight: 900, fontSize: '0.7rem', letterSpacing: '0.3em', opacity: 0.3 }}>SINCRONIZANDO PROTOCOLOS...</p>
-            </div>
-        );
-    }
+    // Eliminamos el bloqueo de pantalla completa para una carga progresiva más rápida
+    const isFirstLoad = loading && !userName && nextMatches.length === 0;
 
     return (
         <div style={{ display: 'flex', flexDirection: 'column', gap: '2rem', paddingBottom: '2rem' }}>
@@ -136,9 +122,14 @@ export default function VendorHome() {
                     <RefreshCw size={24} className={loading ? 'animate-spin' : ''} />
                 </button>
                 <h1 style={{ fontSize: '2.5rem', lineHeight: 1, fontWeight: 900 }}>
-                    HOLA, <span className="text-gradient-primary">{userName}</span>
+                    HOLA, <span className="text-gradient-primary">{loading && !userName ? '...' : userName}</span>
                 </h1>
                 <p style={{ fontWeight: 700, marginTop: '0.5rem', opacity: 0.6 }}>¿Qué vamos a vender hoy?</p>
+                {loading && (
+                    <div style={{ display: 'flex', justifyContent: 'center', marginTop: '1rem' }}>
+                         <Loader2 size={20} className="animate-spin" style={{ color: 'var(--color-primary)', opacity: 0.5 }} />
+                    </div>
+                )}
             </motion.div>
 
             {/* Banner de Estado / Noticia Dinámica */}
