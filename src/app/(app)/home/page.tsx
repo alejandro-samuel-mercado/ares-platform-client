@@ -34,19 +34,19 @@ export default function VendorHome() {
 
     const loadDynamicData = async () => {
         try {
-            // 1. Cargar nombre del perfil
-            const profile = await api.get('/perfil');
+            setLoading(true);
+            const [profile, settings, matches] = await Promise.all([
+                api.get('/perfil').catch(() => ({})),
+                api.get('/ajustes-publicos').catch(() => ({})),
+                api.get('/partidos?fecha=hoy').catch(() => [])
+            ]);
 
-            if (profile.nombre) setUserName(profile.nombre.split(' ')[0].toUpperCase());
+            if (profile?.nombre) setUserName(profile.nombre.split(' ')[0].toUpperCase());
+            
+            if (settings?.noticia_global) setNoticia(settings.noticia_global);
+            if (settings?.whatsapp_soporte) setSoporteWp(settings.whatsapp_soporte);
 
-            // 2. Cargar avisos y soporte
-            const settings = await api.get('/ajustes-publicos');
-            if (settings.noticia_global) setNoticia(settings.noticia_global);
-            if (settings.whatsapp_soporte) setSoporteWp(settings.whatsapp_soporte);
-
-            // 3. Cargar partidos (próximos 2)
-            const matches = await api.get('/partidos?fecha=hoy');
-            setNextMatches(matches.slice(0, 2));
+            if (Array.isArray(matches)) setNextMatches(matches.slice(0, 2));
 
         } catch (err) {
             console.error('Error cargando datos dinámicos:', err);

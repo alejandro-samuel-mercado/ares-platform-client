@@ -62,13 +62,18 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     if (savedToken && savedVendor) {
       setToken(savedToken);
       setVendor(JSON.parse(savedVendor));
-      // Forzar actualización suave para asegurar permisos al día
+      // Forzar actualización suave para asegurar permisos al día antes de mostrar UI restringida
       api.get('/perfil').then(data => {
         setVendor(data);
         localStorage.setItem('ares_vendor', JSON.stringify(data));
-      }).catch(() => {});
+      }).catch(() => {
+        // Ignorar en catch, el layout o page forzará relogin si hubo error authn
+      }).finally(() => {
+        setIsLoading(false);
+      });
+    } else {
+      setIsLoading(false);
     }
-    setIsLoading(false);
   }, []);
 
 

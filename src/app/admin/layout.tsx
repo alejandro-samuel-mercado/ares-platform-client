@@ -596,14 +596,14 @@ function AdminHeader() {
 }
 
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
-    const { isColaborador, isLoading } = useAuth();
+    const { isAdmin, isColaborador, isLoading } = useAuth();
     const router = useRouter();
 
     React.useEffect(() => {
-        if (!isLoading && isColaborador) {
+        if (!isLoading && !isAdmin && !isColaborador) {
             router.push('/home');
         }
-    }, [isColaborador, isLoading, router]);
+    }, [isAdmin, isColaborador, isLoading, router]);
 
     if (isLoading) return (
         <div style={{ 
@@ -620,7 +620,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
             <p style={{ fontWeight: 900, letterSpacing: '0.3em', color: 'var(--color-primary)', fontSize: '0.8rem' }}>SINCRONIZANDO...</p>
         </div>
     );
-    if (isColaborador) return null;
+    if (!isAdmin && !isColaborador) return null;
 
     return (
         <div style={{ position: 'relative' }}>

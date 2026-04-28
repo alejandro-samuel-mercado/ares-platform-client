@@ -3,9 +3,9 @@
  */
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Package, Plus, Edit2, Trash2, X, AlertTriangle, CheckCircle, Info, Layers, LayoutGrid, Zap } from 'lucide-react';
+import { Package, Plus, Edit2, Trash2, X, AlertTriangle, CheckCircle, Info, Layers, LayoutGrid, Zap, Upload, Link } from 'lucide-react';
 import api from '@/lib/api';
 
 interface Categoria {
@@ -37,6 +37,10 @@ export default function ServiciosPage() {
     const [showToast, setShowToast] = useState(false);
     const [toastMsg, setToastMsg] = useState('');
     const [tasaCambio, setTasaCambio] = useState(6.96);
+    const [logoFile, setLogoFile] = useState<File | null>(null);
+    const [logoPreview, setLogoPreview] = useState<string | null>(null);
+    const [useUrlMode, setUseUrlMode] = useState(false);
+    const fileInputRef = useRef<HTMLInputElement>(null);
 
     const load = () => {
         setLoading(true);
@@ -46,7 +50,7 @@ export default function ServiciosPage() {
             api.get('/categorias?tipo=SERVICIO')
         ])
             .then(([svcs, ajustes, cats]) => {
-                setServicios(svcs);
+                setServicios(svcs.filter((s: Servicio) => s.activo));
                 if (ajustes?.tasa_cambio_bob) setTasaCambio(ajustes.tasa_cambio_bob);
                 setCategorias(cats);
                 if (cats.length > 0 && !editing?.categoria) {
@@ -68,9 +72,40 @@ export default function ServiciosPage() {
     const handleSave = async () => {
         if (!editing) return;
         try {
-            if (editing.id) { await api.put(`/admin/servicios/${editing.id}`, editing); triggerToast('CATÁLOGO ACTUALIZADO'); }
-            else { await api.post('/admin/servicios', editing); triggerToast('NUEVO SERVICIO REGISTRADO'); }
-            setShowModal(false); setEditing(null); load();
+            let body: any;
+            const useForm = logoFile != null;
+            if (useForm) {
+                const fd = new FormData();
+                fd.append('logo', logoFile);
+                if (editing.nombre) fd.append('nombre', editing.nombre);
+                if (editing.descripcion_base) fd.append('descripcion_base', editing.descripcion_base);
+                if (editing.precio_admin != null) fd.append('precio_admin', String(editing.precio_admin));
+                if (editing.categoria) fd.append('categoria', editing.categoria);
+                if (editing.estado_actual) fd.append('estado_actual', editing.estado_actual);
+                fd.append('es_iptv_propio', String(!!editing.es_iptv_propio));
+                fd.append('activo', String(editing.activo ?? true));
+                if (editing.nota_estado) fd.append('nota_estado', editing.nota_estado);
+                body = fd;
+            } else {
+                body = editing;
+            }
+
+            if (editing.id) {
+                if (useForm) {
+                    await api.request(`/admin/servicios/${editing.id}`, { method: 'PUT', body });
+                } else {
+                    await api.put(`/admin/servicios/${editing.id}`, body);
+                }
+                triggerToast('CATÁLOGO ACTUALIZADO');
+            } else {
+                if (useForm) {
+                    await api.request('/admin/servicios', { method: 'POST', body });
+                } else {
+                    await api.post('/admin/servicios', body);
+                }
+                triggerToast('NUEVO SERVICIO REGISTRADO');
+            }
+            setShowModal(false); setEditing(null); setLogoFile(null); setLogoPreview(null); load();
         } catch (err) { triggerToast('ERROR AL SINCRONIZAR'); }
     };
 
@@ -143,7 +178,7 @@ export default function ServiciosPage() {
                 </div>
                 <button
                     className="btn-primary"
-                    onClick={() => { setEditing({ nombre: '', logo_url: '', descripcion_base: '', precio_admin: 0, categoria: 'STREAMING', es_iptv_propio: false, estado_actual: 'VERDE', activo: true }); setShowModal(true); }}
+                    onClick={() => { setEditing({ nombre: '', logo_url: '', descripcion_base: '', precio_admin: 0, categoria: 'STREAMING', es_iptv_propio: false, estado_actual: 'VERDE', activo: true }); setLogoFile(null); setLogoPreview(null); setUseUrlMode(false); setShowModal(true); }}
                 >
                     <Plus size={22} /> AÑADIR PRODUCTO
                 </button>
@@ -288,9 +323,85 @@ export default function ServiciosPage() {
                                             <span className="slider round"></span>
                                         </label>
                                     </div>
+
+                                    {/* Logo: Subir archivo o pegar URL */}
                                     <div style={{ marginTop: '0.5rem' }}>
-                                        <label className="input-label">URL del Logo (Horizontal recomendado)</label>
-                                        <input className="input" value={editing.logo_url || ''} onChange={e => setEditing({ ...editing, logo_url: e.target.value })} placeholder="https://..." />
+                                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '0.5rem' }}>
+                                            <label className="input-label" style={{ margin: 0 }}>Logo del Servicio</label>
+                                            <button
+                                                type="button"
+                                                className="btn-ghost"
+                                                style={{ fontSize: '0.7rem', padding: '0.25rem 0.75rem', fontWeight: 800, display: 'flex', alignItems: 'center', gap: '0.3rem' }}
+                                                onClick={() => setUseUrlMode(!useUrlMode)}
+                                            >
+                                                {useUrlMode ? <><Upload size={12} /> SUBIR ARCHIVO</> : <><Link size={12} /> PEGAR URL</>}
+                                            </button>
+                                        </div>
+
+                                        {useUrlMode ? (
+                                            <input
+                                                className="input"
+                                                value={editing.logo_url || ''}
+                                                onChange={e => setEditing({ ...editing, logo_url: e.target.value })}
+                                                placeholder="https://ejemplo.com/logo.png"
+                                            />
+                                        ) : (
+                                            <div
+                                                onClick={() => fileInputRef.current?.click()}
+                                                style={{
+                                                    border: '2px dashed var(--border-color)',
+                                                    borderRadius: '16px',
+                                                    padding: '1.5rem',
+                                                    textAlign: 'center',
+                                                    cursor: 'pointer',
+                                                    background: 'var(--bg-base)',
+                                                    transition: 'border-color 0.2s',
+                                                }}
+                                                onDragOver={e => { e.preventDefault(); e.currentTarget.style.borderColor = 'var(--color-primary)'; }}
+                                                onDragLeave={e => { e.currentTarget.style.borderColor = 'var(--border-color)'; }}
+                                                onDrop={e => {
+                                                    e.preventDefault();
+                                                    e.currentTarget.style.borderColor = 'var(--border-color)';
+                                                    const file = e.dataTransfer.files[0];
+                                                    if (file && file.type.startsWith('image/')) {
+                                                        setLogoFile(file);
+                                                        setLogoPreview(URL.createObjectURL(file));
+                                                    }
+                                                }}
+                                            >
+                                                <input
+                                                    ref={fileInputRef}
+                                                    type="file"
+                                                    accept="image/*"
+                                                    style={{ display: 'none' }}
+                                                    onChange={e => {
+                                                        const file = e.target.files?.[0];
+                                                        if (file) {
+                                                            setLogoFile(file);
+                                                            setLogoPreview(URL.createObjectURL(file));
+                                                        }
+                                                    }}
+                                                />
+                                                {logoPreview || editing.logo_url ? (
+                                                    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '0.75rem' }}>
+                                                        <img
+                                                            src={logoPreview || editing.logo_url}
+                                                            alt="Preview"
+                                                            style={{ maxWidth: '120px', maxHeight: '80px', objectFit: 'contain', borderRadius: '8px' }}
+                                                        />
+                                                        <span style={{ fontSize: '0.75rem', fontWeight: 700, color: 'var(--text-muted)' }}>
+                                                            {logoFile ? logoFile.name : 'Click para cambiar'}
+                                                        </span>
+                                                    </div>
+                                                ) : (
+                                                    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '0.5rem' }}>
+                                                        <Upload size={28} color="var(--text-muted)" />
+                                                        <span style={{ fontSize: '0.8rem', fontWeight: 800, color: 'var(--text-muted)' }}>Arrastra o haz click para subir</span>
+                                                        <span style={{ fontSize: '0.65rem', fontWeight: 600, opacity: 0.5 }}>PNG, JPG, SVG, WEBP</span>
+                                                    </div>
+                                                )}
+                                            </div>
+                                        )}
                                     </div>
                                 </div>
 
