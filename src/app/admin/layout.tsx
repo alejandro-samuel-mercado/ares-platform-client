@@ -274,8 +274,12 @@ function AdminHeader() {
                     api.get('/admin/pedidos')
                 ]);
 
-                const pPagos = (pagos || []).filter((p: any) => p.status === 'PENDIENTE');
-                const pPedidos = (pedidos || []).filter((p: any) => p.status === 'PENDIENTE');
+                const dismissedStr = localStorage.getItem('ares_notif_dismissed') || '[]';
+                let dismissedArr: string[] = [];
+                try { dismissedArr = JSON.parse(dismissedStr); } catch {}
+
+                const pPagos = (pagos || []).filter((p: any) => p.status === 'PENDIENTE' && !dismissedArr.includes(`pago-${p.id}`));
+                const pPedidos = (pedidos || []).filter((p: any) => p.status === 'PENDIENTE' && !dismissedArr.includes(`pedido-${p.id}`));
 
                 setPendingPagos(pPagos);
                 setPendingPedidos(pPedidos);
@@ -296,6 +300,25 @@ function AdminHeader() {
 
     const handleNotifications = () => {
         setShowNotifications(!showNotifications);
+    };
+
+    const handleDismiss = (key: string, e?: React.MouseEvent) => {
+        if (e) e.stopPropagation();
+        const dismissedStr = localStorage.getItem('ares_notif_dismissed') || '[]';
+        let arr: string[] = [];
+        try { arr = JSON.parse(dismissedStr); } catch {}
+        if (!arr.includes(key)) {
+            arr.push(key);
+            localStorage.setItem('ares_notif_dismissed', JSON.stringify(arr));
+        }
+
+        if (key.startsWith('pago-')) {
+            const id = key.replace('pago-', '');
+            setPendingPagos(prev => prev.filter(x => x.id !== id));
+        } else if (key.startsWith('pedido-')) {
+            const id = key.replace('pedido-', '');
+            setPendingPedidos(prev => prev.filter(x => x.id !== id));
+        }
     };
 
     React.useEffect(() => {
@@ -356,7 +379,7 @@ function AdminHeader() {
                                         <div
                                             key={`pago-${p.id}`}
                                             onClick={() => {
-                                                setPendingPagos(prev => prev.filter(x => x.id !== p.id));
+                                                handleDismiss(`pago-${p.id}`);
                                                 router.push('/admin/pagos');
                                                 setShowNotifications(false);
                                             }}
@@ -373,13 +396,22 @@ function AdminHeader() {
                                                 <p style={{ fontWeight: 800, fontSize: '0.85rem' }}>Pago: @{p.vendor?.alias || 'Vendedor'}</p>
                                                 <p style={{ fontSize: '0.75rem', opacity: 0.7 }}>Monto: {p.monto} x {p.plan?.nombre}</p>
                                             </div>
+                                            <button 
+                                                onClick={(e) => handleDismiss(`pago-${p.id}`, e)}
+                                                style={{ background: 'transparent', border: 'none', color: 'var(--text-muted)', cursor: 'pointer', padding: '0.4rem', borderRadius: '8px' }}
+                                                onMouseOver={(e) => e.currentTarget.style.color = '#ff4b4b'}
+                                                onMouseOut={(e) => e.currentTarget.style.color = 'var(--text-muted)'}
+                                                title="Descartar"
+                                            >
+                                                <X size={16} />
+                                            </button>
                                         </div>
                                     ))}
                                     {pendingPedidos.map((p) => (
                                         <div
                                             key={`pedido-${p.id}`}
                                             onClick={() => {
-                                                setPendingPedidos(prev => prev.filter(x => x.id !== p.id));
+                                                handleDismiss(`pedido-${p.id}`);
                                                 router.push('/admin/pedidos');
                                                 setShowNotifications(false);
                                             }}
@@ -396,6 +428,15 @@ function AdminHeader() {
                                                 <p style={{ fontWeight: 800, fontSize: '0.85rem' }}>Pedido: @{p.vendor?.alias || 'Vendedor'}</p>
                                                 <p style={{ fontSize: '0.75rem', opacity: 0.7 }}>{p.notas || 'Sin notas adicionales'}</p>
                                             </div>
+                                            <button 
+                                                onClick={(e) => handleDismiss(`pedido-${p.id}`, e)}
+                                                style={{ background: 'transparent', border: 'none', color: 'var(--text-muted)', cursor: 'pointer', padding: '0.4rem', borderRadius: '8px' }}
+                                                onMouseOver={(e) => e.currentTarget.style.color = '#ff4b4b'}
+                                                onMouseOut={(e) => e.currentTarget.style.color = 'var(--text-muted)'}
+                                                title="Descartar"
+                                            >
+                                                <X size={16} />
+                                            </button>
                                         </div>
                                     ))}
                                 </>
