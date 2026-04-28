@@ -9,18 +9,27 @@
 
 'use client';
 
-import { useState, useEffect, useRef } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
-import {
-    Key, Send, Loader2, CheckCircle2, AlertCircle, X, Zap, Copy,
-    ExternalLink, Package, Clock, RefreshCw, Eye, EyeOff, Upload,
-    ShoppingBag, Hash, UploadCloud, AlertTriangle,
-    Plus, Minus,
-    Trash2,
-    Edit3, QrCode
-} from 'lucide-react';
 import api from '@/lib/api';
 import { useAuth } from '@/lib/auth';
+import { AnimatePresence, motion } from 'framer-motion';
+import {
+      CheckCircle2,
+      Clock,
+      Copy,
+      Edit3,
+      Eye, EyeOff,
+      Key,
+      Loader2,
+      Minus,
+      Package,
+      Plus,
+      QrCode,
+      RefreshCw,
+      Send,
+      UploadCloud,
+      X, Zap
+} from 'lucide-react';
+import { useEffect, useRef, useState } from 'react';
 
 interface ServicioBase { id: string; nombre: string; logo_url: string; categoria: string; estado_actual: string; precio_admin: number; proveedor_id: string; }
 interface MiServicio { id: string; servicio_id: string; precio_venta: number; servicio: ServicioBase; }
