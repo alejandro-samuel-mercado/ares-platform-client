@@ -4,7 +4,7 @@
 
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { motion } from 'framer-motion';
 import { Lock, User, ArrowRight, ShieldCheck, Zap, Globe, Cpu } from 'lucide-react';
@@ -19,6 +19,19 @@ export default function LoginPage() {
   
   const { login } = useAuth();
   const router = useRouter();
+
+  useEffect(() => {
+    const token = localStorage.getItem('ares_token');
+    const vendor = localStorage.getItem('ares_vendor');
+    if (token && vendor) {
+       const user = JSON.parse(vendor);
+       if (user.role === 'SUPERADMIN' || user.role === 'ADMIN') {
+         window.location.href = '/admin/dashboard';
+       } else {
+         window.location.href = '/home';
+       }
+    }
+  }, []);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();

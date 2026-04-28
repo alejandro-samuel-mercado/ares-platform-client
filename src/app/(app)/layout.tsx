@@ -6,7 +6,7 @@
 
 import React, { Suspense, useState } from 'react';
 import Link from 'next/link';
-import { usePathname } from 'next/navigation';
+import { usePathname, useRouter } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Home, ShoppingBag, Trophy, Package, User, MessageSquare, CreditCard, Calculator, Image as ImageIcon, Clapperboard, History, Key, Megaphone, Store, Layers, ShieldCheck, Menu, X } from 'lucide-react';
 import { useAuth } from '@/lib/auth';
@@ -154,6 +154,38 @@ function Navigation() {
 }
 
 export default function AppLayout({ children }: { children: React.ReactNode }) {
+    const { vendor, isLoading } = useAuth();
+    const router = useRouter();
+
+    React.useEffect(() => {
+        if (!isLoading) {
+            if (!vendor) {
+                window.location.href = '/login';
+            } else if (vendor.role === 'SUPERADMIN' || vendor.role === 'ADMIN') {
+                // Si es admin, no debería estar en la app de vendedor
+                window.location.href = '/admin/dashboard';
+            }
+        }
+    }, [vendor, isLoading]);
+
+    if (isLoading || !vendor) {
+        return (
+            <div style={{ 
+                height: '100vh', display: 'flex', flexDirection: 'column', 
+                alignItems: 'center', justifyContent: 'center', gap: '2rem',
+                background: 'var(--surface-base)'
+            }}>
+                <motion.img 
+                    src="/images/icono.png" 
+                    animate={{ scale: [1, 1.05, 1], rotate: [0, 360] }}
+                    transition={{ duration: 2, repeat: Infinity, ease: "easeInOut" }}
+                    style={{ width: '60px', height: '60px', filter: 'drop-shadow(0 0 15px var(--color-primary))' }}
+                />
+                <p style={{ fontWeight: 900, letterSpacing: '0.3em', color: 'var(--color-primary)', fontSize: '0.7rem', opacity: 0.8 }}>SINCRONIZANDO...</p>
+            </div>
+        );
+    }
+
     return (
         <div style={{
             minHeight: '100vh',
