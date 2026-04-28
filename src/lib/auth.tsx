@@ -62,14 +62,16 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     if (savedToken && savedVendor) {
       setToken(savedToken);
       setVendor(JSON.parse(savedVendor));
-      // Forzar actualización suave para asegurar permisos al día antes de mostrar UI restringida
+      
+      // Ya tenemos datos locales, dejamos de bloquear la carga para que el Home sea instantáneo
+      setIsLoading(false);
+
+      // Actualizamos en segundo plano por si hubo cambios en los permisos o el plan
       api.get('/perfil').then(data => {
         setVendor(data);
         localStorage.setItem('ares_vendor', JSON.stringify(data));
       }).catch(() => {
-        // Ignorar en catch, el layout o page forzará relogin si hubo error authn
-      }).finally(() => {
-        setIsLoading(false);
+        // Si hay error de sesión (token inválido), el interceptor de API se encargará del logout
       });
     } else {
       setIsLoading(false);
