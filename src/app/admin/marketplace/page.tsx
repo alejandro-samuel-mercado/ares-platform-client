@@ -148,7 +148,7 @@ export default function MarketplaceAdminPage() {
         }
     };
 
-    const filtered = services.filter(s =>
+    const filtered = services.filter(s => s.activo).filter(s =>
         s.nombre.toLowerCase().includes(searchTerm.toLowerCase()) ||
         s.categoria.toLowerCase().includes(searchTerm.toLowerCase())
     );
