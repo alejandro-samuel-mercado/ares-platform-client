@@ -112,7 +112,10 @@ export default function ServiciosPage() {
     const [confirmDelete, setConfirmDelete] = useState<{ id: string, nombre: string } | null>(null);
 
     const handleDelete = async () => {
-        if (!confirmDelete) return;
+        if (!confirmDelete?.id) {
+            triggerToast('ID DE SERVICIO NO VÁLIDO');
+            return;
+        }
         try {
             await api.delete(`/admin/servicios/${confirmDelete.id}`);
             triggerToast('SERVICIO DESACTIVADO');

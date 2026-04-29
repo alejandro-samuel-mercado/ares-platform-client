@@ -133,7 +133,10 @@ export default function MarketplaceAdminPage() {
     const [serviceToDelete, setServiceToDelete] = useState<MarketService | null>(null);
 
     const handleDelete = async () => {
-        if (!serviceToDelete) return;
+        if (!serviceToDelete?.id) {
+            alert('ID de servicio no válido');
+            return;
+        }
         try {
             await api.delete(`/admin/servicios/${serviceToDelete.id}`);
             setShowToast(true);
