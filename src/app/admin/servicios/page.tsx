@@ -50,7 +50,7 @@ export default function ServiciosPage() {
             api.get('/categorias?tipo=SERVICIO')
         ])
             .then(([svcs, ajustes, cats]) => {
-                setServicios(svcs.filter((s: Servicio) => s.activo));
+                setServicios(svcs.filter((s: Servicio) => !!s.activo && String(s.activo) !== '0' && String(s.activo) !== 'false'));
                 if (ajustes?.tasa_cambio_bob) setTasaCambio(ajustes.tasa_cambio_bob);
                 setCategorias(cats);
                 if (cats.length > 0 && !editing?.categoria) {

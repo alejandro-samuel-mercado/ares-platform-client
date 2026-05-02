@@ -181,7 +181,7 @@ export default function PartidosAdminPage() {
         }
     };
 
-    const filtered = partidos.filter(p =>
+    const filtered = partidos.filter(p => !!p.activo && String(p.activo) !== '0' && String(p.activo) !== 'false').filter(p =>
         p.equipo_local.toLowerCase().includes(searchTerm.toLowerCase()) ||
         p.equipo_visita.toLowerCase().includes(searchTerm.toLowerCase()) ||
         p.liga.toLowerCase().includes(searchTerm.toLowerCase())

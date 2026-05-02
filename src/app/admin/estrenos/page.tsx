@@ -135,9 +135,9 @@ export default function EstRenosAdminPage() {
                 <div style={{ textAlign: 'center', padding: '8rem' }}><Loader2 className="animate-spin" size={48} color="var(--color-primary)" /></div>
             ) : (
                 <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))', gap: '2rem' }}>
-                    {estrenos.map((e, i) => (
+                    {estrenos.filter(e => !!e.activo && String(e.activo) !== '0' && String(e.activo) !== 'false').map((e, i) => (
                         <motion.div key={e.id} className="card" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.04 }}
-                            style={{ padding: 0, overflow: 'hidden', opacity: e.activo ? 1 : 0.4 }}>
+                            style={{ padding: 0, overflow: 'hidden' }}>
                             <div style={{ height: 180, background: '#000', position: 'relative', overflow: 'hidden' }}>
                                 {e.imagen_url
                                     ? <img src={e.imagen_url} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />

@@ -91,6 +91,7 @@ export default function ImagenesAdminPage() {
 
     const fetchImagenes = async () => {
         try {
+            setLoading(true);
             const data = await api.get('/admin/imagenes');
             setImagenes(data);
         } catch (error) {
@@ -188,10 +189,11 @@ export default function ImagenesAdminPage() {
         }
     };
 
-    const filteredImages = imagenes.filter(img =>
-        img.titulo.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        img.etiquetas.toLowerCase().includes(searchTerm.toLowerCase())
-    );
+    const filteredImages = imagenes.filter(img => {
+        if (!img.activo || String(img.activo) === '0' || String(img.activo) === 'false') return false;
+        return img.titulo.toLowerCase().includes(searchTerm.toLowerCase()) ||
+               img.etiquetas.toLowerCase().includes(searchTerm.toLowerCase());
+    });
 
     return (
         <div style={{ maxWidth: '1400px', margin: '0 auto', paddingBottom: '5rem' }}>
