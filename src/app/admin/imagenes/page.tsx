@@ -41,6 +41,17 @@ interface Servicio {
     logo_url: string;
 }
 
+const parseTags = (tags: string): string[] => {
+    if (!tags) return [];
+    try {
+        const parsed = JSON.parse(tags);
+        return Array.isArray(parsed) ? parsed : [String(parsed)];
+    } catch {
+        // Fallback: si no es JSON, asumir que es una lista separada por comas
+        return tags.split(',').map(t => t.trim()).filter(Boolean);
+    }
+};
+
 export default function ImagenesAdminPage() {
     const [imagenes, setImagenes] = useState<Imagen[]>([]);
     const [loading, setLoading] = useState(true);
@@ -112,7 +123,7 @@ export default function ImagenesAdminPage() {
         setSelectedImage(img);
         setNewImage({
             titulo: img.titulo,
-            etiquetas: img.etiquetas,
+            etiquetas: parseTags(img.etiquetas).join(', '),
             categoria: img.categoria || 'FLYER',
             servicio_id: img.servicio_id || '',
             archivo: null
@@ -135,7 +146,8 @@ export default function ImagenesAdminPage() {
         try {
             const formData = new FormData();
             formData.append('titulo', newImage.titulo);
-            formData.append('etiquetas', newImage.etiquetas);
+            const tagArray = newImage.etiquetas.split(',').map(t => t.trim()).filter(Boolean);
+            formData.append('etiquetas', JSON.stringify(tagArray));
             formData.append('categoria', newImage.categoria);
             formData.append('servicio_id', newImage.servicio_id);
             if (newImage.archivo) {
@@ -192,7 +204,7 @@ export default function ImagenesAdminPage() {
     const filteredImages = imagenes.filter(img => {
         if (!img.activo || String(img.activo) === '0' || String(img.activo) === 'false') return false;
         return img.titulo.toLowerCase().includes(searchTerm.toLowerCase()) ||
-               img.etiquetas.toLowerCase().includes(searchTerm.toLowerCase());
+            img.etiquetas.toLowerCase().includes(searchTerm.toLowerCase());
     });
 
     return (
@@ -288,7 +300,7 @@ export default function ImagenesAdminPage() {
                                         <h3 style={{ fontWeight: 800, fontSize: '1rem', color: 'var(--text-primary)', textTransform: 'uppercase' }}>{img.titulo}</h3>
                                     </div>
                                     <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.4rem' }}>
-                                        {JSON.parse(img.etiquetas || '[]').map((tag: string, i: number) => (
+                                        {parseTags(img.etiquetas).map((tag: string, i: number) => (
                                             <span key={i} style={{ fontSize: '0.65rem', fontWeight: 800, color: 'var(--color-primary)', background: 'var(--ambient-1)', padding: '2px 8px', borderRadius: '6px' }}>
                                                 #{tag.toUpperCase()}
                                             </span>

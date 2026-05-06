@@ -12,6 +12,16 @@ import { downloadMedia } from '@/lib/mediaUtils';
 interface Categoria { id: string; nombre: string; }
 interface Imagen { id: string; titulo: string; url_base: string; categoria: string; etiquetas: string; }
 
+const parseTags = (tags: string): string[] => {
+    if (!tags) return [];
+    try {
+        const parsed = JSON.parse(tags);
+        return Array.isArray(parsed) ? parsed : [String(parsed)];
+    } catch {
+        return tags.split(',').map(t => t.trim()).filter(Boolean);
+    }
+};
+
 export default function FlyersPage() {
     const { isAdmin, isColaborador, vendor } = useAuth();
     const { settings, getUrl } = useWatermark();
@@ -53,10 +63,10 @@ export default function FlyersPage() {
 
     const downloadImage = async (url: string, name: string, id?: string) => {
         await downloadMedia(
-            url, 
-            name, 
-            vendor, 
-            settings || undefined, 
+            url,
+            name,
+            vendor,
+            settings || undefined,
             () => id && setDownloading(prev => new Set(prev).add(id)),
             () => id && setDownloading(prev => { const n = new Set(prev); n.delete(id!); return n; })
         );
@@ -77,8 +87,9 @@ export default function FlyersPage() {
         setSaving(true);
         try {
             const formData = new FormData();
-        formData.append('titulo', form.titulo);
-            formData.append('etiquetas', form.etiquetas);
+            formData.append('titulo', form.titulo);
+            const tagArray = form.etiquetas.split(',').map(t => t.trim()).filter(Boolean);
+            formData.append('etiquetas', JSON.stringify(tagArray));
             formData.append('categoria', form.categoria || 'FLYER');
             if (form.archivo) formData.append('imagen', form.archivo);
 
@@ -175,18 +186,18 @@ export default function FlyersPage() {
                         <motion.div key={flyer.id} className="card" initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: idx * 0.05 }}
                             style={{ padding: 0, overflow: 'hidden', background: 'var(--surface-raised)' }}>
                             <div style={{ aspectRatio: '1/1', background: 'var(--surface-base)', overflow: 'hidden', position: 'relative' }}>
-                                <WatermarkedImage 
-                                    src={flyer.url_base} 
+                                <WatermarkedImage
+                                    src={flyer.url_base}
                                     settings={settings || undefined}
-                                    style={{ width: '100%', height: '100%', objectFit: 'cover' }} 
-                                    alt={flyer.titulo} 
+                                    style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                                    alt={flyer.titulo}
                                 />
                                 <div style={{ position: 'absolute', bottom: 10, left: 10, background: 'var(--color-primary)', color: 'white', padding: '2px 8px', borderRadius: '6px', fontSize: '0.6rem', fontWeight: 900, boxShadow: '2px 2px 0px 0px #000' }}>
                                     {flyer.categoria}
                                 </div>
                                 {canManage && (
                                     <div style={{ position: 'absolute', top: 10, right: 10, display: 'flex', gap: '0.5rem' }}>
-                                        <button onClick={() => { setEditingImg(flyer); setForm({ titulo: flyer.titulo, etiquetas: flyer.etiquetas, categoria: flyer.categoria, archivo: null }); setIsModalOpen(true); }}
+                                        <button onClick={() => { setEditingImg(flyer); setForm({ titulo: flyer.titulo, etiquetas: parseTags(flyer.etiquetas).join(', '), categoria: flyer.categoria, archivo: null }); setIsModalOpen(true); }}
                                             style={{ background: 'var(--color-primary)', color: 'white', border: 'none', borderRadius: '8px', width: '32px', height: '32px', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }}>
                                             <Edit size={16} />
                                         </button>
@@ -201,7 +212,7 @@ export default function FlyersPage() {
                                 <div>
                                     <div style={{ fontWeight: 900, fontSize: '0.85rem' }}>{flyer.titulo}</div>
                                     <div style={{ fontSize: '0.65rem', color: 'var(--text-muted)', fontWeight: 700 }}>
-                                        {(() => { try { return JSON.parse(flyer.etiquetas).join(', '); } catch { return ''; } })()}
+                                        {parseTags(flyer.etiquetas).join(', ')}
                                     </div>
                                 </div>
                                 <button

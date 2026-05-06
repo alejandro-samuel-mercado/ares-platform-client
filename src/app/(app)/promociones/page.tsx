@@ -10,6 +10,16 @@ import { WatermarkedImage } from '@/components/WatermarkedImage';
 
 interface Imagen { id: string; titulo: string; url_base: string; categoria: string; etiquetas: string; }
 
+const parseTags = (tags: string): string[] => {
+    if (!tags) return [];
+    try {
+        const parsed = JSON.parse(tags);
+        return Array.isArray(parsed) ? parsed : [String(parsed)];
+    } catch {
+        return tags.split(',').map(t => t.trim()).filter(Boolean);
+    }
+};
+
 export default function PromocionesPage() {
     const { isAdmin, isColaborador } = useAuth();
     const { getUrl, settings } = useWatermark();
@@ -66,7 +76,8 @@ export default function PromocionesPage() {
         try {
             const formData = new FormData();
             formData.append('titulo', form.titulo);
-            formData.append('etiquetas', form.etiquetas);
+            const tagArray = form.etiquetas.split(',').map(t => t.trim()).filter(Boolean);
+            formData.append('etiquetas', JSON.stringify(tagArray));
             formData.append('categoria', 'PROMO');
             if (form.archivo) formData.append('imagen', form.archivo);
 
@@ -148,7 +159,7 @@ export default function PromocionesPage() {
                                 <WatermarkedImage src={promo.url_base} settings={settings || undefined} alt={promo.titulo} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
                                 {canManage && (
                                     <div style={{ position: 'absolute', top: 10, right: 10, display: 'flex', gap: '0.5rem' }}>
-                                        <button onClick={() => { setEditingImg(promo); setForm({ titulo: promo.titulo, etiquetas: promo.etiquetas, archivo: null }); setIsModalOpen(true); }}
+                                        <button onClick={() => { setEditingImg(promo); setForm({ titulo: promo.titulo, etiquetas: parseTags(promo.etiquetas).join(', '), archivo: null }); setIsModalOpen(true); }}
                                             style={{ background: 'var(--color-primary)', color: 'white', border: 'none', borderRadius: '8px', width: '32px', height: '32px', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }}>
                                             <Edit size={16} />
                                         </button>
@@ -163,7 +174,7 @@ export default function PromocionesPage() {
                                 <div>
                                     <div style={{ fontWeight: 900, fontSize: '0.85rem' }}>{promo.titulo}</div>
                                     <div style={{ fontSize: '0.65rem', color: 'var(--text-muted)', fontWeight: 700 }}>
-                                        {(() => { try { return JSON.parse(promo.etiquetas).join(', '); } catch { return ''; } })()}
+                                        {parseTags(promo.etiquetas).join(', ')}
                                     </div>
                                 </div>
                                 <button className="btn-primary" onClick={() => downloadImage(getUrl(promo.url_base), promo.titulo, promo.id)}
