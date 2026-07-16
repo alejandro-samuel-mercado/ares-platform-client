@@ -33,6 +33,12 @@ interface Vendor {
   es_colaborador?: boolean;
   status: string;
   fecha_vencimiento: string;
+  app_config?: {
+    id: string;
+    nombre: string;
+    modulos_activos: string[];   // array de keys de módulos habilitados
+    colores: Record<string, string>; // CSS variables del tema
+  } | null;
 }
 
 interface AuthContextType {

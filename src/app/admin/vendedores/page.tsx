@@ -23,6 +23,8 @@ interface Vendor {
     whatsapp?: string;
     plan: string;
     plan_id: string;
+    app_config_id?: string;
+    app_config?: AppConfig | null;
     status: string;
     role: string;
     es_colaborador?: boolean;
@@ -37,10 +39,18 @@ interface Plan {
     nombre: string;
 }
 
+interface AppConfig {
+    id: string;
+    nombre: string;
+    descripcion?: string;
+    modulos_activos: string; // JSON string "["home","flyers",...]"
+}
+
 export default function VendedoresPage() {
     const { isColaborador } = useAuth();
     const [vendors, setVendors] = useState<Vendor[]>([]);
     const [planes, setPlanes] = useState<Plan[]>([]);
+    const [appConfigs, setAppConfigs] = useState<AppConfig[]>([]);
     const [loading, setLoading] = useState(true);
     const [search, setSearch] = useState('');
     const [filterPlan, setFilterPlan] = useState('');
@@ -51,12 +61,12 @@ export default function VendedoresPage() {
     const [payments, setPayments] = useState<any[]>([]);
     const [loadingPayments, setLoadingPayments] = useState(false);
     const [editingVendor, setEditingVendor] = useState<Vendor | null>(null);
-    const [editForm, setEditForm] = useState({ nombre: '', alias: '', telefono: '', whatsapp: '', password: '' });
+    const [editForm, setEditForm] = useState({ nombre: '', alias: '', telefono: '', whatsapp: '', password: '', app_config_id: '' });
     const [savingEdit, setSavingEdit] = useState(false);
 
     // Create Vendor
     const [showCreateModal, setShowCreateModal] = useState(false);
-    const [createForm, setCreateForm] = useState({ nombre: '', alias: '', telefono: '', password: '', plan_id: '', whatsapp: '' });
+    const [createForm, setCreateForm] = useState({ nombre: '', alias: '', telefono: '', password: '', plan_id: '', whatsapp: '', app_config_id: '' });
     const [creatingVendor, setCreatingVendor] = useState(false);
     const topScrollRef = useRef<HTMLDivElement>(null);
     const tableContainerRef = useRef<HTMLDivElement>(null);
@@ -65,12 +75,14 @@ export default function VendedoresPage() {
     const loadData = async () => {
         setLoading(true);
         try {
-            const [vendorsData, planesData] = await Promise.all([
+            const [vendorsData, planesData, appsData] = await Promise.all([
                 api.get('/admin/vendors'),
                 api.get('/admin/planes'),
+                api.get('/admin/app-configs'),
             ]);
             setVendors(vendorsData);
             setPlanes(planesData);
+            setAppConfigs(appsData);
         } catch (err) {
             console.error(err);
         } finally {
@@ -151,14 +163,20 @@ export default function VendedoresPage() {
 
     const openEdit = (vendor: Vendor) => {
         setEditingVendor(vendor);
-        setEditForm({ nombre: vendor.nombre, alias: vendor.alias, telefono: vendor.telefono, whatsapp: vendor.whatsapp || '', password: '' });
+        setEditForm({ nombre: vendor.nombre, alias: vendor.alias, telefono: vendor.telefono, whatsapp: vendor.whatsapp || '', password: '', app_config_id: vendor.app_config_id || '' });
     };
 
     const handleEditSave = async () => {
         if (!editingVendor) return;
         setSavingEdit(true);
         try {
-            const payload: any = { nombre: editForm.nombre, alias: editForm.alias, telefono: editForm.telefono, whatsapp: editForm.whatsapp };
+            const payload: any = {
+                nombre: editForm.nombre,
+                alias: editForm.alias,
+                telefono: editForm.telefono,
+                whatsapp: editForm.whatsapp,
+                app_config_id: editForm.app_config_id || null,
+            };
             if (editForm.password) payload.password = editForm.password;
             await api.put(`/admin/vendors/${editingVendor.id}`, payload);
             showToast('Vendedor actualizado ✅');
@@ -271,7 +289,7 @@ export default function VendedoresPage() {
                         <RefreshCw size={20} className={loading ? 'animate-spin' : ''} />
 
                     </button>
-                    <button onClick={() => { setCreateForm({ nombre: '', alias: '', telefono: '', password: '', plan_id: planes[0]?.id || '', whatsapp: '' }); setShowCreateModal(true); }} className="btn-primary" style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                    <button onClick={() => { setCreateForm({ nombre: '', alias: '', telefono: '', password: '', plan_id: planes[0]?.id || '', whatsapp: '', app_config_id: '' }); setShowCreateModal(true); }} className="btn-primary" style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
                         <UserPlus size={20} /> CREAR VENDEDOR
                     </button>
                 </div>
@@ -623,6 +641,30 @@ export default function VendedoresPage() {
                                     <label style={{ fontSize: '0.7rem', fontWeight: 900, opacity: 0.6, display: 'block', marginBottom: '0.4rem' }}>NUEVA CONTRASEÑA (dejar en blanco para no cambiar)</label>
                                     <input className="input" type="password" value={editForm.password} onChange={e => setEditForm(f => ({ ...f, password: e.target.value }))} placeholder="••••••••" />
                                 </div>
+                                {/* Aplicación asignada */}
+                                <div>
+                                    <Combobox
+                                        label="APLICACIÓN ASIGNADA (opcional)"
+                                        placeholder="Sin restricción — acceso completo"
+                                        options={[
+                                            { id: '', nombre: 'SIN APLICACIÓN — ACCESO COMPLETO' },
+                                            ...appConfigs.map(a => ({ id: a.id, nombre: a.nombre + (a.descripcion ? ` — ${a.descripcion}` : '') }))
+                                        ]}
+                                        value={editForm.app_config_id}
+                                        onChange={(val: any) => setEditForm(f => ({ ...f, app_config_id: val }))}
+                                    />
+                                    {editForm.app_config_id && (() => {
+                                        const app = appConfigs.find(a => a.id === editForm.app_config_id);
+                                        if (!app) return null;
+                                        let mods: string[] = [];
+                                        try { mods = JSON.parse(app.modulos_activos || '[]'); } catch { /* */ }
+                                        return (
+                                            <div style={{ marginTop: '0.5rem', padding: '0.6rem 1rem', background: 'rgba(187,72,18,0.1)', border: '2px solid var(--color-primary)', borderRadius: '12px', fontSize: '0.72rem', fontWeight: 800, color: 'var(--color-primary)' }}>
+                                                ℹ️ {mods.length} módulos habilitados con esta aplicación
+                                            </div>
+                                        );
+                                    })()}
+                                </div>
                             </div>
 
                             <div style={{ display: 'flex', gap: '1rem', marginTop: '2rem' }}>
@@ -694,6 +736,30 @@ export default function VendedoresPage() {
                                         value={createForm.plan_id}
                                         onChange={(val: any) => setCreateForm({ ...createForm, plan_id: val })}
                                     />
+                                </div>
+                                {/* Aplicación asignada */}
+                                <div>
+                                    <Combobox
+                                        label="APLICACIÓN (opcional)"
+                                        placeholder="Sin restricción — acceso completo"
+                                        options={[
+                                            { id: '', nombre: 'SIN APLICACIÓN — ACCESO COMPLETO' },
+                                            ...appConfigs.map(a => ({ id: a.id, nombre: a.nombre + (a.descripcion ? ` — ${a.descripcion}` : '') }))
+                                        ]}
+                                        value={createForm.app_config_id}
+                                        onChange={(val: any) => setCreateForm({ ...createForm, app_config_id: val })}
+                                    />
+                                    {createForm.app_config_id && (() => {
+                                        const app = appConfigs.find(a => a.id === createForm.app_config_id);
+                                        if (!app) return null;
+                                        let mods: string[] = [];
+                                        try { mods = JSON.parse(app.modulos_activos || '[]'); } catch { /* */ }
+                                        return (
+                                            <div style={{ marginTop: '0.5rem', padding: '0.6rem 1rem', background: 'rgba(16,185,129,0.1)', border: '2px solid #10B981', borderRadius: '12px', fontSize: '0.72rem', fontWeight: 800, color: '#10B981' }}>
+                                                ✅ {mods.length} módulos habilitados con esta aplicación
+                                            </div>
+                                        );
+                                    })()}
                                 </div>
                             </div>
 

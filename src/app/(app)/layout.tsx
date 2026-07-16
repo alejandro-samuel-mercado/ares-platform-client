@@ -1,54 +1,93 @@
 /**
  * Vendor PWA Layout — Redesign v2 (Cartoon-Futurista)
+ * Soporta AppConfig: filtra módulos y aplica colores de tema por vendor.
  */
 
 'use client';
 
-import React, { Suspense, useState } from 'react';
+import React, { Suspense, useState, useEffect } from 'react';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Home, ShoppingBag, Trophy, Package, User, MessageSquare, CreditCard, Calculator, Image as ImageIcon, Clapperboard, History, Key, Megaphone, Store, Layers, ShieldCheck, Menu, X } from 'lucide-react';
+import {
+    Home, ShoppingBag, Trophy, Package, User, MessageSquare, CreditCard,
+    Calculator, Image as ImageIcon, Clapperboard, History, Key, Megaphone,
+    Store, Layers, ShieldCheck, Menu, X, Lock
+} from 'lucide-react';
 import { useAuth } from '@/lib/auth';
 import './app.css';
 
+// ─── Definición completa de módulos del sidebar ───────────────────────────────
+const ALL_SIDEBAR_ITEMS = [
+    { key: 'home',        href: '/home',                   icon: Home,         label: 'Inicio',      providerOnly: false },
+    { key: 'mensajes',    href: '/mensajes',               icon: MessageSquare, label: 'Mensajes',   providerOnly: false },
+    { key: 'flyers',      href: '/flyers',                 icon: ImageIcon,    label: 'Flyers',      providerOnly: false },
+    { key: 'partidos',    href: '/partidos',               icon: Trophy,       label: 'Partidos',    providerOnly: false },
+    { key: 'estrenos',    href: '/estrenos',               icon: Clapperboard, label: 'Estrenos',    providerOnly: false },
+    { key: 'promociones', href: '/promociones',            icon: Megaphone,    label: 'Promos',      providerOnly: false },
+    { key: 'catalogo',    href: '/catalogo',               icon: ShoppingBag,  label: 'Catálogo',    providerOnly: false },
+    { key: 'imagenes',    href: '/imagenes',               icon: Layers,       label: 'Servicios',   providerOnly: false },
+    { key: 'marketplace', href: '/marketplace/gestion',    icon: Store,        label: 'Marketplace', providerOnly: true  },
+    { key: 'marketplace', href: '/marketplace/credenciales', icon: ShieldCheck, label: 'Cuentas',   providerOnly: true  },
+    { key: 'historial',   href: '/historial',              icon: History,      label: 'Historial',   providerOnly: false },
+    { key: 'plan',        href: '/plan',                   icon: CreditCard,   label: 'Mi Plan',     providerOnly: false },
+    { key: 'calculadora', href: '/calculadora',            icon: Calculator,   label: 'Calculadora', providerOnly: false },
+    { key: 'perfil',      href: '/perfil',                 icon: User,         label: 'Perfil',      providerOnly: false },
+];
+
+const BOTTOM_NAV_KEYS = ['home', 'imagenes', 'flyers', 'catalogo', 'perfil'];
+
+// ─── Inyección de colores CSS del AppConfig ───────────────────────────────────
+function useAppTheme(colores: Record<string, string> | undefined) {
+    useEffect(() => {
+        if (!colores || Object.keys(colores).length === 0) return;
+
+        const root = document.documentElement;
+        const applied: string[] = [];
+
+        Object.entries(colores).forEach(([key, value]) => {
+            if (key.startsWith('--') && value) {
+                root.style.setProperty(key, value);
+                applied.push(key);
+            }
+        });
+
+        // Cleanup: reset only the properties we set when unmounting
+        return () => {
+            applied.forEach(key => root.style.removeProperty(key));
+        };
+    }, [colores]);
+}
+
+// ─── Navigation ───────────────────────────────────────────────────────────────
 function Navigation() {
     const pathname = usePathname();
     const { vendor } = useAuth();
     const [mobileOpen, setMobileOpen] = useState(false);
+
     const isProvider = vendor?.plan === 'Proveedor' || vendor?.role === 'SUPERADMIN';
+    const activeModules: string[] | null = vendor?.app_config?.modulos_activos || null;
 
-    const sidebarItems = [
-        { href: '/home', icon: Home, label: 'Inicio' },
-        { href: '/mensajes', icon: MessageSquare, label: 'Mensajes' },
-        { href: '/flyers', icon: ImageIcon, label: 'Flyers' },
-        { href: '/partidos', icon: Trophy, label: 'Partidos' },
-        { href: '/estrenos', icon: Clapperboard, label: 'Estrenos' },
-        { href: '/promociones', icon: Megaphone, label: 'Promos' },
-        { href: '/catalogo', icon: ShoppingBag, label: 'Catálogo' },
-        { href: '/imagenes', icon: Layers, label: 'Servicios' },
-        ...(isProvider ? [
-            { href: '/marketplace/gestion', icon: Store, label: 'Marketplace' },
-            { href: '/marketplace/credenciales', icon: ShieldCheck, label: 'Cuentas' }
-        ] : []),
-        { href: '/historial', icon: History, label: 'Historial' },
-        { href: '/plan', icon: CreditCard, label: 'Mi Plan' },
-        { href: '/calculadora', icon: Calculator, label: 'Calculadora' },
-        { href: '/perfil', icon: User, label: 'Perfil' },
-    ];
+    // Filtra items según: proveedor, y módulos habilitados por AppConfig
+    const visibleSidebarItems = ALL_SIDEBAR_ITEMS.filter(item => {
+        // Items exclusivos de proveedor
+        if (item.providerOnly && !isProvider) return false;
+        // Si hay AppConfig, filtrar por módulos activos
+        if (activeModules !== null && !activeModules.includes(item.key)) return false;
+        return true;
+    });
 
-    const bottomItems = [
-        { href: '/home', icon: Home, label: 'Inicio' },
-        { href: '/imagenes', icon: Layers, label: 'Servicios' },
-        { href: '/flyers', icon: ImageIcon, label: 'Flyers' },
-        { href: '/catalogo', icon: ShoppingBag, label: 'Catálogo' },
-        { href: '/perfil', icon: User, label: 'Perfil' },
-    ];
+    // Bottom nav: solo los que estén en BOTTOM_NAV_KEYS Y sean visibles
+    const visibleBottomItems = ALL_SIDEBAR_ITEMS.filter(item =>
+        BOTTOM_NAV_KEYS.includes(item.key) &&
+        (activeModules === null || activeModules.includes(item.key))
+    // Deduplicar por href
+    ).filter((item, idx, arr) => arr.findIndex(i => i.href === item.href) === idx);
 
     return (
         <>
-            <button 
-                className="app-mobile-menu-btn mobile-only" 
+            <button
+                className="app-mobile-menu-btn mobile-only"
                 onClick={() => setMobileOpen(true)}
             >
                 <Menu size={24} />
@@ -57,14 +96,14 @@ function Navigation() {
             <AnimatePresence>
                 {mobileOpen && (
                     <>
-                        <motion.div 
+                        <motion.div
                             className="app-drawer-overlay"
                             initial={{ opacity: 0 }}
                             animate={{ opacity: 1 }}
                             exit={{ opacity: 0 }}
                             onClick={() => setMobileOpen(false)}
                         />
-                        <motion.aside 
+                        <motion.aside
                             className="app-drawer"
                             initial={{ x: '-100%' }}
                             animate={{ x: 0 }}
@@ -72,13 +111,20 @@ function Navigation() {
                             transition={{ type: 'spring', damping: 25, stiffness: 200 }}
                         >
                             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2rem' }}>
-                                <span style={{ fontWeight: 900, letterSpacing: '0.1rem', fontSize: '1.2rem' }}>ARES APP</span>
+                                <div>
+                                    <span style={{ fontWeight: 900, letterSpacing: '0.1rem', fontSize: '1.2rem' }}>ARES APP</span>
+                                    {vendor?.app_config && (
+                                        <div style={{ fontSize: '0.6rem', opacity: 0.6, marginTop: '2px', fontWeight: 700 }}>
+                                            📱 {vendor.app_config.nombre}
+                                        </div>
+                                    )}
+                                </div>
                                 <button onClick={() => setMobileOpen(false)} style={{ background: 'transparent', border: 'none', color: 'white' }}>
                                     <X size={28} />
                                 </button>
                             </div>
 
-                            {sidebarItems.map((item) => {
+                            {visibleSidebarItems.map((item) => {
                                 const isActive = pathname === item.href;
                                 return (
                                     <Link
@@ -97,9 +143,10 @@ function Navigation() {
                 )}
             </AnimatePresence>
 
+            {/* Bottom Nav */}
             <nav className="bottom-nav">
                 <div style={{ display: 'flex', width: '100%', justifyContent: 'space-around', alignItems: 'center' }}>
-                    {bottomItems.map((item) => {
+                    {visibleBottomItems.map((item) => {
                         const isActive = pathname === item.href;
                         return (
                             <Link
@@ -128,7 +175,7 @@ function Navigation() {
 
             {/* Desktop Sidebar */}
             <aside className="vendor-sidebar">
-                {sidebarItems.map((item) => {
+                {visibleSidebarItems.map((item) => {
                     const isActive = pathname === item.href;
                     return (
                         <Link
@@ -153,16 +200,19 @@ function Navigation() {
     );
 }
 
+// ─── App Layout ───────────────────────────────────────────────────────────────
 export default function AppLayout({ children }: { children: React.ReactNode }) {
     const { vendor, isLoading } = useAuth();
     const router = useRouter();
+
+    // Aplicar colores del AppConfig como CSS variables en el documento
+    useAppTheme(vendor?.app_config?.colores);
 
     React.useEffect(() => {
         if (!isLoading) {
             if (!vendor) {
                 window.location.href = '/login';
             } else if (vendor.role === 'SUPERADMIN' || vendor.role === 'ADMIN') {
-                // Si es admin, no debería estar en la app de vendedor
                 window.location.href = '/admin/dashboard';
             }
         }
@@ -170,13 +220,13 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
 
     if (isLoading || !vendor) {
         return (
-            <div style={{ 
-                height: '100vh', display: 'flex', flexDirection: 'column', 
+            <div style={{
+                height: '100vh', display: 'flex', flexDirection: 'column',
                 alignItems: 'center', justifyContent: 'center', gap: '2rem',
                 background: 'var(--surface-base)'
             }}>
-                <motion.img 
-                    src="/images/icono.png" 
+                <motion.img
+                    src="/images/icono.png"
                     animate={{ scale: [1, 1.05, 1], rotate: [0, 360] }}
                     transition={{ duration: 2, repeat: Infinity, ease: "easeInOut" }}
                     style={{ width: '60px', height: '60px', filter: 'drop-shadow(0 0 15px var(--color-primary))' }}
@@ -193,7 +243,6 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
             background: 'var(--surface-base)',
             position: 'relative',
             overflowX: 'hidden'
-
         }} className="layout-wrapper">
             {/* Orbe decorativo */}
             <div style={{

@@ -28,9 +28,12 @@
     --color-secondary: #e7dcdc;
     --color-accent: #ceceec;
     --color-danger: #f75617;
-    --border-thick: 2px solid #bb4812;
-    --shadow-heavy: 10px 10px 0px 0px rgba(245, 105, 24, 0.89);
-    --shadow-glow: 0 0 30px rgba(175, 65, 22, 0.74);
+    --color-border: #bb4812;
+    --border-thick: 2px solid var(--color-border);
+    --shadow-color-heavy: rgba(245, 105, 24, 0.89);
+    --shadow-heavy: 10px 10px 0px 0px var(--shadow-color-heavy);
+    --shadow-color-glow: rgba(175, 65, 22, 0.74);
+    --shadow-glow: 0 0 30px var(--shadow-color-glow);
 
     --ambient-1: rgba(201, 132, 53, 0.438);
     --ambient-2: rgba(201, 94, 33, 0.555);
@@ -62,12 +65,15 @@
     --color-accent: #5642b1;
 
     --color-danger: #1b0441;
-    --border-thick: 2px solid #000000;
+    --color-border: #000000;
+    --border-thick: 2px solid var(--color-border);
     --border-glass: 1px solid rgba(255, 255, 255, 0.8);
 
-    --shadow-heavy: 10px 10px 0px 0px #000000;
+    --shadow-color-heavy: #000000;
+    --shadow-heavy: 10px 10px 0px 0px var(--shadow-color-heavy);
     --shadow-soft: 0 20px 50px rgba(0, 0, 0, 0.1);
-    --shadow-glow: 0 0 20px rgba(79, 70, 229, 0.3);
+    --shadow-color-glow: rgba(79, 70, 229, 0.3);
+    --shadow-glow: 0 0 20px var(--shadow-color-glow);
 
     --sidebar-bg: #310c96;
     --sidebar-text: rgba(255, 255, 255, 0.7);
@@ -92,8 +98,10 @@
     --text-primary: #f3dddd;
     --text-muted: #A1A1AA;
     --color-primary: #EF4444;
-    --border-thick: 2px solid #EF4444;
-    --shadow-heavy: 10px 10px 0px 0px rgba(239, 68, 68, 0.3);
+    --color-border: #EF4444;
+    --border-thick: 2px solid var(--color-border);
+    --shadow-color-heavy: rgba(239, 68, 68, 0.3);
+    --shadow-heavy: 10px 10px 0px 0px var(--shadow-color-heavy);
     --color-accent: #EF4444;
     --color-danger: #afa122;
     --sidebar-bg: #1a1a1aec;
