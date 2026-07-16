@@ -204,6 +204,7 @@ function Navigation() {
 export default function AppLayout({ children }: { children: React.ReactNode }) {
     const { vendor, isLoading } = useAuth();
     const router = useRouter();
+    const pathname = usePathname();
 
     // Aplicar colores del AppConfig como CSS variables en el documento
     useAppTheme(vendor?.app_config?.colores);
@@ -214,9 +215,24 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
                 window.location.href = '/login';
             } else if (vendor.role === 'SUPERADMIN' || vendor.role === 'ADMIN') {
                 window.location.href = '/admin/dashboard';
+            } else {
+                // Route protection: prevent access to disabled modules via URL
+                const currentItem = ALL_SIDEBAR_ITEMS.find(item => pathname.startsWith(item.href) && item.href !== '/home');
+                if (currentItem) {
+                    const isProvider = vendor.plan === 'Proveedor' || vendor.role === 'SUPERADMIN';
+                    const activeModules = vendor.app_config?.modulos_activos;
+                    
+                    if (currentItem.providerOnly && !isProvider) {
+                        router.replace('/home');
+                    } else if (activeModules !== null && activeModules !== undefined) {
+                        if (!activeModules.includes(currentItem.key)) {
+                            router.replace('/home');
+                        }
+                    }
+                }
             }
         }
-    }, [vendor, isLoading]);
+    }, [vendor, isLoading, pathname, router]);
 
     if (isLoading || !vendor) {
         return (

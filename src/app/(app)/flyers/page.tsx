@@ -50,14 +50,37 @@ export default function FlyersPage() {
                 api.get('/categorias?tipo=IMAGEN')
             ]);
             setFlyers(all);
-            setCategorias(cats);
-            if (cats.length > 0 && !form.categoria) {
-                setForm(prev => ({ ...prev, categoria: cats[0].nombre }));
+            
+            // Filter categories based on active modules
+            const activeModules = vendor?.app_config?.modulos_activos || null;
+            let visibleCats = cats;
+            if (activeModules) {
+                visibleCats = cats.filter((c: any) => {
+                    const catName = c.nombre.toUpperCase();
+                    if (['DEPORTES', 'PARTIDOS', 'FUTBOL', 'PARTIDO'].includes(catName)) {
+                        return activeModules.includes('partidos');
+                    }
+                    if (['ESTRENOS', 'CINE', 'PELICULAS', 'SERIES'].includes(catName)) {
+                        return activeModules.includes('estrenos');
+                    }
+                    if (['PROMOS', 'PROMOCIONES', 'PROMO'].includes(catName)) {
+                        return activeModules.includes('promociones');
+                    }
+                    if (['FLYERS', 'FLYER'].includes(catName)) {
+                        return activeModules.includes('flyers');
+                    }
+                    return true;
+                });
+            }
+
+            setCategorias(visibleCats);
+            if (visibleCats.length > 0 && !form.categoria) {
+                setForm(prev => ({ ...prev, categoria: visibleCats[0].nombre }));
             }
         } catch (err) { console.error(err); }
         finally { setLoading(false); }
     };
-    useEffect(() => { load(); }, []);
+    useEffect(() => { load(); }, [vendor]);
 
     const showToast = (msg: string) => { setToast(msg); setTimeout(() => setToast(''), 3000); };
 

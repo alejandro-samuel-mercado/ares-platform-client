@@ -76,26 +76,31 @@ export default function VendorHome() {
         setDeferredPrompt(null);
     };
 
+    const activeModules = vendor?.app_config?.modulos_activos || null;
+
     const cards = [
-        { title: 'MENSAJES', desc: 'Soporte rápido', icon: MessageSquare, color: '#F59E0B', href: '/mensajes' },
-        { title: 'FLYERS', desc: 'Banco de imágenes', icon: ImageIcon, color: '#8d09e5ff', href: '/flyers' },
-        { title: 'PARTIDOS', desc: 'Cartelera de hoy', icon: Trophy, color: '#E50914', href: '/partidos' },
-        { title: 'ESTRENOS', desc: 'Novedades streaming', icon: Clapperboard, color: '#E50914', href: '/estrenos' },
-        { title: 'PROMOS', desc: 'Ofertas y avisos', icon: Megaphone, color: '#F59E0B', href: '/promociones' },
-        { title: 'CATÁLOGO', desc: 'Precios actualizados', icon: ShoppingBag, color: 'var(--color-primary)', href: '/catalogo' },
-        { title: 'SERVICIOS', desc: 'Cuentas y licencias', icon: Key, color: 'var(--color-accent)', href: '/imagenes' },
+        { key: 'mensajes', title: 'MENSAJES', desc: 'Soporte rápido', icon: MessageSquare, color: '#F59E0B', href: '/mensajes' },
+        { key: 'flyers', title: 'FLYERS', desc: 'Banco de imágenes', icon: ImageIcon, color: '#8d09e5ff', href: '/flyers' },
+        { key: 'partidos', title: 'PARTIDOS', desc: 'Cartelera de hoy', icon: Trophy, color: '#E50914', href: '/partidos' },
+        { key: 'estrenos', title: 'ESTRENOS', desc: 'Novedades streaming', icon: Clapperboard, color: '#E50914', href: '/estrenos' },
+        { key: 'promociones', title: 'PROMOS', desc: 'Ofertas y avisos', icon: Megaphone, color: '#F59E0B', href: '/promociones' },
+        { key: 'catalogo', title: 'CATÁLOGO', desc: 'Precios actualizados', icon: ShoppingBag, color: 'var(--color-primary)', href: '/catalogo' },
+        { key: 'imagenes', title: 'SERVICIOS', desc: 'Cuentas y licencias', icon: Key, color: 'var(--color-accent)', href: '/imagenes' },
 
         // Módulos de Proveedor
-        { title: 'MARKETPLACE', desc: 'Gestión de ventas', icon: Store, color: 'var(--color-primary)', href: '/marketplace/gestion', providerOnly: true },
-        { title: 'CUENTAS', desc: 'Stock de credenciales', icon: Key, color: '#8B5CF6', href: '/marketplace/credenciales', providerOnly: true },
+        { key: 'marketplace', title: 'MARKETPLACE', desc: 'Gestión de ventas', icon: Store, color: 'var(--color-primary)', href: '/marketplace/gestion', providerOnly: true },
+        { key: 'marketplace', title: 'CUENTAS', desc: 'Stock de credenciales', icon: Key, color: '#8B5CF6', href: '/marketplace/credenciales', providerOnly: true },
 
-        { title: 'HISTORIAL', desc: 'Mis activaciones', icon: History, color: '#8B5CF6', href: '/historial' },
-        { title: 'MI PLAN', desc: 'Suscripción activa', icon: CreditCard, color: '#E50914', href: '/plan' },
-        { title: 'CALCULADORA', desc: 'Margen de ganancia', icon: Calculator, color: '#8B5CF6', href: '/calculadora' },
-        { title: 'PERFIL', desc: 'Ajustes de cuenta', icon: User, color: '#F59E0B', href: '/perfil' },
+        { key: 'historial', title: 'HISTORIAL', desc: 'Mis activaciones', icon: History, color: '#8B5CF6', href: '/historial' },
+        { key: 'plan', title: 'MI PLAN', desc: 'Suscripción activa', icon: CreditCard, color: '#E50914', href: '/plan' },
+        { key: 'calculadora', title: 'CALCULADORA', desc: 'Margen de ganancia', icon: Calculator, color: '#8B5CF6', href: '/calculadora' },
+        { key: 'perfil', title: 'PERFIL', desc: 'Ajustes de cuenta', icon: User, color: '#F59E0B', href: '/perfil' },
     ].filter(card => {
         // Ocultar si es solo para proveedores y el usuario no lo es
         if ((card as any).providerOnly && !isProvider) return false;
+
+        // Filtrar por modulos activos
+        if (activeModules !== null && !activeModules.includes(card.key)) return false;
 
         // Ocultar PARTIDOS si ya hay un widget Bento arriba (para no repetir)
         if (card.title === 'PARTIDOS' && nextMatches.length > 0) return false;
@@ -186,7 +191,7 @@ export default function VendorHome() {
             )}
 
             {/* Cartelera TV Pro - Bento Box */}
-            {nextMatches.length > 0 && (
+            {nextMatches.length > 0 && (activeModules === null || activeModules.includes('partidos')) && (
                 <motion.div
                     initial={{ opacity: 0, y: 10 }}
                     animate={{ opacity: 1, y: 0 }}
