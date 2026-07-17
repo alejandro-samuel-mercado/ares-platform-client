@@ -55,6 +55,7 @@ export default function VendedoresPage() {
     const [search, setSearch] = useState('');
     const [filterPlan, setFilterPlan] = useState('');
     const [filterStatus, setFilterStatus] = useState('');
+    const [filterApp, setFilterApp] = useState('');
     const [toast, setToast] = useState('');
     const [showHistory, setShowHistory] = useState(false);
     const [selectedVendor, setSelectedVendor] = useState<Vendor | null>(null);
@@ -193,6 +194,7 @@ export default function VendedoresPage() {
         if (search && !v.nombre.toLowerCase().includes(search.toLowerCase()) && !v.alias.toLowerCase().includes(search.toLowerCase())) return false;
         if (filterPlan && v.plan !== filterPlan) return false;
         if (filterStatus && v.status !== filterStatus) return false;
+        if (filterApp && v.app_config_id !== filterApp) return false;
         return true;
     });
 
@@ -328,6 +330,17 @@ export default function VendedoresPage() {
                         ]}
                         value={filterStatus}
                         onChange={(val: any) => setFilterStatus(val)}
+                    />
+                </div>
+                <div style={{ width: '220px' }}>
+                    <Combobox
+                        placeholder="Filtrar aplicación..."
+                        options={[
+                            { id: '', nombre: 'TODAS LAS APPS' },
+                            ...appConfigs.map(a => ({ id: a.id, nombre: a.nombre.toUpperCase() }))
+                        ]}
+                        value={filterApp}
+                        onChange={(val: any) => setFilterApp(val)}
                     />
                 </div>
             </div>

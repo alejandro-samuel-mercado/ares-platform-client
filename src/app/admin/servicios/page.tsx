@@ -26,11 +26,14 @@ interface Servicio {
     activo: boolean;
     proveedor_alias?: string;
     proveedor_nombre?: string;
+    app_config_id?: string | null;
+    app_config?: { nombre: string } | null;
 }
 
 export default function ServiciosPage() {
     const [servicios, setServicios] = useState<Servicio[]>([]);
     const [categorias, setCategorias] = useState<Categoria[]>([]);
+    const [apps, setApps] = useState<{id: string, nombre: string}[]>([]);
     const [loading, setLoading] = useState(true);
     const [editing, setEditing] = useState<Partial<Servicio> | null>(null);
     const [showModal, setShowModal] = useState(false);
@@ -47,12 +50,14 @@ export default function ServiciosPage() {
         Promise.all([
             api.get('/admin/servicios'),
             api.get('/ajustes-publicos'),
-            api.get('/categorias?tipo=SERVICIO')
+            api.get('/categorias?tipo=SERVICIO'),
+            api.get('/admin/app-configs')
         ])
-            .then(([svcs, ajustes, cats]) => {
+            .then(([svcs, ajustes, cats, appsRes]) => {
                 setServicios(svcs.filter((s: Servicio) => !!s.activo && String(s.activo) !== '0' && String(s.activo) !== 'false'));
                 if (ajustes?.tasa_cambio_bob) setTasaCambio(ajustes.tasa_cambio_bob);
                 setCategorias(cats);
+                setApps(appsRes || []);
                 if (cats.length > 0 && !editing?.categoria) {
                     // update if creating new
                 }
@@ -85,6 +90,7 @@ export default function ServiciosPage() {
                 fd.append('es_iptv_propio', String(!!editing.es_iptv_propio));
                 fd.append('activo', String(editing.activo ?? true));
                 if (editing.nota_estado) fd.append('nota_estado', editing.nota_estado);
+                if (editing.app_config_id !== undefined) fd.append('app_config_id', editing.app_config_id || '');
                 body = fd;
             } else {
                 body = editing;
@@ -181,7 +187,7 @@ export default function ServiciosPage() {
                 </div>
                 <button
                     className="btn-primary"
-                    onClick={() => { setEditing({ nombre: '', logo_url: '', descripcion_base: '', precio_admin: 0, categoria: 'STREAMING', es_iptv_propio: false, estado_actual: 'VERDE', activo: true }); setLogoFile(null); setLogoPreview(null); setUseUrlMode(false); setShowModal(true); }}
+                    onClick={() => { setEditing({ nombre: '', logo_url: '', descripcion_base: '', precio_admin: 0, categoria: 'STREAMING', es_iptv_propio: false, estado_actual: 'VERDE', activo: true, app_config_id: '' }); setLogoFile(null); setLogoPreview(null); setUseUrlMode(false); setShowModal(true); }}
                 >
                     <Plus size={22} /> AÑADIR PRODUCTO
                 </button>
@@ -195,6 +201,7 @@ export default function ServiciosPage() {
                             <th>Imagen</th>
                             <th>Propuesto Por</th>
                             <th>Categoría</th>
+                            <th>Aplicación</th>
                             <th>Costo Adm.</th>
                             <th>Propio</th>
                             <th>Acciones</th>
@@ -234,6 +241,9 @@ export default function ServiciosPage() {
                                 </td>
                                 <td>
                                     <div className="chip chip-blue" style={{ fontSize: '0.7rem' }}>{s.categoria}</div>
+                                </td>
+                                <td>
+                                    {s.app_config ? <div className="chip chip-gold" style={{ fontSize: '0.7rem' }}>{s.app_config.nombre}</div> : <span style={{ opacity: 0.3, fontWeight: 800, fontSize: '0.7rem' }}>GLOBAL</span>}
                                 </td>
                                 <td>
                                     <div style={{ fontWeight: 900, color: 'var(--color-primary)', fontSize: '1.2rem' }}>{s.precio_admin} <span style={{ fontSize: '0.8rem', opacity: 0.6 }}>Bs</span> <span style={{ fontSize: '0.8rem', opacity: 0.4 }}>| ${(s.precio_admin / tasaCambio).toFixed(2)}</span></div>
@@ -298,6 +308,13 @@ export default function ServiciosPage() {
                                 <div>
                                     <label className="input-label">Descripción Técnica / Beneficios</label>
                                     <input className="input" value={editing.descripcion_base || ''} onChange={e => setEditing({ ...editing, descripcion_base: e.target.value })} placeholder="4 Pantallas UHD + Audio Atmos..." />
+                                </div>
+                                <div>
+                                    <label className="input-label">Aplicación</label>
+                                    <select className="input" value={editing.app_config_id || ''} onChange={e => setEditing({ ...editing, app_config_id: e.target.value })}>
+                                        <option value="">SIN APLICACIÓN</option>
+                                        {apps.map(a => <option key={a.id} value={a.id}>{a.nombre}</option>)}
+                                    </select>
                                 </div>
 
                                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1.5rem' }}>

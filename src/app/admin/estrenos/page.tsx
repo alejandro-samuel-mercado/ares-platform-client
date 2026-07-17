@@ -23,13 +23,16 @@ interface Estreno {
     imagen_url?: string;
     activo: boolean;
     creado_en: string;
+    app_config_id?: string | null;
+    app_config?: { nombre: string } | null;
 }
 
-const emptyForm = { titulo: '', descripcion: '', plataforma: 'NETFLIX', fecha_estreno: '', imagen_url: '', imagen_archivo: null as File | null };
+const emptyForm = { titulo: '', descripcion: '', plataforma: 'NETFLIX', fecha_estreno: '', imagen_url: '', app_config_id: '', imagen_archivo: null as File | null };
 
 export default function EstRenosAdminPage() {
     const [estrenos, setEstrenos] = useState<Estreno[]>([]);
     const [dbPlataformas, setDbPlataformas] = useState<Plataforma[]>([]);
+    const [apps, setApps] = useState<{id: string, nombre: string}[]>([]);
     const [loading, setLoading] = useState(true);
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [editingId, setEditingId] = useState<string | null>(null);
@@ -41,12 +44,14 @@ export default function EstRenosAdminPage() {
     const fetch = async () => {
         setLoading(true);
         try {
-            const [estrenosData, plataformasData] = await Promise.all([
+            const [estrenosData, plataformasData, appsRes] = await Promise.all([
                 api.get('/admin/estrenos'),
-                api.get('/plataformas')
+                api.get('/plataformas'),
+                api.get('/admin/app-configs')
             ]);
             setEstrenos(estrenosData);
             setDbPlataformas(plataformasData);
+            setApps(appsRes || []);
             if (plataformasData.length > 0 && !form.plataforma) {
                 setForm(prev => ({ ...prev, plataforma: plataformasData[0].nombre }));
             }
@@ -58,7 +63,7 @@ export default function EstRenosAdminPage() {
     const openModal = (e?: Estreno) => {
         if (e) {
             setEditingId(e.id);
-            setForm({ titulo: e.titulo, descripcion: e.descripcion || '', plataforma: e.plataforma, fecha_estreno: e.fecha_estreno ? e.fecha_estreno.slice(0, 10) : '', imagen_url: e.imagen_url || '', imagen_archivo: null });
+            setForm({ titulo: e.titulo, descripcion: e.descripcion || '', plataforma: e.plataforma, fecha_estreno: e.fecha_estreno ? e.fecha_estreno.slice(0, 10) : '', imagen_url: e.imagen_url || '', app_config_id: e.app_config_id || '', imagen_archivo: null });
         } else {
             setEditingId(null);
             setForm(emptyForm);
@@ -76,6 +81,7 @@ export default function EstRenosAdminPage() {
             data.append('plataforma', form.plataforma);
             data.append('fecha_estreno', form.fecha_estreno);
             data.append('imagen_url', form.imagen_url);
+            data.append('app_config_id', form.app_config_id);
             if (form.imagen_archivo) data.append('imagen', form.imagen_archivo);
 
             const token = localStorage.getItem('ares_token');
@@ -144,12 +150,22 @@ export default function EstRenosAdminPage() {
                                     : <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                                         <Clapperboard size={64} color="white" style={{ opacity: 0.1 }} />
                                     </div>}
-                                <div style={{
-                                    position: 'absolute', top: 12, left: 12,
-                                    background: dbPlataformas.find(p => p.nombre === e.plataforma)?.color || '#000',
-                                    color: 'white', padding: '4px 12px', borderRadius: 20, fontSize: '0.65rem', fontWeight: 900
-                                }}>
-                                    {e.plataforma}
+                                <div style={{ position: 'absolute', top: 12, left: 12, display: 'flex', gap: '0.5rem', flexDirection: 'column', alignItems: 'flex-start' }}>
+                                    <div style={{
+                                        background: dbPlataformas.find(p => p.nombre === e.plataforma)?.color || '#000',
+                                        color: 'white', padding: '4px 12px', borderRadius: 20, fontSize: '0.65rem', fontWeight: 900
+                                    }}>
+                                        {e.plataforma}
+                                    </div>
+                                    {e.app_config ? (
+                                        <div style={{ background: '#F59E0B', color: 'black', padding: '4px 12px', borderRadius: 20, fontSize: '0.65rem', fontWeight: 900 }}>
+                                            {e.app_config.nombre}
+                                        </div>
+                                    ) : (
+                                        <div style={{ background: 'transparent', border: '1px solid white', color: 'white', padding: '4px 12px', borderRadius: 20, fontSize: '0.65rem', fontWeight: 900, backdropFilter: 'blur(4px)' }}>
+                                            GLOBAL
+                                        </div>
+                                    )}
                                 </div>
                             </div>
                             <div style={{ padding: '1.25rem' }}>
@@ -199,6 +215,21 @@ export default function EstRenosAdminPage() {
                                         <label className="input-label">FECHA DE ESTRENO</label>
                                         <input className="input" type="date" value={form.fecha_estreno} onChange={e => setForm({ ...form, fecha_estreno: e.target.value })} />
                                     </div>
+                                </div>
+                                <div>
+                                    <Combobox
+                                        label="APLICACIÓN "
+                                        placeholder="SIN APLICACIÓN"
+                                        options={[
+                                            { id: '', nombre: 'SIN APLICACIÓN' },
+                                            ...apps.map(a => ({
+                                                id: a.id,
+                                                nombre: a.nombre.toUpperCase()
+                                            }))
+                                        ]}
+                                        value={form.app_config_id}
+                                        onChange={(val: any) => setForm({ ...form, app_config_id: val })}
+                                    />
                                 </div>
                                 <div>
                                     <label className="input-label">DESCRIPCIÓN (OPCIONAL)</label>

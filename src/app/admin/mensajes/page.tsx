@@ -16,17 +16,21 @@ interface MensajeRapido {
     template: string;
     orden: number;
     activo: boolean;
+    app_config_id?: string | null;
+    app_config?: { nombre: string } | null;
 }
 
 const emptyForm = {
     titulo: '',
     template: '',
     orden: 0,
-    activo: true
+    activo: true,
+    app_config_id: ''
 };
 
 export default function AdminMensajesPage() {
     const [mensajes, setMensajes] = useState<MensajeRapido[]>([]);
+    const [apps, setApps] = useState<{id: string, nombre: string}[]>([]);
     const [loading, setLoading] = useState(true);
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [editingId, setEditingId] = useState<string | null>(null);
@@ -39,8 +43,12 @@ export default function AdminMensajesPage() {
     const fetchMensajes = async () => {
         setLoading(true);
         try {
-            const data = await api.get('/admin/mensajes');
+            const [data, appsRes] = await Promise.all([
+                api.get('/admin/mensajes'),
+                api.get('/admin/app-configs')
+            ]);
             setMensajes(data);
+            setApps(appsRes || []);
         } catch (error) {
             console.error('Error fetching mensajes:', error);
         } finally {
@@ -90,7 +98,7 @@ export default function AdminMensajesPage() {
     const openModal = (msg?: MensajeRapido) => {
         if (msg) {
             setEditingId(msg.id);
-            setFormData({ titulo: msg.titulo, template: msg.template, orden: msg.orden, activo: msg.activo });
+            setFormData({ titulo: msg.titulo, template: msg.template, orden: msg.orden, activo: msg.activo, app_config_id: msg.app_config_id || '' });
         } else {
             setEditingId(null);
             setFormData({ ...emptyForm, orden: mensajes.length + 1 });
@@ -147,7 +155,10 @@ export default function AdminMensajesPage() {
                                 boxShadow: '4px 4px 0px 0px #000'
                             }}>
                             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-                                <h3 style={{ fontWeight: 900, fontSize: '1.2rem', color: 'var(--text-primary)' }}>{msg.titulo.toUpperCase()}</h3>
+                                <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
+                                    <h3 style={{ fontWeight: 900, fontSize: '1.2rem', color: 'var(--text-primary)' }}>{msg.titulo.toUpperCase()}</h3>
+                                    {msg.app_config ? <div className="chip" style={{ background: '#F59E0B', color: '#000', fontSize: '0.6rem', padding: '0.2rem 0.6rem', border: '1px solid #000' }}>{msg.app_config.nombre}</div> : <div className="chip" style={{ background: 'transparent', color: 'var(--text-primary)', border: '1px solid var(--text-primary)', fontSize: '0.6rem', padding: '0.2rem 0.6rem' }}>GLOBAL</div>}
+                                </div>
                                 <div className="chip chip-primary" style={{ fontSize: '0.7rem', background: 'var(--color-primary)', color: 'white', padding: '4px 8px', borderRadius: '8px', fontWeight: 900 }}>ORDEN: {msg.orden}</div>
                             </div>
 
@@ -249,6 +260,13 @@ export default function AdminMensajesPage() {
                                             onChange={(val: any) => setFormData({ ...formData, activo: val === 'true' })}
                                         />
                                     </div>
+                                </div>
+                                <div>
+                                    <label className="input-label">APLICACIÓN (Opcional)</label>
+                                    <select className="input" value={formData.app_config_id || ''} onChange={e => setFormData({ ...formData, app_config_id: e.target.value })}>
+                                        <option value="">SIN APLICACIÓN</option>
+                                        {apps.map(a => <option key={a.id} value={a.id}>{a.nombre}</option>)}
+                                    </select>
                                 </div>
                                 <button type="submit" className="btn-primary" disabled={saving} style={{ height: 64, fontSize: '1.1rem', marginTop: '1rem' }}>
                                     {saving ? 'GUARDANDO...' : (editingId ? 'ACTUALIZAR SCRIPT' : 'LANZAR NUEVO SCRIPT')}

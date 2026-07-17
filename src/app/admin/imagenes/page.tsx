@@ -33,6 +33,8 @@ interface Imagen {
     } | null;
     activo: boolean;
     creado_en: string;
+    app_config_id?: string | null;
+    app_config?: { nombre: string } | null;
 }
 
 interface Servicio {
@@ -67,11 +69,13 @@ export default function ImagenesAdminPage() {
 
     const [servicios, setServicios] = useState<Servicio[]>([]);
     const [categorias, setCategorias] = useState<Categoria[]>([]);
+    const [apps, setApps] = useState<{id: string, nombre: string}[]>([]);
     const [newImage, setNewImage] = useState({
         titulo: '',
         etiquetas: '',
         categoria: 'FLYER',
         servicio_id: '',
+        app_config_id: '',
         archivo: null as File | null,
     });
 
@@ -79,6 +83,7 @@ export default function ImagenesAdminPage() {
         fetchImagenes();
         fetchServicios();
         fetchCategorias();
+        fetchApps();
     }, []);
 
     const fetchCategorias = async () => {
@@ -97,6 +102,15 @@ export default function ImagenesAdminPage() {
             setServicios(data);
         } catch (error) {
             console.error('Error fetching services:', error);
+        }
+    };
+
+    const fetchApps = async () => {
+        try {
+            const data = await api.get('/admin/app-configs');
+            setApps(data);
+        } catch (error) {
+            console.error('Error fetching apps:', error);
         }
     };
 
@@ -126,6 +140,7 @@ export default function ImagenesAdminPage() {
             etiquetas: parseTags(img.etiquetas).join(', '),
             categoria: img.categoria || 'FLYER',
             servicio_id: img.servicio_id || '',
+            app_config_id: img.app_config_id || '',
             archivo: null
         });
         setIsEditMode(true);
@@ -134,7 +149,7 @@ export default function ImagenesAdminPage() {
 
     const openCreateModal = () => {
         setSelectedImage(null);
-        setNewImage({ titulo: '', etiquetas: '', categoria: categorias[0]?.nombre || 'FLYER', servicio_id: '', archivo: null });
+        setNewImage({ titulo: '', etiquetas: '', categoria: categorias[0]?.nombre || 'FLYER', servicio_id: '', app_config_id: '', archivo: null });
         setIsEditMode(false);
         setIsModalOpen(true);
     };
@@ -150,6 +165,7 @@ export default function ImagenesAdminPage() {
             formData.append('etiquetas', JSON.stringify(tagArray));
             formData.append('categoria', newImage.categoria);
             formData.append('servicio_id', newImage.servicio_id);
+            formData.append('app_config_id', newImage.app_config_id);
             if (newImage.archivo) {
                 formData.append('imagen', newImage.archivo);
             }
@@ -289,7 +305,10 @@ export default function ImagenesAdminPage() {
                                 </div>
                                 <div style={{ padding: '1.5rem' }}>
                                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: '0.4rem', marginBottom: '0.5rem' }}>
-                                        <div className="chip" style={{ fontSize: '0.6rem', fontWeight: 900, background: 'var(--color-primary)', color: 'white' }}>{img.categoria}</div>
+                                        <div style={{ display: 'flex', gap: '0.4rem' }}>
+                                            <div className="chip" style={{ fontSize: '0.6rem', fontWeight: 900, background: 'var(--color-primary)', color: 'white' }}>{img.categoria}</div>
+                                            {img.app_config ? <div className="chip" style={{ fontSize: '0.6rem', fontWeight: 900, background: '#F59E0B', color: 'black' }}>{img.app_config.nombre}</div> : <div className="chip" style={{ fontSize: '0.6rem', fontWeight: 900, background: 'transparent', border: '1px solid currentColor', opacity: 0.5 }}>GLOBAL</div>}
+                                        </div>
                                         {img.servicio && (
                                             <div title={img.servicio.nombre} style={{ width: '32px', height: '32px', borderRadius: '8px', overflow: 'hidden', border: '2px solid #000', flexShrink: 0, boxShadow: '2px 2px 0px 0px #000' }}>
                                                 <img src={img.servicio.logo_url} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
@@ -386,6 +405,21 @@ export default function ImagenesAdminPage() {
                                         ]}
                                         value={newImage.servicio_id}
                                         onChange={(val: any) => setNewImage({ ...newImage, servicio_id: val })}
+                                    />
+                                </div>
+                                <div>
+                                    <Combobox
+                                        label="APLICACIÓN "
+                                        placeholder="SIN APLICACIÓN"
+                                        options={[
+                                            { id: '', nombre: 'SIN APLICACIÓN' },
+                                            ...apps.map(a => ({
+                                                id: a.id,
+                                                nombre: a.nombre.toUpperCase()
+                                            }))
+                                        ]}
+                                        value={newImage.app_config_id}
+                                        onChange={(val: any) => setNewImage({ ...newImage, app_config_id: val })}
                                     />
                                 </div>
                                 <button type="submit" disabled={uploading || (!isEditMode && !newImage.archivo)} className="btn-primary" style={{ width: '100%', padding: '1.75rem', fontSize: '1.2rem', boxShadow: '10px 10px 0px 0px #000' }}>

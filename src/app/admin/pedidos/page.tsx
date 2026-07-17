@@ -33,6 +33,8 @@ interface Pedido {
         logo_url: string;
         categoria: string;
     } | null;
+    app_config_id?: string | null;
+    app_config?: { nombre: string } | null;
 }
 
 export default function PedidosAdminPage() {
@@ -45,12 +47,18 @@ export default function PedidosAdminPage() {
     const [responseModal, setResponseModal] = useState<{ open: boolean; pedidoId: string | null }>({ open: false, pedidoId: null });
     const [deleteModal, setDeleteModal] = useState<{ open: boolean; pedidoId: string | null }>({ open: false, pedidoId: null });
     const [respuestaText, setRespuestaText] = useState('');
+    const [apps, setApps] = useState<{id: string, nombre: string}[]>([]);
+    const [filterApp, setFilterApp] = useState('');
 
     const fetchPedidos = async () => {
         setLoading(true);
         try {
-            const data = await api.get('/admin/pedidos');
+            const [data, appsRes] = await Promise.all([
+                api.get('/admin/pedidos'),
+                api.get('/admin/app-configs')
+            ]);
             setPedidos(data);
+            setApps(appsRes || []);
         } catch (error) {
             console.error('Error fetching orders:', error);
         } finally {
@@ -106,9 +114,11 @@ export default function PedidosAdminPage() {
         }
     };
 
-    const filteredPedidos = pedidos.filter(p =>
-        filter === 'ALL' || p.status === filter
-    );
+    const filteredPedidos = pedidos.filter(p => {
+        if (filter !== 'ALL' && p.status !== filter) return false;
+        if (filterApp && p.app_config_id !== filterApp) return false;
+        return true;
+    });
 
     const getStatusBadge = (status: string) => {
         const config: Record<string, string> = {
@@ -186,6 +196,18 @@ export default function PedidosAdminPage() {
                             {s === 'ALL' ? 'VER TODO' : s.replace('_', ' ')}
                         </button>
                     ))}
+                    
+                    <div style={{ flex: '1 1 auto', minWidth: '200px' }}>
+                        <select
+                            className="input"
+                            value={filterApp}
+                            onChange={e => setFilterApp(e.target.value)}
+                            style={{ padding: '0.6rem 1.25rem', height: '100%', borderRadius: '12px' }}
+                        >
+                            <option value="">TODAS LAS APLICACIONES</option>
+                            {apps.map(a => <option key={a.id} value={a.id}>{a.nombre}</option>)}
+                        </select>
+                    </div>
                 </div>
 
                 {/* Grid de Pedidos Nuclear */}
@@ -260,6 +282,15 @@ export default function PedidosAdminPage() {
                                             <MessageCircle size={16} style={{ display: 'inline', marginRight: '0.75rem', color: 'var(--color-primary)' }} />
                                             <span style={{ fontStyle: 'italic', opacity: 0.9 }}>"{p.notas}"</span>
                                         </p>
+                                        
+                                        {p.app_config && (
+                                            <div style={{ marginTop: '0.75rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                                                <span style={{ fontSize: '0.65rem', fontWeight: 900, color: 'var(--text-muted)' }}>APLICACIÓN DE ORIGEN:</span>
+                                                <div className="chip" style={{ background: '#F59E0B', color: '#000', fontSize: '0.6rem', padding: '0.2rem 0.6rem', border: '1px solid #000' }}>
+                                                    {p.app_config.nombre}
+                                                </div>
+                                            </div>
+                                        )}
 
                                         {p.comprobante_url && (
                                             <div style={{ marginTop: '1rem', padding: '1rem', background: 'var(--surface-base)', borderRadius: '16px', border: '2px solid var(--color-primary)' }}>

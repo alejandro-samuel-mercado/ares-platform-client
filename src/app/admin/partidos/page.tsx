@@ -22,10 +22,13 @@ interface Partido {
     requiere_iptv: boolean;
     activo: boolean;
     imagen_personalizada?: string;
+    app_config_id?: string | null;
+    app_config?: { nombre: string } | null;
 }
 
 export default function PartidosAdminPage() {
     const [partidos, setPartidos] = useState<Partido[]>([]);
+    const [apps, setApps] = useState<{id: string, nombre: string}[]>([]);
     const [loading, setLoading] = useState(true);
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [editingId, setEditingId] = useState<string | null>(null);
@@ -48,6 +51,7 @@ export default function PartidosAdminPage() {
         canal: '',
         requiere_iptv: false,
         imagen_personalizada: '',
+        app_config_id: '',
         imagen_personalizada_archivo: null as File | null
     });
 
@@ -55,8 +59,12 @@ export default function PartidosAdminPage() {
 
     const fetchPartidos = async () => {
         try {
-            const data = await api.get('/admin/partidos');
+            const [data, appsRes] = await Promise.all([
+                api.get('/admin/partidos'),
+                api.get('/admin/app-configs')
+            ]);
             setPartidos(data);
+            setApps(appsRes || []);
         }
         catch (error) { console.error('Error fetching matches:', error); }
         finally { setLoading(false); }
@@ -84,6 +92,7 @@ export default function PartidosAdminPage() {
             data.append('canal', formData.canal);
             data.append('requiere_iptv', formData.requiere_iptv.toString());
             data.append('activo', 'true');
+            data.append('app_config_id', formData.app_config_id);
             data.append('logo_local', formData.logo_local || '');
             data.append('logo_visita', formData.logo_visita || '');
 
@@ -140,6 +149,7 @@ export default function PartidosAdminPage() {
                 canal: partido.canal,
                 requiere_iptv: partido.requiere_iptv || false,
                 imagen_personalizada: partido.imagen_personalizada || '',
+                app_config_id: partido.app_config_id || '',
                 imagen_personalizada_archivo: null
             });
         } else {
@@ -148,7 +158,7 @@ export default function PartidosAdminPage() {
                 equipo_local: '', equipo_visita: '', logo_local: '', logo_visita: '',
                 logo_local_archivo: null, logo_visita_archivo: null,
                 liga: '', fecha: getTodayStr(), hora: '', canal: '', requiere_iptv: false,
-                imagen_personalizada: '', imagen_personalizada_archivo: null
+                imagen_personalizada: '', app_config_id: '', imagen_personalizada_archivo: null
             });
         }
         setIsModalOpen(true);
@@ -161,7 +171,7 @@ export default function PartidosAdminPage() {
             equipo_local: '', equipo_visita: '', logo_local: '', logo_visita: '',
             logo_local_archivo: null, logo_visita_archivo: null,
             liga: '', fecha: '', hora: '', canal: '', requiere_iptv: false,
-            imagen_personalizada: '', imagen_personalizada_archivo: null
+            imagen_personalizada: '', app_config_id: '', imagen_personalizada_archivo: null
         });
         setErrorToast(null);
     };
@@ -244,7 +254,10 @@ export default function PartidosAdminPage() {
                         <motion.div key={p.id} initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: j * 0.05 }}
                             className="card" style={{ padding: '0', overflow: 'hidden', background: 'var(--surface-card)' }}>
                             <div style={{ background: 'var(--color-primary)', color: 'var(--text-inverse)', padding: '0.75rem 1.5rem', borderBottom: '2.5px solid #000', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                                <span style={{ fontWeight: 900, fontSize: '0.75rem', textTransform: 'uppercase' }}>{p.liga}</span>
+                                <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
+                                    <span style={{ fontWeight: 900, fontSize: '0.75rem', textTransform: 'uppercase' }}>{p.liga}</span>
+                                    {p.app_config ? <div className="chip" style={{ background: '#F59E0B', color: '#000', fontSize: '0.6rem', padding: '0.2rem 0.6rem', border: '1px solid #000' }}>{p.app_config.nombre}</div> : <div className="chip" style={{ background: 'transparent', color: 'var(--text-inverse)', border: '1px solid var(--text-inverse)', fontSize: '0.6rem', padding: '0.2rem 0.6rem' }}>GLOBAL</div>}
+                                </div>
                                 <div style={{ display: 'flex', alignItems: 'center', gap: '0.8rem' }}>
                                     {p.requiere_iptv && <div className="chip" style={{ background: 'gold', color: '#000', fontSize: '0.6rem', padding: '0.2rem 0.6rem', border: '1px solid #000' }}>👑 PRO</div>}
                                     <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', minWidth: '60px' }}>
@@ -469,6 +482,14 @@ export default function PartidosAdminPage() {
                                 <div>
                                     <label className="input-label">Canal de Transmisión</label>
                                     <input className="input" placeholder="ej: ESPN, Star+, etc." value={formData.canal} onChange={e => setFormData({ ...formData, canal: e.target.value })} required />
+                                </div>
+                                
+                                <div>
+                                    <label className="input-label">Aplicación (Opcional)</label>
+                                    <select className="input" value={formData.app_config_id || ''} onChange={e => setFormData({ ...formData, app_config_id: e.target.value })}>
+                                        <option value="">SIN APLICACIÓN</option>
+                                        {apps.map(a => <option key={a.id} value={a.id}>{a.nombre}</option>)}
+                                    </select>
                                 </div>
 
                                 <div className="card" style={{ padding: '1.25rem', background: 'var(--surface-raised)', borderWidth: '2px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
